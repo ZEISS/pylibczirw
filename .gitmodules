@@ -1,6 +1,3 @@
-[submodule "libs/libs/libCZIrw"]
-	path = libs/libs/libCZIrw
-	url = https://github.com/ZEISS/libczi
 [submodule "libs/libCZIrw"]
 	path = libs/libCZIrw
 	url = https://github.com/ZEISS/libczi
