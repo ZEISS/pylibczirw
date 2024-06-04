@@ -139,6 +139,10 @@ jobs:
             CIBWBEFOREALL: '${{inputs.CIBWBEFOREALLWindows}}',
           }
     steps:
+    - uses: actions/checkout@v4.1.0
+      with:
+        lfs: true
+        submodules: recursive
     - uses: "./.github/actions/steps_package"
       with:
         PyVersionLatest: "${{inputs.PyVersionLatest}}"
@@ -201,7 +205,10 @@ jobs:
     name: Test Wheel${{inputs.PyVersionLatest}} on windows-2019
     runs-on: windows-2019
     steps:
-    - uses: "./.github/actions/steps_package"
+    - uses: actions/checkout@v4.1.0
+      with:
+        lfs: true
+    - uses: "./.github/actions/steps_download"
       with:
         PyVersionLatest: "${{inputs.PyVersionLatest}}"
         ArtifactName: Wheel${{inputs.PyVersionLatest}}
@@ -214,7 +221,10 @@ jobs:
         os: [ubuntu-latest, windows-2019]
     runs-on: ${{ matrix.OS }}
     steps:
-    - uses: "./.github/actions/steps_package"
+    - uses: actions/checkout@v4.1.0
+      with:
+        lfs: true
+    - uses: "./.github/actions/steps_downlaod"
       with:
         PyVersionLatest: "${{inputs.PyVersionLatest}}"
         ArtifactName: Sdist
