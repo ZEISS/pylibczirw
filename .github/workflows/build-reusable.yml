@@ -35,8 +35,6 @@ on:
         required: false
         default: ''
         type: string
-permissions:
-  contents: read
 jobs:
   CodeQualityAnalysis-Test:
     name: Static Analysis and Tests
@@ -226,9 +224,6 @@ jobs:
         PkgRootFolder: "${{inputs.PkgRootFolder}}"
     needs: PackageSDist
   Upload:
-    permissions:
-      # IMPORTANT: this permission is mandatory for trusted publishing
-      id-token: write
     needs:
     - CodeQualityAnalysis-Test
     - DownloadTestSdist

@@ -4,6 +4,10 @@ on:
     branches: ["main"]
   pull_request:
     branches: ["main"]
+permissions:
+  contents: read
+  # IMPORTANT: this permission is mandatory for trusted publishing
+  id-token: write
 jobs:
   build-test-deploy:
     name: Build, Test, Deploy to PyPI
