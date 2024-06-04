@@ -39,9 +39,6 @@ jobs:
   CodeQualityAnalysis-Test:
     name: Static Analysis and Tests
     runs-on: windows-2019
-    env:
-      CovResultsPath: "${{ runner.temp }}\\cov_results\\cov.xml"
-      TestResultsPath: "${{ runner.temp }}\\results"
     outputs:
       pypi_released: ${{ steps.pythonsemanticrelease.outputs.released }}
       pypi_version: ${{ steps.pythonsemanticrelease.outputs.version }}
@@ -113,10 +110,15 @@ jobs:
       if: success() || failure()
       run: tox -vv -r -s false
       working-directory: "${{inputs.PkgRootFolder}}"
+      env:
+        CovResultsPath: "${{ runner.temp }}\\cov_results\\cov.xml"
+        TestResultsPath: "${{ runner.temp }}\\results"
     - name: Upload Coverage
       uses: codecov/codecov-action@v4
       with:
-        files: ${{ CovResultsPath }}
+        # Hard copy from step above
+        directory: ${{ runner.temp }}/cov_results
+        files: cov.xml
         fail_ci_if_error: true
         verbose: true
         # Only one flag to be safe with
