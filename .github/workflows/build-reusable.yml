@@ -13,15 +13,14 @@ on:
       PySourceFolder:
         required: true
         type: string
-      PyProdFolder:
-        required: true
-        type: string
       PkgName:
         required: true
         type: string
       PkgRootFolder:
-        required: true
+        # Relative to github.workspace
+        required: false
         type: string
+        default: ""
       CIBWBEFOREALLLINUX:
         required: false
         default: ''
@@ -30,6 +29,8 @@ on:
         required: false
         default: ''
         type: string
+permissions:
+  contents: read
 jobs:
   CodeQualityAnalysis-Test:
     name: Static Analysis and Tests
@@ -52,37 +53,38 @@ jobs:
         architecture: x64
     - name: Python Semantic Release Setup
       run: python -m pip install --upgrade python-semantic-release
-      working-directory: "${{inputs.PkgRootFolder}}"
+      working-directory: "${{ github.workspace }}/${{inputs.PkgRootFolder}}"
     - name: Python Semantic Release
       id: pythonsemanticrelease
-      working-directory: "${{inputs.PkgRootFolder}}"
+      working-directory: "${{ github.workspace }}/${{inputs.PkgRootFolder}}"
       # TODO: Patch only for testing
       run: semantic-release -vv -c python-semantic-release.json version --patch --changelog --no-commit --no-tag --no-push --no-vcs-release --skip-build
     - name: Environment Setup
       run: python -m pip install --upgrade --requirement requirements_test.txt
-      working-directory: "${{inputs.PkgRootFolder}}"
+      working-directory: "${{ github.workspace }}/${{inputs.PkgRootFolder}}"
     - name: Check Python Versions Consistency
-      run: check-python-versions ${{inputs.PkgRootFolder}}
+      # Only specify tox.ini and setup.py since .yml uses cibuildwheel
+      run: check-python-versions ${{ github.workspace }}\${{inputs.PkgRootFolder}} --only tox.ini,setup.py
     - name: Black Static Analysis
       if: success() || failure()
       run: black -v --line-length 120 --safe --check .
-      working-directory: "${{inputs.PySourceFolder}}"
+      working-directory: "${{ github.workspace }}/${{inputs.PySourceFolder}}"
     - name: Flake8 Static Analysis
       if: success() || failure()
-      run: flake8 -v --config ${{inputs.PkgRootFolder}}\setup.cfg .
-      working-directory: "${{inputs.PySourceFolder}}"
+      run: flake8 -v --config ${{ github.workspace }}\${{inputs.PkgRootFolder}}\setup.cfg .
+      working-directory: "${{ github.workspace }}/${{inputs.PySourceFolder}}"
     - name: Pylint Static Analysis
       if: success() || failure()
-      run: pylint_runner -v --rcfile ${{inputs.PkgRootFolder}}\setup.cfg
-      working-directory: "${{inputs.PySourceFolder}}"
+      run: pylint_runner -v --rcfile ${{ github.workspace }}\${{inputs.PkgRootFolder}}\setup.cfg
+      working-directory: "${{ github.workspace }}/${{inputs.PySourceFolder}}"
     - name: Mypy Static Analysis
       if: success() || failure()
-      run: mypy -v --config-file ${{inputs.PkgRootFolder}}\setup.cfg .
-      working-directory: "${{inputs.PySourceFolder}}"
+      run: mypy -v --config-file ${{ github.workspace }}\${{inputs.PkgRootFolder}}\setup.cfg .
+      working-directory: "${{ github.workspace }}/${{inputs.PySourceFolder}}"
     - name: Bandit Static Analysis
       if: success() || failure()
-      run: bandit -v -r -c ${{inputs.PkgRootFolder}}\bandit.yaml .
-      working-directory: "${{inputs.PySourceFolder}}"
+      run: bandit -v -r -c ${{ github.workspace }}\${{inputs.PkgRootFolder}}\bandit.yaml .
+      working-directory: "${{ github.workspace }}/${{inputs.PySourceFolder}}"
     - name: Set TEMP to ${{ runner.temp }}
       run: echo "TEMP=${{ runner.temp }}" >> "$GITHUB_ENV"
       shell: bash
@@ -95,7 +97,7 @@ jobs:
     - name: Unit and Integration Tests
       if: success() || failure()
       run: tox -vv -r -s false
-      working-directory: "${{inputs.PkgRootFolder}}"
+      working-directory: "${{ github.workspace }}/${{inputs.PkgRootFolder}}"
       env:
         CovResultsPath: "${{ runner.temp }}\\cov_results\\cov.xml"
         TestResultsPath: "${{ runner.temp }}\\results"
@@ -155,15 +157,15 @@ jobs:
         architecture: x64
     - name: Environment Setup
       run: python -m pip install --upgrade --requirement requirements_deploy.txt
-      working-directory: "${{inputs.PkgRootFolder}}"
+      working-directory: "${{ github.workspace }}/${{inputs.PkgRootFolder}}"
     - name: Build Distribution
       run: python setup.py bdist_wheel
-      working-directory: "${{inputs.PkgRootFolder}}"
+      working-directory: "${{ github.workspace }}/${{inputs.PkgRootFolder}}"
     - name: Publish Wheel for Python ${{inputs.PyVersionLatest}}
       uses: actions/upload-artifact@v4.1.0
       with:
         name: Wheel${{inputs.PyVersionLatest}}
-        path: "${{inputs.PkgRootFolder}}\\dist"
+        path: "${{ github.workspace }}\\${{inputs.PkgRootFolder}}\\dist"
   PackageSDist:
     name: Package Source Distribution
     runs-on: windows-2019
@@ -179,15 +181,15 @@ jobs:
         architecture: x64
     - name: Environment Setup
       run: python -m pip install --upgrade --requirement requirements_deploy.txt
-      working-directory: "${{inputs.PkgRootFolder}}"
+      working-directory: "${{ github.workspace }}/${{inputs.PkgRootFolder}}"
     - name: Build Distribution
       run: python setup.py sdist
-      working-directory: "${{inputs.PkgRootFolder}}"
+      working-directory: "${{ github.workspace }}/${{inputs.PkgRootFolder}}"
     - name: Publish Sdist
       uses: actions/upload-artifact@v4.1.0
       with:
         name: Sdist
-        path: "${{inputs.PkgRootFolder}}\\dist"
+        path: "${{ github.workspace }}\\${{inputs.PkgRootFolder}}\\dist"
   DownloadTestWheelsPure:
     # No need to re-test wheels for non-pure wheels produced through cibuildwheel since already tested there
     # Can be tested anywhere since it is pure
@@ -220,6 +222,10 @@ jobs:
         PkgRootFolder: "${{inputs.PkgRootFolder}}"
     needs: PackageSDist
   Upload:
+    permissions:
+      contents: read
+      # IMPORTANT: this permission is mandatory for trusted publishing
+      id-token: write
     needs:
     - CodeQualityAnalysis-Test
     - DownloadTestSdist
@@ -244,7 +250,7 @@ jobs:
         architecture: x64
     - name: Environment Setup
       run: python -m pip install --upgrade --requirement requirements_deploy.txt
-      working-directory: "${{inputs.PkgRootFolder}}"
+      working-directory: "${{ github.workspace }}/${{inputs.PkgRootFolder}}"
     - name: Download Wheels and Source Distribution
       uses: actions/download-artifact@v4.1.0
     - name: Collect Wheels and Source Distribution
@@ -263,6 +269,8 @@ jobs:
         # TODO: Only for testing purposes
         repository-url: https://test.pypi.org/legacy/
   Tag:
+    permissions:
+      contents: write
     needs: Upload
     runs-on: windows-2019
     steps:
