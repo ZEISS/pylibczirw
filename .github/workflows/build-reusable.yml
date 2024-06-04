@@ -67,7 +67,7 @@ jobs:
       run: check-python-versions ${{ github.workspace }}\${{inputs.PkgRootFolder}} --only tox.ini,setup.py
     - name: Black Static Analysis
       if: success() || failure()
-      run: black -v --line-length 120 --safe --check .
+      run: black -v --line-length 120 --safe --check --diff --color .
       working-directory: "${{ github.workspace }}/${{inputs.PySourceFolder}}"
     - name: Flake8 Static Analysis
       if: success() || failure()

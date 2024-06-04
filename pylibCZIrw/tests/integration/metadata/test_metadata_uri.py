@@ -8,7 +8,8 @@ from pylibCZIrw.czi import create_czi, open_czi, Rectangle, ReaderFileInputTypes
 
 working_dir = os.path.dirname(os.path.abspath(__file__))
 
-CZI_DOCUMENT_TEST1 = os.path.join(working_dir, "test_data", "c1_bgr24_t1_z1_h1.czi")
+# Note: This file is not part of the repo and so is untracked. If tests fail, make sure that this have not been deleted.
+CZI_DOCUMENT_TEST1 = "https://cadevelop.blob.core.windows.net/public/pylibCZIrwTestFiles/c1_bgr24_t1_z1_h1.czi"
 EXPECTED_METADATA_TEST1 = os.path.join(working_dir, "test_data", "c1_bgr24_t1_z1_h1_metadata.txt")
 
 
