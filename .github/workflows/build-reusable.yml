@@ -8,24 +8,20 @@ on:
         default: true
         type: boolean
       PyVersionLatest:
-        required: false
+        required: true
         type: string
       PySourceFolder:
-        required: false
+        required: true
         type: string
       PyProdFolder:
-        required: false
+        required: true
         type: string
       PkgName:
-        required: false
+        required: true
         type: string
       PkgRootFolder:
         required: false
-        default: "$(Build.SourcesDirectory)"
-        type: string
-      ProdBranch:
-        required: false
-        default: refs/heads/main
+        default: "${{Build.SourcesDirectory}}"
         type: string
       CIBWBEFOREALLLINUX:
         required: false
@@ -50,25 +46,19 @@ jobs:
         submodules: recursive
         # Python Semantic Release needs access to the full history to determine whether a release should be made.
         fetch-depth: 0
-    - name: Python Semantic Release
-      id: pythonsemanticrelease
-      uses: python-semantic-release/python-semantic-release@v8
-      with:
-        root_options: "-vv -c python-semantic-release.json"
-        commit: "false"
-        tag: "false"
-        push: "false"
-        changelog: "true"
-        vcs_release: "false"
-        build_metadata: "false"
-        skip_build: "true"
-        # TODO: Only for testing
-        force: "patch"
     - name: Use Python ${{inputs.PyVersionLatest}}
       uses: actions/setup-python@v5.0.0
       with:
         python-version: "${{inputs.PyVersionLatest}}"
         architecture: x64
+    - name: Python Semantic Release Setup
+      run: python -m pip install --upgrade python-semantic-release
+      working-directory: "${{inputs.PkgRootFolder}}"
+    - name: Python Semantic Release
+      id: pythonsemanticrelease
+      working-directory: "${{inputs.PkgRootFolder}}"
+      # TODO: Patch only for testing
+      run: semantic-release -vv -c python-semantic-release.json version --patch --changelog --no-commit --no-tag --no-push --no-vcs-release --skip-build
     - name: Environment Setup
       run: python -m pip install --upgrade --requirement requirements_test.txt
       working-directory: "${{inputs.PkgRootFolder}}"

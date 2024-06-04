@@ -1,6 +1,4 @@
 # Used for installation/building/packaging/uploading
 twine
-keyring
-artifacts-keyring
 wheel
 pip
