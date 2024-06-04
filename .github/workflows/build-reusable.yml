@@ -20,8 +20,7 @@ on:
         required: true
         type: string
       PkgRootFolder:
-        required: false
-        default: "${{Build.SourcesDirectory}}"
+        required: true
         type: string
       CIBWBEFOREALLLINUX:
         required: false

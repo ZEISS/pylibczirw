@@ -17,5 +17,6 @@ jobs:
       PyVersionLatest: '3.11'
       PySourceFolder: "${{ github.workspace }}/pylibCZIrw"
       PyProdFolder: "${{ github.workspace }}/pylibCZIrw"
+      PkgRootFolder: "${{ github.workspace }}"
       PkgName: pylibCZIrw
       CIBWBEFOREALLLINUX: yum install -y glibc-static perl-IPC-Cmd
