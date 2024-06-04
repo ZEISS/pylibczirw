@@ -1,0 +1,287 @@
+# Environment variables defined in a calling workflow are not accessible to this reusable workflow. Refer to the documentation for further details on this limitation.
+name: pypi_build_test_deploy
+on:
+  workflow_call:
+    inputs:
+      Pure:
+        required: false
+        default: true
+        type: boolean
+      PyVersionLatest:
+        required: false
+        type: string
+      PySourceFolder:
+        required: false
+        type: string
+      PyProdFolder:
+        required: false
+        type: string
+      PkgName:
+        required: false
+        type: string
+      PkgRootFolder:
+        required: false
+        default: "$(Build.SourcesDirectory)"
+        type: string
+      ProdBranch:
+        required: false
+        default: refs/heads/main
+        type: string
+      CIBWBEFOREALLLINUX:
+        required: false
+        default: ''
+        type: string
+      CIBWBEFOREALLWINDOWS:
+        required: false
+        default: ''
+        type: string
+jobs:
+  CodeQualityAnalysis-Test:
+    name: Static Analysis and Tests
+    runs-on: windows-2019
+    env:
+      CovResultsPath: "${{ runner.temp }}\\cov_results\\cov.xml"
+      TestResultsPath: "${{ runner.temp }}\\results"
+    outputs:
+      pypi_released: ${{ steps.pythonsemanticrelease.outputs.released }}
+      pypi_version: ${{ steps.pythonsemanticrelease.outputs.version }}
+      pypi_tag: ${{ steps.pythonsemanticrelease.outputs.tag }}
+    steps:
+    - uses: actions/checkout@v4.1.0
+      with:
+        lfs: true
+        submodules: recursive
+        # Python Semantic Release needs access to the full history to determine whether a release should be made.
+        fetch-depth: 0
+    - name: Python Semantic Release
+      id: pythonsemanticrelease
+      uses: python-semantic-release/python-semantic-release@v9
+      with:
+        # Actually not used/needed here, but required by action
+        # TODO: See https://python-semantic-release.readthedocs.io/en/latest/automatic-releases/github-actions.html
+        github_token: ${{ secrets.GITHUB_TOKEN }}
+        root_options: "-vv -c python-semantic-release.json"
+        commit: "false"
+        tag: "false"
+        push: "false"
+        changelog: "true"
+        vcs_release: "false"
+        build_metadata: "false"
+        skip_build: "true"
+        # TODO: Only for testing
+        force: "patch"
+    - name: Use Python ${{inputs.PyVersionLatest}}
+      uses: actions/setup-python@v5.0.0
+      with:
+        python-version: "${{inputs.PyVersionLatest}}"
+        architecture: x64
+    - name: Environment Setup
+      run: python -m pip install --upgrade --requirement requirements_test.txt
+      working-directory: "${{inputs.PkgRootFolder}}"
+    - name: Check Python Versions Consistency
+      run: check-python-versions ${{inputs.PkgRootFolder}}
+    - name: Black Static Analysis
+      if: success() || failure()
+      run: black -v --line-length 120 --safe --check .
+      working-directory: "${{inputs.PySourceFolder}}"
+    - name: Flake8 Static Analysis
+      if: success() || failure()
+      run: flake8 -v --config ${{inputs.PkgRootFolder}}\setup.cfg .
+      working-directory: "${{inputs.PySourceFolder}}"
+    - name: Pylint Static Analysis
+      if: success() || failure()
+      run: pylint_runner -v --rcfile ${{inputs.PkgRootFolder}}\setup.cfg
+      working-directory: "${{inputs.PySourceFolder}}"
+    - name: Mypy Static Analysis
+      if: success() || failure()
+      run: mypy -v --config-file ${{inputs.PkgRootFolder}}\setup.cfg .
+      working-directory: "${{inputs.PySourceFolder}}"
+    - name: Bandit Static Analysis
+      if: success() || failure()
+      run: bandit -v -r -c ${{inputs.PkgRootFolder}}\bandit.yaml .
+      working-directory: "${{inputs.PySourceFolder}}"
+    - name: Set TEMP to ${{ runner.temp }}
+      run: echo "TEMP=${{ runner.temp }}" >> "$GITHUB_ENV"
+      shell: bash
+    - name: Set TMP to ${{ runner.temp }}
+      run: echo "TMP=${{ runner.temp }}" >> "$GITHUB_ENV"
+      shell: bash
+    - name: Set TMPDIR to ${{ runner.temp }}
+      run: echo "TMPDIR=${{ runner.temp }}" >> "$GITHUB_ENV"
+      shell: bash
+    - name: Unit and Integration Tests
+      if: success() || failure()
+      run: tox -vv -r -s false
+      working-directory: "${{inputs.PkgRootFolder}}"
+    - name: Upload Coverage
+      uses: codecov/codecov-action@v4
+      with:
+        files: ${{ CovResultsPath }}
+        fail_ci_if_error: true
+        verbose: true
+        # Only one flag to be safe with
+        # https://docs.codecov.com/docs/flags#one-to-one-relationship-of-flags-to-uploads
+        flags: ${{matrix.OS}}
+        token: ${{ secrets.CODECOV_TOKEN }}
+  PackageWheelsNonPure:
+    name: Package Non-pure Wheels for ${{ matrix.config.OS }}
+    runs-on: ${{ matrix.config.PoolImage }}
+    strategy:
+      matrix:
+        config:
+          - {
+            PoolImage: ubuntu-latest,
+            OS: Linux,
+            CIBWBEFOREALL: '${{inputs.CIBWBEFOREALLLINUX}}',
+          }
+          - {
+            PoolImage: windows-2019,
+            OS: Windows,
+            CIBWBEFOREALL: '${{inputs.CIBWBEFOREALLWindows}}',
+          }
+    steps:
+    - uses: "./.github/actions/steps_package"
+      with:
+        PyVersionLatest: "${{inputs.PyVersionLatest}}"
+        PkgRootFolder: "${{inputs.PkgRootFolder}}"
+        OS: "${{matrix.config.OS}}"
+        CIBWBEFOREALL: "${{matrix.config.CIBWBEFOREALLLINUX}}"
+    if: inputs.Pure == false
+  PackageWheelsPure:
+    name: Package Pure Wheels
+    runs-on: windows-2019
+    if: inputs.Pure == true
+    steps:
+    - uses: actions/checkout@v4.1.0
+      with:
+        lfs: true
+        submodules: recursive
+    - name: Use Python ${{inputs.PyVersionLatest}}
+      uses: actions/setup-python@v5.0.0
+      with:
+        python-version: "${{inputs.PyVersionLatest}}"
+        architecture: x64
+    - name: Environment Setup
+      run: python -m pip install --upgrade --requirement requirements_deploy.txt
+      working-directory: "${{inputs.PkgRootFolder}}"
+    - name: Build Distribution
+      run: python setup.py bdist_wheel
+      working-directory: "${{inputs.PkgRootFolder}}"
+    - name: Publish Wheel for Python ${{inputs.PyVersionLatest}}
+      uses: actions/upload-artifact@v4.1.0
+      with:
+        name: Wheel${{inputs.PyVersionLatest}}
+        path: "${{inputs.PkgRootFolder}}\\dist"
+  PackageSDist:
+    name: Package Source Distribution
+    runs-on: windows-2019
+    steps:
+    - uses: actions/checkout@v4.1.0
+      with:
+        lfs: true
+        submodules: recursive
+    - name: Use Python ${{inputs.PyVersionLatest}}
+      uses: actions/setup-python@v5.0.0
+      with:
+        python-version: "${{inputs.PyVersionLatest}}"
+        architecture: x64
+    - name: Environment Setup
+      run: python -m pip install --upgrade --requirement requirements_deploy.txt
+      working-directory: "${{inputs.PkgRootFolder}}"
+    - name: Build Distribution
+      run: python setup.py sdist
+      working-directory: "${{inputs.PkgRootFolder}}"
+    - name: Publish Sdist
+      uses: actions/upload-artifact@v4.1.0
+      with:
+        name: Sdist
+        path: "${{inputs.PkgRootFolder}}\\dist"
+  DownloadTestWheelsPure:
+    # No need to re-test wheels for non-pure wheels produced through cibuildwheel since already tested there
+    # Can be tested anywhere since it is pure
+    name: Test Wheel${{inputs.PyVersionLatest}} on windows-2019
+    runs-on: windows-2019
+    steps:
+    - uses: "./.github/actions/steps_package"
+      with:
+        PyVersionLatest: "${{inputs.PyVersionLatest}}"
+        ArtifactName: Wheel${{inputs.PyVersionLatest}}
+        PkgRootFolder: "${{inputs.PkgRootFolder}}"
+    if: inputs.Pure == true
+    needs: PackageWheelsPure
+  DownloadTestSdist:
+    strategy:
+      matrix:
+        os:[ubuntu-latest, windows-2019]
+    runs-on: ${{ matrix.OS }}
+    steps:
+    - uses: "./.github/actions/steps_package"
+      with:
+        PyVersionLatest: "${{inputs.PyVersionLatest}}"
+        ArtifactName: Sdist
+        PkgRootFolder: "${{inputs.PkgRootFolder}}"
+    needs: PackageSDist
+  Upload:
+    permissions:
+      # IMPORTANT: this permission is mandatory for trusted publishing
+      id-token: write
+    needs:
+    - CodeQualityAnalysis-Test
+    - DownloadTestSdist
+    - DownloadTestWheelsPure
+    - PackageWheelsNonPure
+    - PackageWheelsPure
+    - PackageSdist
+    runs-on: windows-2019
+    if: needs.CodeQualityAnalysis-Test.result == 'success' && contains(fromJSON('["skipped", "success"]'), needs.DownloadTestSdist.result) && contains(fromJSON('["skipped", "success"]'), needs.DownloadTestWheelsPure.result) && contains(fromJSON('["skipped", "success"]'), needs.PackageWheelsNonPure.result) && contains(fromJSON('["skipped", "success"]'), needs.PackageWheelsPure.result) && contains(fromJSON('["skipped", "success"]'), needs.PackageSdist.result) && github.event_name != "pull_request" && ${{needs.CodeQualityAnalysis-Test.outputs.pypi_released}} == "true"
+    environment:
+      # TODO: Only for testing purposes
+      # name: pypi
+      # url: https://pypi.org/project/pylibCZIrw/${{needs.CodeQualityAnalysis-Test.outputs.pypi_version}}
+      name: testpypi
+      url: https://test.pypi.org/p/pylibCZIrw/${{needs.CodeQualityAnalysis-Test.outputs.pypi_version}}
+    steps:
+    - uses: actions/checkout@v4.1.0
+    - name: Use Python ${{inputs.PyVersionLatest}}
+      uses: actions/setup-python@v5.0.0
+      with:
+        python-version: "${{inputs.PyVersionLatest}}"
+        architecture: x64
+    - name: Environment Setup
+      run: python -m pip install --upgrade --requirement requirements_deploy.txt
+      working-directory: "${{inputs.PkgRootFolder}}"
+    - name: Download Wheels and Source Distribution
+      uses: actions/download-artifact@v4.1.0
+    - name: Collect Wheels and Source Distribution
+      run: New-Item -Path "." -Name "dist" -ItemType "directory"; Get-ChildItem -Path ".\*.whl",".\*.tar.gz" -Recurse | Move-Item -Destination ".\dist"
+      shell: powershell
+      working-directory: "${{ runner.workspace }}"
+    - name: Check Rendering
+      run: twine check dist/*
+      working-directory: "${{ runner.workspace }}"
+    - name: Upload to PyPI
+      # As of 06/2024, trusted publishing does not work within reusable workflows located in a different repo
+      # Tracked in:
+      # https://github.com/pypa/gh-action-pypi-publish/issues/166
+      # https://github.com/pypi/warehouse/issues/11096
+      # https://docs.pypi.org/trusted-publishers/troubleshooting/#reusable-workflows-on-github
+      uses: pypa/gh-action-pypi-publish@release/v1
+      with:
+        # TODO: Only for testing purposes
+        repository-url: https://test.pypi.org/legacy/
+      working-directory: "${{ runner.workspace }}"
+  Tag:
+    needs: Upload
+    runs-on: windows-2019
+    steps:
+    - uses: actions/checkout@v4.1.0
+    - name: Tag with PyPI version
+      uses: actions/github-script@v7
+      with:
+        script: |
+          github.rest.git.createRef({
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            ref: 'refs/tags/${{needs.CodeQualityAnalysis-Test.outputs.pypi_tag}}',
+            sha: context.sha
+          })

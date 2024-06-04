@@ -1,0 +1,44 @@
+name: Package
+inputs:
+  PyVersionLatest:
+    required: true
+  CIBWBEFOREALL:
+    required: true
+  PkgRootFolder:
+    required: true
+  OS:
+    required: true
+runs:
+  using: composite
+  steps:
+  - uses: actions/checkout@v4.1.0
+    with:
+      lfs: true
+      submodules: recursive
+  - name: Use Python ${{inputs.PyVersionLatest}}
+    uses: actions/setup-python@v5.0.0
+    with:
+      python-version: "${{inputs.PyVersionLatest}}"
+      architecture: x64
+  - name: Install dependencies
+    run: |-
+      set -o errexit
+      python -m pip install --upgrade pip
+      pip install cibuildwheel~=2.3
+    shell: bash
+  - name: Build wheels
+    env:
+      CIBW_BUILD_FRONTEND: build
+      CIBW_ARCHS: auto64
+      CIBW_SKIP: pp* *-musllinux_*
+      CIBW_BEFORE_ALL: "${{inputs.CIBWBEFOREALL}}"
+      CIBW_TEST_REQUIRES: "-r requirements_test.txt"
+      CIBW_TEST_COMMAND: tox -c {project}/tox_cibuildwheel.ini -e base --skip-pkg-install --current-env -vv
+    run: cibuildwheel --output-dir wheelhouse .
+    shell: bash
+    working-directory: "${{inputs.PkgRootFolder}}"
+  - name: Publish Wheels for ${{inputs.OS}}
+    uses: actions/upload-artifact@v4.1.0
+    with:
+      name: Wheels${{inputs.OS}}
+      path: "${{inputs.PkgRootFolder}}/wheelhouse"

@@ -1,0 +1,9 @@
+recursive-include _pylibCZIrw *
+recursive-include libs *
+recursive-exclude libs/libCZIrw/Src/CZICheck *
+recursive-exclude libs/libCZIrw/Src/CZICmd *
+recursive-exclude libs/libCZIrw/Src/Test *
+recursive-exclude libs/libCZIrw/Src/libCZI_UnitTests *
+include CMake*
+include INFO.md
+exclude README.md

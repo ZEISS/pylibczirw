@@ -1,0 +1,19 @@
+name: DevOps
+on:
+  push:
+    branches: ["main"]
+  pull_request:
+    branches: ["main"]
+permissions:
+  contents: read
+jobs:
+  build-test-deploy:
+    name: Build, Test, Deploy to PyPI
+    uses: "./.github/workflows/build-reusable.yml"
+    with:
+      Pure: false
+      PyVersionLatest: '3.11'
+      PySourceFolder: "${{ github.workspace }}/pylibCZIrw"
+      PyProdFolder: "${{ github.workspace }}/pylibCZIrw"
+      PkgName: pylibCZIrw
+      CIBWBEFOREALLLINUX: yum install -y glibc-static perl-IPC-Cmd

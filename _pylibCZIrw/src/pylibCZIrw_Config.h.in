@@ -1,0 +1,4 @@
+#pragma once
+
+// Make the project version available on the C++ side
+#define PROJECT_VERSION "@PROJECT_VERSION@"

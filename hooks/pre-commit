@@ -1,0 +1,39 @@
+#!/bin/sh
+#
+# A hook script to verify what is about to be committed.
+# Called by "git commit" with no arguments.
+# This script verifies that all files to be committed that 
+# match the LFS filter in .gitattributes are indeed LFS pointer files.
+# Rationale: To prevent files that are expected to be LFS pointers are committed as original files.
+
+set -e
+
+UNREFERENCED_FILES=""
+# Do not consider deleted, renamed or other already present files
+CHANGED_FILES=$(git diff --cached --name-only --diff-filter=ACM)
+
+# Need to rely here on git keeping the output format like <file>: filter: lfs
+# Docs: https://git-scm.com/docs/git-check-attr#_output
+# No possibility to chain filters - latest wins.
+LFS_FILES=$(echo $CHANGED_FILES | xargs git check-attr filter | grep 'filter: lfs$' | sed -e 's/: filter: lfs//')
+
+for FILE in $LFS_FILES; do
+    # No issue with relativ/absolute path here since git seems to reset the cwd upon running those hooks
+    SOFT_SHA=$(git hash-object $FILE)
+    RAW_SHA=$(git hash-object --no-filters $FILE)
+
+    if [ $SOFT_SHA == $RAW_SHA ]; then
+        UNREFERENCED_FILES="$FILE\n$UNREFERENCED_FILES"
+    fi
+done
+
+if [[ -n "$UNREFERENCED_FILES" ]]; then
+    echo "Attention!"
+    echo "----------"
+    echo "You tried to commit files that should be tracked by LFS, but are not:"
+    echo -e "\x1B[31m$UNREFERENCED_FILES\x1B[0m"
+    echo "Revert your changes and commit those files with git-lfs!"
+    echo "See https://git-lfs.github.com/ for more information."
+    echo "----------"
+    exit 1
+fi

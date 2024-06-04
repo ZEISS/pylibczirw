@@ -1,0 +1,30 @@
+<?xml version="1.0"?>
+<ImageDocument>
+ <Metadata>
+  <Information>
+   <Image>
+    <SizeX>1200</SizeX>
+    <SizeY>1000</SizeY>
+    <SizeC>1</SizeC>
+    <SizeM>1</SizeM>
+    <Dimensions>
+     <Channels>
+      <Channel Id="Channel:0" Name="Channel #0">
+       <PixelType>Bgr24</PixelType>
+      </Channel>
+     </Channels>
+    </Dimensions>
+    <PixelType>Bgr24</PixelType>
+   </Image>
+   <Document>
+    <Name>test.czi</Name>
+    <Title>CZICmd generated</Title>
+    <Comment>Bounds:    ; Tile-size: 1200 x 1000; Mosaic:    no</Comment>
+   </Document>
+   <Application>
+    <Name>libCZIrw-Test</Name>
+    <Version>0.01</Version>
+   </Application>
+  </Information>
+ </Metadata>
+</ImageDocument>

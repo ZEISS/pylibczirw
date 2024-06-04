@@ -1,0 +1,5 @@
+pylibCZIrw Package
+Copyright 2022 Carl Zeiss Microscopy GmbH
+
+This product includes software developed at
+Carl Zeiss Microscopy GmbH – (https://www.zeiss.com/microscopy/int/home.html)
