@@ -1,4 +1,5 @@
 """Module implementing integration tests for the properties of the CziReader class"""
+
 from typing import Dict, Tuple, Optional, Any
 import tempfile
 import os

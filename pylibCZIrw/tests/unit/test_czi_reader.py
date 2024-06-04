@@ -1,4 +1,5 @@
 """Module implementing unit tests for the CziReader class"""
+
 from unittest import mock
 from typing import NamedTuple, Dict, Tuple, Optional
 import pytest

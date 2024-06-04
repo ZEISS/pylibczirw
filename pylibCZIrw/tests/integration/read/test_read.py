@@ -1,4 +1,5 @@
 """Module implementing integration tests for the read function of the CziReader class"""
+
 import os
 from typing import Dict, Tuple, List, Optional
 from functools import partial

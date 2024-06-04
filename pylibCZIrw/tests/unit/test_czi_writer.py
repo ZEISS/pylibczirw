@@ -1,4 +1,5 @@
 """Module implementing unit tests for the CziWriter class"""
+
 import re
 import tempfile
 from typing import Dict, Optional

@@ -22,9 +22,6 @@ runs:
     run: python -m pip install --upgrade --requirement requirements_test.txt
     working-directory: "${{inputs.PkgRootFolder}}"
     shell: bash
-  - name: Display Downloads
-    run: Get-ChildItem -Path $env:RUNNER_WORKSPACE -Recurse
-    shell: powershell
   - name: Unit and Integration Tests
     env:
       TEMP: "${{ runner.temp }}"

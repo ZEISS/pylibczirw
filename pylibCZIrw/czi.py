@@ -3,6 +3,7 @@
 The open method will create a czi document.
 This czi document can be use to read and write czi.
 """
+
 import contextlib
 from os import makedirs
 from os.path import isfile, abspath, dirname

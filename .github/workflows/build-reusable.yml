@@ -197,7 +197,7 @@ jobs:
   DownloadTestWheelsPure:
     # No need to re-test wheels for non-pure wheels produced through cibuildwheel since already tested there
     # Can be tested anywhere since it is pure
-    name: Test Wheel${{inputs.PyVersionLatest}} on windows-2019
+    name: Test Wheel on windows-2019
     runs-on: windows-2019
     steps:
     - uses: actions/checkout@v4.1.0

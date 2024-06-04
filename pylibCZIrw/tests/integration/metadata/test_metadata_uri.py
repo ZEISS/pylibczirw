@@ -1,4 +1,5 @@
 """Module implementing minimal integration tests for CziReader using URI"""
+
 from typing import Dict, Tuple, Optional
 import tempfile
 import os

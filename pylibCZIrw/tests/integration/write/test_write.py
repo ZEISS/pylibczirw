@@ -1,4 +1,5 @@
 """Module implementing integration tests for the write function of the CziWriter class"""
+
 from os.path import join, abspath, dirname
 from collections import OrderedDict
 import tempfile
