@@ -1,7 +1,2 @@
 # CHANGELOG
-
-
-
-## v0.0.1 (2024-06-04)
-
-### Unknown
+Auto-generated and published to PyPI by [Python Semantic Release](https://python-semantic-release.readthedocs.io/en/latest/index.html).
