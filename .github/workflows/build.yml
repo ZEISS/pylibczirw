@@ -19,3 +19,5 @@ jobs:
       PySourceFolder: "pylibCZIrw"
       PkgName: pylibCZIrw
       CIBWBEFOREALLLINUX: yum install -y glibc-static perl-IPC-Cmd
+    secrets:
+      CODECOV_TOKEN: ${{secrets.CODECOV_TOKEN}}

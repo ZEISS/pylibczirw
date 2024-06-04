@@ -2,6 +2,9 @@
 name: pypi_build_test_deploy
 on:
   workflow_call:
+    secrets:
+      CODECOV_TOKEN:
+        required: true
     inputs:
       Pure:
         required: false
