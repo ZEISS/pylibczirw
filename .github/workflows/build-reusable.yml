@@ -52,11 +52,8 @@ jobs:
         fetch-depth: 0
     - name: Python Semantic Release
       id: pythonsemanticrelease
-      uses: python-semantic-release/python-semantic-release@v9
+      uses: python-semantic-release/python-semantic-release@v8
       with:
-        # Actually not used/needed here, but required by action
-        # TODO: See https://python-semantic-release.readthedocs.io/en/latest/automatic-releases/github-actions.html
-        github_token: ${{ secrets.GITHUB_TOKEN }}
         root_options: "-vv -c python-semantic-release.json"
         commit: "false"
         tag: "false"
