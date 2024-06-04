@@ -32,9 +32,9 @@ runs:
       CIBW_TEST_COMMAND: tox -c {project}/tox_cibuildwheel.ini -e base --skip-pkg-install --current-env -vv
     run: cibuildwheel --output-dir wheelhouse .
     shell: bash
-    working-directory: "${{ github.workspace }}/${{inputs.PkgRootFolder}}"
+    working-directory: "${{inputs.PkgRootFolder}}"
   - name: Publish Wheels for ${{inputs.OS}}
     uses: actions/upload-artifact@v4.1.0
     with:
       name: Wheels${{inputs.OS}}
-      path: "${{ github.workspace }}/${{inputs.PkgRootFolder}}/wheelhouse"
+      path: "${{inputs.PkgRootFolder}}/wheelhouse"

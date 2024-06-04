@@ -6,4 +6,5 @@ recursive-exclude libs/libCZIrw/Src/Test *
 recursive-exclude libs/libCZIrw/Src/libCZI_UnitTests *
 include CMake*
 include INFO.md
+include CHANGELOG.md
 exclude README.md

@@ -86,12 +86,15 @@ jobs:
       run: bandit -v -r -c ${{ github.workspace }}\${{inputs.PkgRootFolder}}\bandit.yaml .
       working-directory: "${{ github.workspace }}/${{inputs.PySourceFolder}}"
     - name: Set TEMP to ${{ runner.temp }}
+      if: success() || failure()
       run: echo "TEMP=${{ runner.temp }}" >> "$GITHUB_ENV"
       shell: bash
     - name: Set TMP to ${{ runner.temp }}
+      if: success() || failure()
       run: echo "TMP=${{ runner.temp }}" >> "$GITHUB_ENV"
       shell: bash
     - name: Set TMPDIR to ${{ runner.temp }}
+      if: success() || failure()
       run: echo "TMPDIR=${{ runner.temp }}" >> "$GITHUB_ENV"
       shell: bash
     - name: Unit and Integration Tests
@@ -102,6 +105,7 @@ jobs:
         CovResultsPath: "${{ runner.temp }}\\cov_results\\cov.xml"
         TestResultsPath: "${{ runner.temp }}\\results"
     - name: Upload Coverage
+      if: success() || failure()
       uses: codecov/codecov-action@v4
       with:
         # Hard copy from step above due to https://github.com/actions/runner/issues/2204
@@ -137,9 +141,9 @@ jobs:
     - uses: "./.github/actions/steps_package"
       with:
         PyVersionLatest: "${{inputs.PyVersionLatest}}"
-        PkgRootFolder: "${{inputs.PkgRootFolder}}"
+        PkgRootFolder: "${{ github.workspace }}/${{inputs.PkgRootFolder}}"
         OS: "${{matrix.config.OS}}"
-        CIBWBEFOREALL: "${{matrix.config.CIBWBEFOREALLLINUX}}"
+        CIBWBEFOREALL: "${{matrix.config.CIBWBEFOREALL}}"
     if: inputs.Pure == false
   PackageWheelsPure:
     name: Package Pure Wheels
@@ -203,7 +207,7 @@ jobs:
       with:
         PyVersionLatest: "${{inputs.PyVersionLatest}}"
         ArtifactName: Wheel${{inputs.PyVersionLatest}}
-        PkgRootFolder: "${{inputs.PkgRootFolder}}"
+        PkgRootFolder: "${{ github.workspace }}/${{inputs.PkgRootFolder}}"
     if: inputs.Pure == true
     needs: PackageWheelsPure
   DownloadTestSdist:
@@ -219,7 +223,7 @@ jobs:
       with:
         PyVersionLatest: "${{inputs.PyVersionLatest}}"
         ArtifactName: Sdist
-        PkgRootFolder: "${{inputs.PkgRootFolder}}"
+        PkgRootFolder: "${{ github.workspace }}/${{inputs.PkgRootFolder}}"
     needs: PackageSDist
   Upload:
     permissions:

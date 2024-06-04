@@ -20,7 +20,7 @@ runs:
       architecture: x64
   - name: Environment Setup
     run: python -m pip install --upgrade --requirement requirements_test.txt
-    working-directory: "${{ github.workspace }}/${{inputs.PkgRootFolder}}"
+    working-directory: "${{inputs.PkgRootFolder}}"
   - name: Display Downloads
     run: Get-ChildItem -Path $env:RUNNER_WORKSPACE -Recurse
     shell: powershell
@@ -31,4 +31,4 @@ runs:
       TESTRESULTSPATH: "${{ runner.temp }}"
       COVRESULTSPATH: "${{ runner.temp }}\\cov.xml"
     run: tox --installpkg ${{ runner.workspace }}/${{inputs.ArtifactName}}/* -vv -r -s true
-    working-directory: "${{ github.workspace }}/${{inputs.PkgRootFolder}}"
+    working-directory: "${{inputs.PkgRootFolder}}"
