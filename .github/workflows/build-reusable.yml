@@ -214,7 +214,7 @@ jobs:
   DownloadTestSdist:
     strategy:
       matrix:
-        os:[ubuntu-latest, windows-2019]
+        os: [ubuntu-latest, windows-2019]
     runs-on: ${{ matrix.OS }}
     steps:
     - uses: "./.github/actions/steps_package"
@@ -257,10 +257,8 @@ jobs:
     - name: Collect Wheels and Source Distribution
       run: New-Item -Path "." -Name "dist" -ItemType "directory"; Get-ChildItem -Path ".\*.whl",".\*.tar.gz" -Recurse | Move-Item -Destination ".\dist"
       shell: powershell
-      working-directory: "${{ runner.workspace }}"
     - name: Check Rendering
       run: twine check dist/*
-      working-directory: "${{ runner.workspace }}"
     - name: Upload to PyPI
       # As of 06/2024, trusted publishing does not work within reusable workflows located in a different repo
       # Tracked in:
@@ -271,7 +269,6 @@ jobs:
       with:
         # TODO: Only for testing purposes
         repository-url: https://test.pypi.org/legacy/
-      working-directory: "${{ runner.workspace }}"
   Tag:
     needs: Upload
     runs-on: windows-2019
