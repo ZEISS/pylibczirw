@@ -5,7 +5,7 @@ on:
   pull_request:
     branches: ["main"]
 permissions:
-  contents: read
+  contents: write
   # IMPORTANT: this permission is mandatory for trusted publishing
   id-token: write
 jobs:
