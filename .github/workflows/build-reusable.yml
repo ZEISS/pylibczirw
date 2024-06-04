@@ -219,7 +219,7 @@ jobs:
     - uses: actions/checkout@v4.1.0
       with:
         lfs: true
-    - uses: "./.github/actions/steps_downlaod"
+    - uses: "./.github/actions/steps_download"
       with:
         PyVersionLatest: "${{inputs.PyVersionLatest}}"
         ArtifactName: Sdist
