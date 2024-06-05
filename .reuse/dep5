@@ -1,0 +1,36 @@
+Format: https://www.debian.org/doc/packaging-manuals/copyright-format/1.0/
+Upstream-Name: pylibCZIrw
+Upstream-Contact: Carl Zeiss Microscopy GmbH <github.microscopy@zeiss.com>
+Source: https://github.com/ZEISS/pylibczirw
+
+Files: .github/*
+Copyright: 2024 Carl Zeiss Microscopy GmbH
+License: CC0-1.0
+
+Files: hooks/*
+Copyright: 2024 Carl Zeiss Microscopy GmbH
+License: CC0-1.0
+
+Files: templates/*
+Copyright: 2024 Carl Zeiss Microscopy GmbH
+License: CC0-1.0
+
+Files: _pylibCZIrw/*
+Copyright: 2017-2022 Carl Zeiss Microscopy GmbH
+License: LGPL-3.0-or-later
+
+Files: doc/*
+Copyright: 2017-2022 Carl Zeiss Microscopy GmbH
+License: LGPL-3.0-or-later
+
+Files: pylibCZIrw/*
+Copyright: 2017-2022 Carl Zeiss Microscopy GmbH
+License: LGPL-3.0-or-later
+
+Files: test_data/*
+Copyright: 2017-2022 Carl Zeiss Microscopy GmbH
+License: LGPL-3.0-or-later
+
+Files: cla_*.txt CODE_OF_CONDUCT.md CONTRIBUTING.md README.md SECURITY.md API.md CHANGELOG.md INFO.md TROUBLESHOOTING.md CMake* MANIFEST.in NOTICE.txt python-semantic-release.json .gitignore .gitattributes .gitmodules [Doc]* bandit.yaml requirements_*.txt setup.cfg setup.py tox.ini tox_cibuildwheel.ini
+Copyright: 2017-2022 Carl Zeiss Microscopy GmbH
+License: LGPL-3.0-or-later

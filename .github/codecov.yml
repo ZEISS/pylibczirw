@@ -1,0 +1,39 @@
+# Based on https://docs.codecov.com/docs/common-recipe-list#set-non-blocking-status-checks
+coverage:
+  status:
+    project:
+      default:
+        informational: true
+    patch:
+      default:
+        informational: true
+# Based on https://docs.codecov.com/docs/flags#recommended-automatic-flag-management
+flag_management:
+  default_rules:
+    statuses:
+      - type: project
+        informational: true
+      - type: patch
+        informational: true
+# Based on https://docs.codecov.com/docs/components
+# Based on https://github.com/codecov/example-components
+# Based on https://about.codecov.io/blog/codecov-components-breaking-down-coverage-by-filters/
+# Based on https://about.codecov.io/blog/granular-test-coverage-analysis-using-components-in-codecov/
+component_management:
+  default_rules:
+    statuses:
+      - type: project
+        informational: true
+      - type: patch
+        informational: true
+  individual_components:
+    - component_id: "id_pylibczirw_python"
+      name: pylibczirw_python
+      paths:
+        - "pylibCZIrw/"
+    - component_id: "id_pylibczirw_c"
+      name: pylibczirw_c
+      paths:
+        - "_pylibCZIrw/"
+comment:
+  layout: "header, diff, flags, components"  # show component info in the PR comment

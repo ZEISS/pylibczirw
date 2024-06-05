@@ -2,11 +2,8 @@
 [![License: LGPL v3](https://img.shields.io/badge/License-LGPL_v3-blue.svg)](https://www.gnu.org/licenses/lgpl-3.0)
 [![REUSE status](https://api.reuse.software/badge/github.com/ZEISS/pylibczirw)](https://api.reuse.software/info/github.com/ZEISS/pylibczirw)
 [![Build](https://github.com/ZEISS/pylibczirw/actions/workflows/build.yml/badge.svg?branch=main&event=push)](https://github.com/ZEISS/pylibczirw/actions/workflows/build.yml)
-[![CodeQL](https://github.com/ZEISS/pylibczirw/actions/workflows/codeql.yml/badge.svg?branch=main&event=push)](https://github.com/ZEISS/pylibczirw/actions/workflows/codeql.yml)
-[![MegaLinter](https://github.com/ZEISS/pylibczirw/actions/workflows/mega-linter.yml/badge.svg?branch=main&event=push)](https://github.com/ZEISS/pylibczirw/actions/workflows/mega-linter.yml)
 [![codecov]()
 [![GitHub Pages](https://github.com/ZEISS/pylibczirw/actions/workflows/pages.yml/badge.svg?branch=main&event=push)](https://github.com/ZEISS/pylibczirw/actions/workflows/pages.yml)
-
 [![PyPI version](https://badge.fury.io/py/pylibCZIrw.svg)](https://badge.fury.io/py/pylibCZIrw)  
 
 # Contribute
@@ -19,14 +16,14 @@ You should ideally have [PyCharm Professional](https://www.jetbrains.com/pycharm
 1. Create a fresh conda environment via `conda create -p <some-path\PyPI\pylibCZIrw> python` and activate it with `conda activate <environment_name>`  
    Note: Alternatively, when opening the project the first time, in the prompt to create a venv, select the python location from one of the existing conda venvs. 
 2. Navigate to the repository from inside the environment.
-3. Install necessary packages for building from the activated environment via `pip install --upgrade -r requirements.txt`
-4. Install necessary packages for code quality analysis and testing from the activated environment via `pip install .[test]` or `pip install .[dev]`  
+3. Install necessary packages for building from the activated environment via `pip install .`
+4. Install necessary packages for code quality analysis and testing from the activated environment via `pip install -r requirements_test.txt`  
 
 You may then [configure all relevant 3rd party tools](https://www.jetbrains.com/help/pycharm/configuring-third-party-tools.html#), e.g. pytest, mypy, flake8 or bandit. You may want to check with the corresponding pipeline (template) for which analysis tools are run and their command line.  
 
 This repo follows [GitFlow](https://www.atlassian.com/git/tutorials/comparing-workflows/gitflow-workflow). PR/Build validation is executed on develop and main. Self-approval is allowed on develop. No policy is applied on release/ to allow for PR changes on release/ before merging to main or back to develop. See [Packaging](#packaging) and [Versioning](#versioning) for more information.  
 
-In case of API changes, you are required to update [API.md](API.md).  
+For more information, refer to [CONTRIBUTING.md](./CONTRIBUTING.md).
 
 # Introduction 
 
@@ -70,8 +67,8 @@ Before building, install [vcpkg](https://vcpkg.io/en/getting-started.html)
 Once this is done, add the environment variable VCPKG_INSTALLATION_ROOT to be the root of the installation (repo).
 
 ### Using PyCharm (or plain Python console)
-1. ``` pip install .[all]``` from the root of the repo.  
-Note: For pip 21.2 and below, use in-tree-build ``` pip install --use-feature=in-tree-build .[all]``` from the root of the repo, or it will fail.
+1. ``` pip install .``` from the root of the repo.  
+Note: For pip 21.2 and below, use in-tree-build ``` pip install --use-feature=in-tree-build .``` from the root of the repo, or it will fail.
 2. You can import this library in python and start using the bindings.  
 ```from pylibCZIrw import czi ```
 3. Updating to a libczi version on a different fork can be done via navigating to the lib folder in the fork `cd <RepositoryDirectory>/pylibczirw/libs/libCZIrw` 
@@ -80,14 +77,14 @@ Note: For pip 21.2 and below, use in-tree-build ``` pip install --use-feature=in
    And finally checking out the required branch ``git checkout write_colormode_to_displaysettingsxml``
 4. To test this on another project that uses pylibczi, navigate to the pylibczirw folder in python terminal of the pylibCZIrw project, and then create a wheel file using
    ```python setup.py bdist_wheel```.  
-    Note: Make sure you didn't run ``pip install .[all]`` as this will delete the wheel file after installing it.
+    Note: Make sure you didn't run ``pip install .`` as this will delete the wheel file after installing it.
     Then install the package in the project using ```pip install <RepositoryDirectory>\pylibczirw\dist\pylibCZIrw-3.4.0-cp310-cp310-win_amd64.whl```  
     Note: this required the python versions in both projects (and venvs) to be the same.
     Note: If this fails on cmake, the cmake inputs can be copied from the console output, and run separately for faster debugging.
-5. Alternatively, in the python terminal of the project that uses pylibCZIrw, navigate to the build folder of pylibCZIrw and run ```pip install .[all] -e```.  
+5. Alternatively, in the python terminal of the project that uses pylibCZIrw, navigate to the build folder of pylibCZIrw and run ```pip install . -e```.  
    This will build and install the latest pylibCZIrw whenever it changes.  
-   Note: This is slow and takes around 5 min to build. To run a faster option that doesn't auto update, run ```pip install .[all]```. This will however need to be rerun on every change to pylibczirw.
-6. Finally run ``` pip install .[all]``` from the root of the repo CziConverter repo to install all the new dependencies.
+   Note: This is slow and takes around 5 min to build. To run a faster option that doesn't auto update, run ```pip install .```. This will however need to be rerun on every change to pylibczirw.
+6. Finally run ``` pip install .``` from the root of the repo CziConverter repo to install all the new dependencies.
 ### Using Visual Studio > 2015
 1. Create an environment variable PYTHON_EXECUTABLE that contains the full path to python.exe (needed for pybind11)
 2. Launch ***Visual Studio***. 
@@ -111,13 +108,12 @@ Not done yet. Only in CI/CD pipeline.
 
 # Versioning
 This [package](#packaging) follows [Semantic Versioning](https://semver.org/).  
-
-For the sake of simplicity, **any** source code change that will eventually go into the __main__ development [branch](#contribute) needs to be accompanied by an update to the version number in setup.py, i.e. no filtering on source code level is carried out. 
+Version bumps are carried out automatically using [Python Semantic Release](https://python-semantic-release.readthedocs.io/en/latest/index.html).  
 Note: When updating major version, this must be synchronised with a [Colab template update](doc/jupyter_notebooks). 
 
 # Packaging
 
-A package installable through pip is generated as part of a [build](https://github.com/ZEISS/pylibczirw/actions/workflows/publish.yml) and pushed to [PyPI](https://pypi.org/project/pylibczirw/).  
+A package installable through pip is generated as part of a [build](https://github.com/ZEISS/pylibczirw/actions/workflows/build.yml) and pushed to [PyPI](https://pypi.org/project/pylibczirw/).  
 
 # Release Process
   1. Once changes have been merged to develop, a PR with updated version (see: [Versioning](#versioning)) should be created to develop.  

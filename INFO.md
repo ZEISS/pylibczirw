@@ -30,11 +30,9 @@ with pyczi.open_czi(filepath) as czidoc:
     image2d = czidoc.read(plane={"T": 1, "Z": 2, "C": 0}, zoom=1.0, roi=(0, 0, 50, 100))
 ```
 
-The detailed usage can be inferred from this sample notebook:  
+The detailed usage can be inferred from the [sample notebooks](https://github.com/ZEISS/pylibczirw/tree/main/doc/jupyter_notebooks).  
 
-[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/zeiss/pylibczirw/blob/main/doc/jupyter_notebooks/pylibCZIrw_4_1_0.ipynb)  
-
-For more detailed information (on the latest version) refer to https://zeiss.github.io/pylibczirw/ (also shipped with the source distribution of this package).  
+For more detailed information (on the latest version) refer to https://zeiss.github.io/pylibczirw/.  
 
 ## Installation
 In case there is no wheel available for your system configuration, you can:  
