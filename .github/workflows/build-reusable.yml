@@ -36,8 +36,6 @@ permissions:
   contents: read
 jobs:
   CodeQualityAnalysis-Test:
-    # TODO: Only debugging
-    if: github.event_name != 'push'
     name: Static Analysis and Tests
     runs-on: windows-2019
     outputs:
@@ -109,9 +107,6 @@ jobs:
       env:
         CovResultsPath: "${{ runner.temp }}\\cov_results\\cov.xml"
         TestResultsPath: "${{ runner.temp }}\\results"
-    - name: List files
-      run: dir
-      working-directory: "${{ runner.temp }}\\cov_results"
     - name: Upload Coverage
       if: success() || failure()
       uses: codecov/codecov-action@v3
@@ -152,11 +147,11 @@ jobs:
         PkgRootFolder: "${{ github.workspace }}/${{inputs.PkgRootFolder}}"
         OS: "${{matrix.config.OS}}"
         CIBWBEFOREALL: "${{matrix.config.CIBWBEFOREALL}}"
-    if: inputs.Pure == false && github.event_name != 'push' # TODO: Only debugging
+    if: inputs.Pure == false
   PackageWheelsPure:
     name: Package Pure Wheels
     runs-on: windows-2019
-    if: inputs.Pure == true && github.event_name != 'push' # TODO: Only debugging
+    if: inputs.Pure == true
     steps:
     - uses: actions/checkout@v4.1.0
       with:
@@ -179,7 +174,6 @@ jobs:
         name: Wheel${{inputs.PyVersionLatest}}
         path: "${{ github.workspace }}\\${{inputs.PkgRootFolder}}\\dist"
   PackageSDist:
-    if: github.event_name != 'push' # TODO: Only debugging
     name: Package Source Distribution
     runs-on: windows-2019
     steps:
@@ -218,10 +212,9 @@ jobs:
         ArtifactName: Wheel${{inputs.PyVersionLatest}}
         PkgRootFolder: "${{ github.workspace }}/${{inputs.PkgRootFolder}}"
         RunShell: cmd
-    if: inputs.Pure == true && github.event_name != 'push' # TODO: Only debugging
+    if: inputs.Pure == true
     needs: PackageWheelsPure
   DownloadTestSdist:
-    if: github.event_name != 'push' # TODO: Only debugging
     strategy:
       matrix:
         config:
@@ -258,6 +251,7 @@ jobs:
     - PackageWheelsPure
     - PackageSdist
     runs-on: windows-2019
+    # If conditional based on https://github.com/actions/runner/issues/491#issuecomment-850884422
     if: |
       always() &&
       github.event_name != 'pull_request' && 
@@ -266,10 +260,8 @@ jobs:
       contains(fromJSON('["skipped", "success"]'), needs.PackageWheelsNonPure.result) && 
       contains(fromJSON('["skipped", "success"]'), needs.PackageWheelsPure.result) && 
       contains(fromJSON('["skipped", "success"]'), needs.PackageSdist.result) &&
-      needs.CodeQualityAnalysis-Test.result == 'skipped'
-
-    # needs.CodeQualityAnalysis-Test.outputs.pypi_released == 'true'
-    # needs.CodeQualityAnalysis-Test.result == 'success'
+      needs.CodeQualityAnalysis-Test.result == 'success' &&
+      needs.CodeQualityAnalysis-Test.outputs.pypi_released == true
     environment:
       # TODO: Only for testing purposes
       # name: pypi
