@@ -112,7 +112,7 @@ jobs:
       working-directory: "${{ runner.temp }}\\cov_results"
     - name: Upload Coverage
       if: success() || failure()
-      uses: codecov/codecov-action@v4
+      uses: codecov/codecov-action@v3
       with:
         # Hard copy from step above due to https://github.com/actions/runner/issues/2204
         directory: ${{ runner.temp }}/cov_results
