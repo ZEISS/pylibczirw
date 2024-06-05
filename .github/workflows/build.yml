@@ -21,5 +21,3 @@ jobs:
       CIBWBEFOREALLLINUX: yum install -y glibc-static perl-IPC-Cmd
     secrets:
       CODECOV_TOKEN: ${{secrets.CODECOV_TOKEN}}
-      ACTIONS_RUNNER_DEBUG: ${{secrets.ACTIONS_RUNNER_DEBUG}}
-      ACTIONS_STEP_DEBUG: ${{secrets.ACTIONS_STEP_DEBUG}}

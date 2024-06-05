@@ -5,10 +5,6 @@ on:
     secrets:
       CODECOV_TOKEN:
         required: true
-      ACTIONS_RUNNER_DEBUG:
-        required: false
-      ACTIONS_STEP_DEBUG:
-        required: false
     inputs:
       Pure:
         required: false
