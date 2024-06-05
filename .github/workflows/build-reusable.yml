@@ -250,7 +250,8 @@ jobs:
     - PackageWheelsNonPure
     - PackageWheelsPure
     - PackageSdist
-    runs-on: windows-2019
+    # Needs to run on ubuntu
+    runs-on: ubuntu-latest
     # If conditional based on https://github.com/actions/runner/issues/491#issuecomment-850884422
     if: |
       always() &&
@@ -269,22 +270,12 @@ jobs:
       name: testpypi
       url: https://test.pypi.org/p/pylibCZIrw/${{needs.CodeQualityAnalysis-Test.outputs.pypi_version}}
     steps:
-    - uses: actions/checkout@v4.1.0
-    - name: Use Python ${{inputs.PyVersionLatest}}
-      uses: actions/setup-python@v5.0.0
-      with:
-        python-version: "${{inputs.PyVersionLatest}}"
-        architecture: x64
-    - name: Environment Setup
-      run: python -m pip install --upgrade --requirement requirements_deploy.txt
-      working-directory: "${{ github.workspace }}/${{inputs.PkgRootFolder}}"
     - name: Download Wheels and Source Distribution
       uses: actions/download-artifact@v4.1.0
     - name: Collect Wheels and Source Distribution
+      # Move to dist as default folder for publish action
       run: New-Item -Path "." -Name "dist" -ItemType "directory"; Get-ChildItem -Path ".\*.whl",".\*.tar.gz" -Recurse | Move-Item -Destination ".\dist"
-      shell: powershell
-    - name: Check Rendering
-      run: twine check dist/*
+      shell: pwsh
     - name: Upload to PyPI
       # As of 06/2024, trusted publishing does not work within reusable workflows located in a different repo
       # Tracked in:
@@ -295,6 +286,8 @@ jobs:
       with:
         # TODO: Only for testing purposes
         repository-url: https://test.pypi.org/legacy/
+        # Basically runs twine check
+        verify-metadata: true
   Tag:
     permissions:
       contents: write
