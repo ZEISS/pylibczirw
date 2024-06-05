@@ -107,6 +107,9 @@ jobs:
       env:
         CovResultsPath: "${{ runner.temp }}\\cov_results\\cov.xml"
         TestResultsPath: "${{ runner.temp }}\\results"
+    - name: List files
+      run: dir
+      working-directory: "${{ runner.temp }}\\cov_results"
     - name: Upload Coverage
       if: success() || failure()
       uses: codecov/codecov-action@v4
