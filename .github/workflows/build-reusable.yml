@@ -229,7 +229,7 @@ jobs:
             OS: windows-2019,
             RunShell: cmd,
           }
-    runs-on: ${{ matrix..config.OS }}
+    runs-on: ${{ matrix.config.OS }}
     steps:
     - uses: actions/checkout@v4.1.0
       with:
@@ -239,7 +239,7 @@ jobs:
         PyVersionLatest: "${{inputs.PyVersionLatest}}"
         ArtifactName: Sdist
         PkgRootFolder: "${{ github.workspace }}/${{inputs.PkgRootFolder}}"
-        RunShell: ${{ matrix..config.RunShell }}
+        RunShell: ${{ matrix.config.RunShell }}
     needs: PackageSDist
   Upload:
     permissions:
