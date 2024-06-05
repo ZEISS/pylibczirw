@@ -6,6 +6,8 @@ inputs:
     required: true
   PkgRootFolder:
     required: true
+  RunShell:
+    required: true
 runs:
   using: composite
   steps:
@@ -30,5 +32,5 @@ runs:
       TESTRESULTSPATH: "${{ runner.temp }}"
       COVRESULTSPATH: "${{ runner.temp }}\\cov.xml"
     run: tox --installpkg ${{ runner.workspace }}/${{inputs.ArtifactName}}/* -vv -r -s true
-    shell: bash
+    shell: "${{inputs.RunShell}}"
     working-directory: "${{inputs.PkgRootFolder}}"

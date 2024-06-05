@@ -37,3 +37,6 @@ component_management:
         - "_pylibCZIrw/"
 comment:
   layout: "header, diff, flags, components"  # show component info in the PR comment
+ignore:
+  - "pylibCZIrw/tests"  # ignore tests
+  - "_pylibCZIrw/tests"  # ignore tests

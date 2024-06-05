@@ -214,13 +214,22 @@ jobs:
         PyVersionLatest: "${{inputs.PyVersionLatest}}"
         ArtifactName: Wheel${{inputs.PyVersionLatest}}
         PkgRootFolder: "${{ github.workspace }}/${{inputs.PkgRootFolder}}"
+        RunShell: cmd
     if: inputs.Pure == true
     needs: PackageWheelsPure
   DownloadTestSdist:
     strategy:
       matrix:
-        os: [ubuntu-latest, windows-2019]
-    runs-on: ${{ matrix.OS }}
+        config:
+          - {
+            OS: ubuntu-latest,
+            RunShell: bash,
+          }
+          - {
+            OS: windows-2019,
+            RunShell: cmd,
+          }
+    runs-on: ${{ matrix..config.OS }}
     steps:
     - uses: actions/checkout@v4.1.0
       with:
@@ -230,6 +239,7 @@ jobs:
         PyVersionLatest: "${{inputs.PyVersionLatest}}"
         ArtifactName: Sdist
         PkgRootFolder: "${{ github.workspace }}/${{inputs.PkgRootFolder}}"
+        RunShell: ${{ matrix..config.RunShell }}
     needs: PackageSDist
   Upload:
     permissions:
