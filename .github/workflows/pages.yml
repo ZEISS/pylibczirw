@@ -37,13 +37,18 @@ jobs:
             --self-contained
             --output=${{ env.DOCPATH }}
             API.md
+      - name: Prepare HTML for publishing
+        run: |
+          mkdir ${{runner.temp}}/doc
+          mv ${{ env.DOCPATH }} ${{runner.temp}}/doc
+        shell: bash
       - name: Setup Pages
         uses: actions/configure-pages@v2
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v1
         with:
           # Upload entire repository
-          path: "${{github.workspace}}/${{ env.DOCPATH }}"
+          path: "${{runner.temp}}/doc"
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v1
