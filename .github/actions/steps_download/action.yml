@@ -23,8 +23,9 @@ runs:
     working-directory: "${{inputs.PkgRootFolder}}"
     shell: bash
   - name: List files
-    run: dir
+    run: Get-ChildItem -Path .\ -Recurse -Force
     working-directory: "${{ github.workspace }}"
+    shell: pwsh
   - name: Unit and Integration Tests
     env:
       TEMP: "${{ runner.temp }}"
