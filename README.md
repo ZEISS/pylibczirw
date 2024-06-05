@@ -2,7 +2,7 @@
 [![License: LGPL v3](https://img.shields.io/badge/License-LGPL_v3-blue.svg)](https://www.gnu.org/licenses/lgpl-3.0)
 [![REUSE status](https://api.reuse.software/badge/github.com/ZEISS/pylibczirw)](https://api.reuse.software/info/github.com/ZEISS/pylibczirw)
 [![Build](https://github.com/ZEISS/pylibczirw/actions/workflows/build.yml/badge.svg?branch=main&event=push)](https://github.com/ZEISS/pylibczirw/actions/workflows/build.yml)
-[![codecov]()
+[![codecov](https://codecov.io/gh/ZEISS/pylibczirw/graph/badge.svg?token=JX6cZGEJ0a)](https://codecov.io/gh/ZEISS/pylibczirw)
 [![GitHub Pages](https://github.com/ZEISS/pylibczirw/actions/workflows/pages.yml/badge.svg?branch=main&event=push)](https://github.com/ZEISS/pylibczirw/actions/workflows/pages.yml)
 [![PyPI version](https://badge.fury.io/py/pylibCZIrw.svg)](https://badge.fury.io/py/pylibCZIrw)  
 
