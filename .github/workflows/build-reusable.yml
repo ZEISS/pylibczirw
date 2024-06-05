@@ -5,6 +5,10 @@ on:
     secrets:
       CODECOV_TOKEN:
         required: true
+      ACTIONS_RUNNER_DEBUG:
+        required: false
+      ACTIONS_STEP_DEBUG:
+        required: false
     inputs:
       Pure:
         required: false
@@ -36,6 +40,8 @@ permissions:
   contents: read
 jobs:
   CodeQualityAnalysis-Test:
+    # TODO: Only debugging
+    if: github.event_name != 'push'
     name: Static Analysis and Tests
     runs-on: windows-2019
     outputs:
@@ -150,11 +156,11 @@ jobs:
         PkgRootFolder: "${{ github.workspace }}/${{inputs.PkgRootFolder}}"
         OS: "${{matrix.config.OS}}"
         CIBWBEFOREALL: "${{matrix.config.CIBWBEFOREALL}}"
-    if: inputs.Pure == false
+    if: inputs.Pure == false && github.event_name != 'push' # TODO: Only debugging
   PackageWheelsPure:
     name: Package Pure Wheels
     runs-on: windows-2019
-    if: inputs.Pure == true
+    if: inputs.Pure == true && github.event_name != 'push' # TODO: Only debugging
     steps:
     - uses: actions/checkout@v4.1.0
       with:
@@ -177,6 +183,7 @@ jobs:
         name: Wheel${{inputs.PyVersionLatest}}
         path: "${{ github.workspace }}\\${{inputs.PkgRootFolder}}\\dist"
   PackageSDist:
+    if: github.event_name != 'push' # TODO: Only debugging
     name: Package Source Distribution
     runs-on: windows-2019
     steps:
@@ -215,9 +222,10 @@ jobs:
         ArtifactName: Wheel${{inputs.PyVersionLatest}}
         PkgRootFolder: "${{ github.workspace }}/${{inputs.PkgRootFolder}}"
         RunShell: cmd
-    if: inputs.Pure == true
+    if: inputs.Pure == true && github.event_name != 'push' # TODO: Only debugging
     needs: PackageWheelsPure
   DownloadTestSdist:
+    if: github.event_name != 'push' # TODO: Only debugging
     strategy:
       matrix:
         config:
@@ -254,7 +262,7 @@ jobs:
     - PackageWheelsPure
     - PackageSdist
     runs-on: windows-2019
-    if: needs.CodeQualityAnalysis-Test.result == 'success' && contains(fromJSON('["skipped", "success"]'), needs.DownloadTestSdist.result) && contains(fromJSON('["skipped", "success"]'), needs.DownloadTestWheelsPure.result) && contains(fromJSON('["skipped", "success"]'), needs.PackageWheelsNonPure.result) && contains(fromJSON('["skipped", "success"]'), needs.PackageWheelsPure.result) && contains(fromJSON('["skipped", "success"]'), needs.PackageSdist.result) && github.event_name != 'pull_request' && needs.CodeQualityAnalysis-Test.outputs.pypi_released == 'true'
+    if: contains(fromJSON('["skipped", "success"]'), needs.DownloadTestSdist.result) && contains(fromJSON('["skipped", "success"]'), needs.DownloadTestWheelsPure.result) && contains(fromJSON('["skipped", "success"]'), needs.PackageWheelsNonPure.result) && contains(fromJSON('["skipped", "success"]'), needs.PackageWheelsPure.result) && contains(fromJSON('["skipped", "success"]'), needs.PackageSdist.result) && github.event_name != 'pull_request' && contains(fromJSON('["skipped", "success"]'), needs.CodeQualityAnalysis-Test.result) # && needs.CodeQualityAnalysis-Test.result == 'success' && needs.CodeQualityAnalysis-Test.outputs.pypi_released == 'true'
     environment:
       # TODO: Only for testing purposes
       # name: pypi
