@@ -262,10 +262,8 @@ jobs:
       contains(fromJSON('["skipped", "success"]'), needs.PackageWheelsNonPure.result) && 
       contains(fromJSON('["skipped", "success"]'), needs.PackageWheelsPure.result) && 
       contains(fromJSON('["skipped", "success"]'), needs.PackageSdist.result) &&
-      needs.CodeQualityAnalysis-Test.result == 'skipped' &&
+      needs.CodeQualityAnalysis-Test.result == 'success' &&
       needs.CodeQualityAnalysis-Test.outputs.pypi_released == 'true'
-    # TODO: Revert
-    # needs.CodeQualityAnalysis-Test.result == 'success'
     environment:
       # TODO: Only for testing purposes
       # name: pypi
