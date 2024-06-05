@@ -263,7 +263,7 @@ jobs:
       contains(fromJSON('["skipped", "success"]'), needs.PackageWheelsPure.result) && 
       contains(fromJSON('["skipped", "success"]'), needs.PackageSdist.result) &&
       needs.CodeQualityAnalysis-Test.result == 'skipped' &&
-      needs.CodeQualityAnalysis-Test.outputs.pypi_released == false
+      needs.CodeQualityAnalysis-Test.outputs.pypi_released == 'true'
     # TODO: Revert
     # needs.CodeQualityAnalysis-Test.result == 'success'
     environment:
