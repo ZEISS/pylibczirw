@@ -62,64 +62,64 @@ jobs:
       working-directory: "${{ github.workspace }}/${{inputs.PkgRootFolder}}"
       # TODO: Patch only for testing
       run: semantic-release -vv -c python-semantic-release.json version --patch --changelog --no-commit --no-tag --no-push --no-vcs-release --skip-build
-#    - name: Environment Setup
-#      run: python -m pip install --upgrade --requirement requirements_test.txt
-#      working-directory: "${{ github.workspace }}/${{inputs.PkgRootFolder}}"
-#    - name: Check Python Versions Consistency
-#      # Only specify tox.ini and setup.py since .yml uses cibuildwheel
-#      run: check-python-versions ${{ github.workspace }}\${{inputs.PkgRootFolder}} --only tox.ini,setup.py
-#    - name: Black Static Analysis
-#      if: success() || failure()
-#      run: black -v --line-length 120 --safe --check --diff --color .
-#      working-directory: "${{ github.workspace }}/${{inputs.PySourceFolder}}"
-#    - name: Flake8 Static Analysis
-#      if: success() || failure()
-#      run: flake8 -v --config ${{ github.workspace }}\${{inputs.PkgRootFolder}}\setup.cfg .
-#      working-directory: "${{ github.workspace }}/${{inputs.PySourceFolder}}"
-#    - name: Pylint Static Analysis
-#      if: success() || failure()
-#      run: pylint_runner -v --rcfile ${{ github.workspace }}\${{inputs.PkgRootFolder}}\setup.cfg
-#      working-directory: "${{ github.workspace }}/${{inputs.PySourceFolder}}"
-#    - name: Mypy Static Analysis
-#      if: success() || failure()
-#      run: mypy -v --config-file ${{ github.workspace }}\${{inputs.PkgRootFolder}}\setup.cfg .
-#      working-directory: "${{ github.workspace }}/${{inputs.PySourceFolder}}"
-#    - name: Bandit Static Analysis
-#      if: success() || failure()
-#      run: bandit -v -r -c ${{ github.workspace }}\${{inputs.PkgRootFolder}}\bandit.yaml .
-#      working-directory: "${{ github.workspace }}/${{inputs.PySourceFolder}}"
-#    - name: Set TEMP to ${{ runner.temp }}
-#      if: success() || failure()
-#      run: echo "TEMP=${{ runner.temp }}" >> "$GITHUB_ENV"
-#      shell: bash
-#    - name: Set TMP to ${{ runner.temp }}
-#      if: success() || failure()
-#      run: echo "TMP=${{ runner.temp }}" >> "$GITHUB_ENV"
-#      shell: bash
-#    - name: Set TMPDIR to ${{ runner.temp }}
-#      if: success() || failure()
-#      run: echo "TMPDIR=${{ runner.temp }}" >> "$GITHUB_ENV"
-#      shell: bash
-#    - name: Unit and Integration Tests
-#      if: success() || failure()
-#      run: tox -vv -r -s false
-#      working-directory: "${{ github.workspace }}/${{inputs.PkgRootFolder}}"
-#      env:
-#        CovResultsPath: "${{ runner.temp }}\\cov_results\\cov.xml"
-#        TestResultsPath: "${{ runner.temp }}\\results"
-#    - name: Upload Coverage
-#      if: success() || failure()
-#      uses: codecov/codecov-action@v3
-#      with:
-#        # Hard copy from step above due to https://github.com/actions/runner/issues/2204
-#        directory: ${{ runner.temp }}/cov_results
-#        files: cov.xml
-#        fail_ci_if_error: true
-#        verbose: true
-#        # Only one flag to be safe with
-#        # https://docs.codecov.com/docs/flags#one-to-one-relationship-of-flags-to-uploads
-#        flags: ${{matrix.OS}}
-#        token: ${{ secrets.CODECOV_TOKEN }}
+    - name: Environment Setup
+      run: python -m pip install --upgrade --requirement requirements_test.txt
+      working-directory: "${{ github.workspace }}/${{inputs.PkgRootFolder}}"
+    - name: Check Python Versions Consistency
+      # Only specify tox.ini and setup.py since .yml uses cibuildwheel
+      run: check-python-versions ${{ github.workspace }}\${{inputs.PkgRootFolder}} --only tox.ini,setup.py
+    - name: Black Static Analysis
+      if: success() || failure()
+      run: black -v --line-length 120 --safe --check --diff --color .
+      working-directory: "${{ github.workspace }}/${{inputs.PySourceFolder}}"
+    - name: Flake8 Static Analysis
+      if: success() || failure()
+      run: flake8 -v --config ${{ github.workspace }}\${{inputs.PkgRootFolder}}\setup.cfg .
+      working-directory: "${{ github.workspace }}/${{inputs.PySourceFolder}}"
+    - name: Pylint Static Analysis
+      if: success() || failure()
+      run: pylint_runner -v --rcfile ${{ github.workspace }}\${{inputs.PkgRootFolder}}\setup.cfg
+      working-directory: "${{ github.workspace }}/${{inputs.PySourceFolder}}"
+    - name: Mypy Static Analysis
+      if: success() || failure()
+      run: mypy -v --config-file ${{ github.workspace }}\${{inputs.PkgRootFolder}}\setup.cfg .
+      working-directory: "${{ github.workspace }}/${{inputs.PySourceFolder}}"
+    - name: Bandit Static Analysis
+      if: success() || failure()
+      run: bandit -v -r -c ${{ github.workspace }}\${{inputs.PkgRootFolder}}\bandit.yaml .
+      working-directory: "${{ github.workspace }}/${{inputs.PySourceFolder}}"
+    - name: Set TEMP to ${{ runner.temp }}
+      if: success() || failure()
+      run: echo "TEMP=${{ runner.temp }}" >> "$GITHUB_ENV"
+      shell: bash
+    - name: Set TMP to ${{ runner.temp }}
+      if: success() || failure()
+      run: echo "TMP=${{ runner.temp }}" >> "$GITHUB_ENV"
+      shell: bash
+    - name: Set TMPDIR to ${{ runner.temp }}
+      if: success() || failure()
+      run: echo "TMPDIR=${{ runner.temp }}" >> "$GITHUB_ENV"
+      shell: bash
+    - name: Unit and Integration Tests
+      if: success() || failure()
+      run: tox -vv -r -s false
+      working-directory: "${{ github.workspace }}/${{inputs.PkgRootFolder}}"
+      env:
+        CovResultsPath: "${{ runner.temp }}\\cov_results\\cov.xml"
+        TestResultsPath: "${{ runner.temp }}\\results"
+    - name: Upload Coverage
+      if: success() || failure()
+      uses: codecov/codecov-action@v3
+      with:
+        # Hard copy from step above due to https://github.com/actions/runner/issues/2204
+        directory: ${{ runner.temp }}/cov_results
+        files: cov.xml
+        fail_ci_if_error: true
+        verbose: true
+        # Only one flag to be safe with
+        # https://docs.codecov.com/docs/flags#one-to-one-relationship-of-flags-to-uploads
+        flags: ${{matrix.OS}}
+        token: ${{ secrets.CODECOV_TOKEN }}
   PackageWheelsNonPure:
     name: Package Non-pure Wheels for ${{ matrix.config.OS }}
     runs-on: ${{ matrix.config.PoolImage }}
@@ -147,7 +147,7 @@ jobs:
         PkgRootFolder: "${{ github.workspace }}/${{inputs.PkgRootFolder}}"
         OS: "${{matrix.config.OS}}"
         CIBWBEFOREALL: "${{matrix.config.CIBWBEFOREALL}}"
-    if: inputs.Pure == false && github.event_name != 'push' #TODO: Remove
+    if: inputs.Pure == false
   PackageWheelsPure:
     name: Package Pure Wheels
     runs-on: windows-2019
@@ -174,7 +174,6 @@ jobs:
         name: Wheel${{inputs.PyVersionLatest}}
         path: "${{ github.workspace }}\\${{inputs.PkgRootFolder}}\\dist"
   PackageSDist:
-    if: github.event_name != 'push' #TODO: Remove
     name: Package Source Distribution
     runs-on: windows-2019
     steps:
@@ -213,10 +212,9 @@ jobs:
         ArtifactName: Wheel${{inputs.PyVersionLatest}}
         PkgRootFolder: "${{ github.workspace }}/${{inputs.PkgRootFolder}}"
         RunShell: cmd
-    if: inputs.Pure == true && github.event_name != 'push' #TODO: Remove
+    if: inputs.Pure == true
     needs: PackageWheelsPure
   DownloadTestSdist:
-    if: github.event_name != 'push' #TODO: Remove
     strategy:
       matrix:
         config:
