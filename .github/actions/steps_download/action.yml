@@ -13,7 +13,7 @@ runs:
     uses: actions/download-artifact@v4.1.0
     with:
       name: "${{inputs.ArtifactName}}"
-      path: "${{runner.temp}}/${{inputs.ArtifactName}}"
+      path: "${{runner.workspace}}/${{inputs.ArtifactName}}"
   - name: Use Python ${{inputs.PyVersionLatest}}
     uses: actions/setup-python@v5.0.0
     with:
@@ -33,6 +33,6 @@ runs:
       TMP: "${{ runner.temp }}"
       TESTRESULTSPATH: "${{ runner.temp }}"
       COVRESULTSPATH: "${{ runner.temp }}\\cov.xml"
-    run: tox --installpkg ${{ runner.temp }}/${{inputs.ArtifactName}}/* -vv -r -s true
+    run: tox --installpkg ${{ runner.workspace }}\${{inputs.ArtifactName}}\* -vv -r -s true
     shell: bash
     working-directory: "${{inputs.PkgRootFolder}}"
