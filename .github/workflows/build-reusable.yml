@@ -259,7 +259,7 @@ jobs:
     #- PackageSdist
     runs-on: windows-2019
     #if: contains(fromJSON('["skipped", "success"]'), needs.DownloadTestSdist.result) && contains(fromJSON('["skipped", "success"]'), needs.DownloadTestWheelsPure.result) && contains(fromJSON('["skipped", "success"]'), needs.PackageWheelsNonPure.result) && contains(fromJSON('["skipped", "success"]'), needs.PackageWheelsPure.result) && contains(fromJSON('["skipped", "success"]'), needs.PackageSdist.result) && ${{github.event_name != 'pull_request'}} && contains(fromJSON('["skipped", "success"]'), needs.CodeQualityAnalysis-Test.result) # && needs.CodeQualityAnalysis-Test.result == 'success' && needs.CodeQualityAnalysis-Test.outputs.pypi_released == 'true'
-    if: ${{github.event_name != 'pull_request'}} && contains(fromJSON('["skipped", "success"]'), needs.CodeQualityAnalysis-Test.result) # && needs.CodeQualityAnalysis-Test.result == 'success' && needs.CodeQualityAnalysis-Test.outputs.pypi_released == 'true'
+    if: ${{github.event_name != 'pull_request' && contains(fromJSON('["skipped", "success"]'), needs.CodeQualityAnalysis-Test.result)}} # && needs.CodeQualityAnalysis-Test.result == 'success' && needs.CodeQualityAnalysis-Test.outputs.pypi_released == 'true'
     environment:
       # TODO: Only for testing purposes
       # name: pypi
