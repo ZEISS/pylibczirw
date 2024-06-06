@@ -1,4 +1,4 @@
-BREAKING CHANGE: Either **remove this line or add a short description** describing the nature of the breaking change. Be aware that this will [[trigger](https://github.com/ZEISS/pylibczirw/actions/workflows/build.yml) a **MAJOR** update pushed to PyPI when merged to main].
+BREAKING CHANGE: Either **remove this line or add a short description** describing the nature of the breaking change. Be aware that this will [trigger](https://github.com/ZEISS/pylibczirw/actions/workflows/build.yml) a **MAJOR** update pushed to PyPI when merged to main.
 
 **---ADAPT ME---**  
 [ ] I followed the [How to structure your PR](https://github.com/ZEISS/pylibczirw/blob/main/CONTRIBUTING.md#creating-a-pr).  

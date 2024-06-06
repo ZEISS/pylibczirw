@@ -41,5 +41,9 @@ For all contributions, please respect the following guidelines:
 - Do not commit changes to files that are irrelevant to the type and subject defined before.  
 - Only once: Make sure to either sign the [Individual](./cla_individual.txt) or the [Corporate](./cla_corporate.txt) Contributor License Agreement (CLA) and send it to github.microscopy@zeiss.com.
 
+Note: PRs submitted from forks external to this organization do not automatically trigger required workflows to run. Approval granted based on [Approving workflow runs from public forks - GitHub Docs](https://docs.github.com/en/actions/managing-workflow-runs/approving-workflow-runs-from-public-forks#approving-workflow-runs-on-a-pull-request-from-a-public-fork).
+Rationale: [Keeping your GitHub Actions and workflows secure Part 1: Preventing pwn requests | GitHub Security Lab](https://securitylab.github.com/research/github-actions-preventing-pwn-requests/)
+
+
 # Attribution
 This template was inspired by https://github.com/nayafia/contributing-template.
