@@ -49,19 +49,10 @@ jobs:
         submodules: recursive
         # Python Semantic Release needs access to the full history to determine whether a release should be made.
         fetch-depth: 0
-    - name: Use Python ${{inputs.PyVersionLatest}}
-      uses: actions/setup-python@v5.0.0
+    - uses: "./.github/actions/steps_psr"
       with:
-        python-version: "${{inputs.PyVersionLatest}}"
-        architecture: x64
-    - name: Python Semantic Release Setup
-      run: python -m pip install --upgrade python-semantic-release
-      working-directory: "${{ github.workspace }}/${{inputs.PkgRootFolder}}"
-    - name: Python Semantic Release
-      id: pythonsemanticrelease
-      working-directory: "${{ github.workspace }}/${{inputs.PkgRootFolder}}"
-      # TODO: Patch only for testing
-      run: semantic-release -vv -c python-semantic-release.json version --patch --changelog --no-commit --no-tag --no-push --no-vcs-release --skip-build
+        PyVersionLatest: "${{inputs.PyVersionLatest}}"
+        PkgRootFolder: "${{ github.workspace }}/${{inputs.PkgRootFolder}}"
     - name: Environment Setup
       run: python -m pip install --upgrade --requirement requirements_test.txt
       working-directory: "${{ github.workspace }}/${{inputs.PkgRootFolder}}"
@@ -141,6 +132,8 @@ jobs:
       with:
         lfs: true
         submodules: recursive
+        # Python Semantic Release needs access to the full history to determine whether a release should be made.
+        fetch-depth: 0
     - uses: "./.github/actions/steps_package"
       with:
         PyVersionLatest: "${{inputs.PyVersionLatest}}"
@@ -157,11 +150,12 @@ jobs:
       with:
         lfs: true
         submodules: recursive
-    - name: Use Python ${{inputs.PyVersionLatest}}
-      uses: actions/setup-python@v5.0.0
+        # Python Semantic Release needs access to the full history to determine whether a release should be made.
+        fetch-depth: 0
+    - uses: "./.github/actions/steps_psr"
       with:
-        python-version: "${{inputs.PyVersionLatest}}"
-        architecture: x64
+        PyVersionLatest: "${{inputs.PyVersionLatest}}"
+        PkgRootFolder: "${{ github.workspace }}/${{inputs.PkgRootFolder}}"
     - name: Environment Setup
       run: python -m pip install --upgrade --requirement requirements_deploy.txt
       working-directory: "${{ github.workspace }}/${{inputs.PkgRootFolder}}"
@@ -181,11 +175,12 @@ jobs:
       with:
         lfs: true
         submodules: recursive
-    - name: Use Python ${{inputs.PyVersionLatest}}
-      uses: actions/setup-python@v5.0.0
+        # Python Semantic Release needs access to the full history to determine whether a release should be made.
+        fetch-depth: 0
+    - uses: "./.github/actions/steps_psr"
       with:
-        python-version: "${{inputs.PyVersionLatest}}"
-        architecture: x64
+        PyVersionLatest: "${{inputs.PyVersionLatest}}"
+        PkgRootFolder: "${{ github.workspace }}/${{inputs.PkgRootFolder}}"
     - name: Environment Setup
       run: python -m pip install --upgrade --requirement requirements_deploy.txt
       working-directory: "${{ github.workspace }}/${{inputs.PkgRootFolder}}"
@@ -292,6 +287,7 @@ jobs:
     permissions:
       contents: write
     needs: Upload
+    if: needs.Upload.result == 'success'
     runs-on: windows-2019
     steps:
     - uses: actions/checkout@v4.1.0

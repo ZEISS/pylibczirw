@@ -11,11 +11,10 @@ inputs:
 runs:
   using: composite
   steps:
-  - name: Use Python ${{inputs.PyVersionLatest}}
-    uses: actions/setup-python@v5.0.0
+  - uses: "./.github/actions/steps_psr"
     with:
-      python-version: "${{inputs.PyVersionLatest}}"
-      architecture: x64
+      PyVersionLatest: "${{inputs.PyVersionLatest}}"
+      PkgRootFolder: "${{inputs.PkgRootFolder}}"
   - name: Install dependencies
     run: |-
       set -o errexit
