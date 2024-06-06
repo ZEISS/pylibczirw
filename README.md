@@ -7,6 +7,7 @@
 [![PyPI version](https://badge.fury.io/py/pylibCZIrw.svg)](https://badge.fury.io/py/pylibCZIrw)  
 
 # Contribute
+test
 If you intend to **use** this repo, clone the repository on your machine with ``` git clone --recurse-submodules ```.  
 If you intend to also **contribute** to this repo, you are requested to copy ALL files in the hooks directory into your .git/hooks directory right after you cloned this repo!  
 In addition, be sure to ideally always keep your remotes up-to-date with ``` git pull --recurse-submodules ```. Even better, you can set the configuration option _submodule.recurse_ to _true_ locally (this works for git pull since Git 2.15) with ``` git config --local submodule.recurse true ```.  This option will make Git use the _--recurse-submodules_ flag for all commands that support it (except clone). See https://git-scm.com/book/en/v2/Git-Tools-Submodules for more information.
