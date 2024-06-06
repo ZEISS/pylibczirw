@@ -14,7 +14,7 @@ runs:
       architecture: x64
   - name: Python Semantic Release Setup
     run: python -m pip install --upgrade python-semantic-release
-    working-directory: "${{ github.workspace }}/${{inputs.PkgRootFolder}}"
+    working-directory: "${{inputs.PkgRootFolder}}"
     shell: bash
   - name: Python Semantic Release
     id: pythonsemanticrelease
