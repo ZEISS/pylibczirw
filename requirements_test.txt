@@ -9,6 +9,6 @@ flake8-bugbear
 bandit
 black
 check-python-versions
-tox==3.27.1
+tox==4.15.1
 tox-current-env
 pytest
