@@ -45,7 +45,7 @@ jobs:
           mv ${{ env.DOCPATH }} ${{runner.temp}}/doc
         shell: bash
       - name: Setup Pages
-        uses: actions/configure-pages@v2
+        uses: actions/configure-pages@v5
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v1
         with:
