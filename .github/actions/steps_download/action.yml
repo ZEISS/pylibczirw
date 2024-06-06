@@ -8,6 +8,8 @@ inputs:
     required: true
   RunShell:
     required: true
+  PkgVersion:
+    required: true
 runs:
   using: composite
   steps:
@@ -31,6 +33,8 @@ runs:
       TMP: "${{ runner.temp }}"
       TESTRESULTSPATH: "${{ runner.temp }}"
       COVRESULTSPATH: "${{ runner.temp }}\\cov.xml"
+      # Optionally used inside test environment to check for version specific functionality
+      PYTHON_SEMANTIC_RELEASE_VERSION: "${{inputs.PkgVersion}}"
     run: tox --installpkg ${{ runner.workspace }}/${{inputs.ArtifactName}}/* -vv -r -s true
     shell: "${{inputs.RunShell}}"
     working-directory: "${{inputs.PkgRootFolder}}"

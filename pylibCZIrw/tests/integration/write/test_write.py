@@ -1,5 +1,5 @@
 """Module implementing integration tests for the write function of the CziWriter class"""
-
+import os
 from os.path import join, abspath, dirname
 from collections import OrderedDict
 import tempfile
@@ -142,14 +142,18 @@ def test_write_succeeds_if_file_does_not_exist(exist_ok: bool, path: str) -> Non
 def test_write_metadata_application_version_matches_package_version() -> None:
     """Tests that Metadata/Information/Application/Version matches the package version as specified in setup.py"""
     # Arrange
-    # retrieve version as generated through setup.py
-    root = join(abspath(dirname(dirname(dirname(dirname(dirname(__file__)))))))
-    with open(join(root, "setup.py"), encoding="utf-8") as f:
-        readme = f.readlines()
-        for line in readme:
-            if "VERSION" in line:
-                setup_version = line.split('"')[1]
-                break
+    # retrieve version as generated through setup.py (locally) or env set through python-semantic-release in pipeline
+    setup_version = os.getenv("PYTHON_SEMANTIC_RELEASE_VERSION")
+    if setup_version is None:
+        root = join(abspath(dirname(dirname(dirname(dirname(dirname(__file__)))))))
+        with open(join(root, "setup.py"), encoding="utf-8") as f:
+            readme = f.readlines()
+            for line in readme:
+                if "VERSION" in line:
+                    setup_version = line.split('"')[1]
+                    break
+
+    assert setup_version is not None
 
     original_plane = get_plane(CZI_DOCUMENT_TEST_WRITE1, None)
     with tempfile.TemporaryDirectory() as td:
