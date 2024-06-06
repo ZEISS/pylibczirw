@@ -35,16 +35,14 @@
         "commit_parser": "angular",
         "commit_parser_options": {
             "allowed_tags": [
-                "build",
                 "chore",
-                "ci",
                 "docs",
                 "feat",
                 "fix",
                 "perf",
-                "style",
                 "refactor",
-                "test"
+                "test",
+                "deps"
             ],
             "minor_tags": [
                 "feat"

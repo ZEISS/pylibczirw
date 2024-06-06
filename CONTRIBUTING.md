@@ -23,15 +23,23 @@ If you find yourself wishing for a feature or improvement that doesn't exist in 
 # Creating a PR
 We are always happy to receive code contributions from your side.  
 
-For all contributions, please respect the following guidelines:
-- Follow the [angular commit guidelines](https://github.com/angular/angular.js/blob/master/DEVELOPERS.md#commits) to support proper functioning of the [python semantic release commit parsing](https://python-semantic-release.readthedocs.io/en/latest/commit-parsing.html).
-- The above is supported by a PR status check to ensure PR title matching. On top, the final squash commit message is prepared to match this commit style.
-- Make sure to either sign the [Individual](./cla_individual.txt) or the [Corporate](./cla_corporate.txt) Contributor License Agreement (CLA) and send it to github.microscopy@zeiss.com.
-- Always associate a PR with either an [issue](#other-issues) or a [feature](#suggesting-a-feature).  
-- Each PR should implement ONE feature or bugfix. If you want to add or fix more than one thing, submit more than one PR.
-- Do not commit changes to files that are irrelevant to your feature or bugfix.
-- Be willing to accept criticism and work on improving your code.
-- Be aware that the PR review process is not immediate, and is generally proportional to the size of the PR.
+For all contributions, please respect the following guidelines:  
+- Each PR should implement ONE feature or bugfix. If you want to add or fix more than one thing, submit more than one PR.  
+- Whenever possible: Associate a PR with either an [issue](#other-issues) or a [feature](#suggesting-a-feature).  
+- Format your PR title according to the [angular commit guidelines](https://github.com/angular/angular.js/blob/master/DEVELOPERS.md#commits) as **```<type>(<optional scope>): <subject>```** to support proper functioning of the [python semantic release commit parsing](https://python-semantic-release.readthedocs.io/en/latest/commit-parsing.html).  
+  The following prefixes (types) are allowed:  
+  - **chore**: Changes to the build process or auxiliary tools and libraries such as documentation generation  
+  - **docs**: Documentation only changes  
+  - **feat**: A new feature [[triggers](https://github.com/ZEISS/pylibczirw/actions/workflows/build.yml) a **MINOR** update pushed to PyPI when merged to main]  
+  - **fix**: A bug fix [[triggers](https://github.com/ZEISS/pylibczirw/actions/workflows/build.yml) a **PATCH** update pushed to PyPI when merged to main]  
+  - **perf**: A code change that improves performance [[triggers](https://github.com/ZEISS/pylibczirw/actions/workflows/build.yml) a **PATCH** update pushed to PyPI when merged to main]  
+  - **refactor**: A code change that neither fixes a bug nor adds a feature (incl. style changes that do not affect the meaning of the code like white-space, formatting, missing semi-colons, etc)  
+  - **test**: Adding missing or correcting existing tests  
+  - **deps**: Reserved for dependabot PR/updates  
+  The final squash commit message (only squash merging allowed) is prepared to match this commit style (by taking the PR title and PR description) based on [New options for controlling the default commit message when merging a pull request - The GitHub Blog](https://github.blog/changelog/2022-08-23-new-options-for-controlling-the-default-commit-message-when-merging-a-pull-request/).  
+  ** DO NOT CHANGE THE FINAL COMMIT MESSAGE AS PREPARED BEFORE COMPLETING THE PR!**
+- Do not commit changes to files that are irrelevant to the type and subject defined before.  
+- Only once: Make sure to either sign the [Individual](./cla_individual.txt) or the [Corporate](./cla_corporate.txt) Contributor License Agreement (CLA) and send it to github.microscopy@zeiss.com.
 
 # Attribution
 This template was inspired by https://github.com/nayafia/contributing-template.

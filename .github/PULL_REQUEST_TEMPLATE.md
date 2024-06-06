@@ -1,36 +1,14 @@
-# STOP - Read this First!
-Reporting a security vulnerability?  
-Check out the project's [security policy](https://github.com/zeiss/pylibczirw/security/policy).
+BREAKING CHANGE: Either **remove this line or add a short description** describing the nature of the breaking change. Be aware that this will [[trigger](https://github.com/ZEISS/pylibczirw/actions/workflows/build.yml) a **MAJOR** update pushed to PyPI when merged to main].
 
-# Fill out and Adjust this Template
+**---ADAPT ME---**  
+[ ] I followed the [How to structure your PR](https://github.com/ZEISS/pylibczirw/blob/main/CONTRIBUTING.md#creating-a-pr).  
+[ ] Based on [Commit Parsing](https://python-semantic-release.readthedocs.io/en/latest/commit-parsing.html): In case a new **major** release will be created (because the body or footer begins with 'BREAKING CHANGE:'), I created a new [Jupyter notebook with a matching version](https://github.com/ZEISS/pylibczirw/tree/main/doc/jupyter_notebooks).  
+[ ] Based on [Commit Parsing](https://python-semantic-release.readthedocs.io/en/latest/commit-parsing.html): In case a new **minor/patch** release will be created (because PR title begins with 'feat'/('fix' or 'perf')), I optionally created a new [Jupyter notebook with a matching version](https://github.com/ZEISS/pylibczirw/tree/main/doc/jupyter_notebooks).  
+[ ] In case of API changes, I updated [API.md](https://github.com/ZEISS/pylibczirw/blob/main/API.md).  
 
-## Description
+_Summary of the change(s) and which issue(s) is/are fixed_  
+_Relevant motivation and context_  
+_Dependencies required for this change_  
 
-Summary of the change(s) and which issue(s) is/are fixed  
-Relevant motivation and context  
-Dependencies required for this change  
-
-Fixes # (issue)
-
-### Type of change
-
-- [ ] Bug fix (non-breaking change which fixes an issue)
-- [ ] New feature (non-breaking change which adds functionality)
-- [ ] Breaking change (fix or feature that would cause existing functionality to not work as expected)
-- [ ] This change requires a documentation update
-
-## How Has This Been Tested?
-
-Describe the tests that you ran to verify your changes.  
-Provide instructions to reproduce.
-
-## Checklist:
-
-- [ ] I followed the [Contributing Guidelines](https://github.com/ZEISS/pylibczirw/blob/main/CONTRIBUTING.md).
-- [ ] Based on [Commit Parsing](https://python-semantic-release.readthedocs.io/en/latest/commit-parsing.html): In case a new major release will be created (because the body or footer begins with 'BREAKING CHANGE:'), I created a new [Jupyter notebook with a matching version](https://github.com/ZEISS/pylibczirw/tree/main/doc/jupyter_notebooks).
-- [ ] Based on [Commit Parsing](https://python-semantic-release.readthedocs.io/en/latest/commit-parsing.html): In case a new minor/patch release will be created (because commit begins with 'feat'/('fix' or 'perf')), I optionally created a new [Jupyter notebook with a matching version](https://github.com/ZEISS/pylibczirw/tree/main/doc/jupyter_notebooks).
-- [ ] I did a self-review.
-- [ ] I commented my code, particularly in hard-to-understand areas.
-- [ ] In case of API changes, I updated [API.md](https://github.com/ZEISS/pylibczirw/blob/main/API.md).
-- [ ] I have added tests that prove my fix is effective or that my feature works.
-- [ ] New and existing unit tests pass locally with my changes.
+Fixes # (issue)  
+**---ADAPT ME---**
