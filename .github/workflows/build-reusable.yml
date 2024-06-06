@@ -277,6 +277,7 @@ jobs:
       # https://github.com/pypa/gh-action-pypi-publish/issues/166
       # https://github.com/pypi/warehouse/issues/11096
       # https://docs.pypi.org/trusted-publishers/troubleshooting/#reusable-workflows-on-github
+      # More info on trusted publishing: https://blog.pypi.org/posts/2023-04-20-introducing-trusted-publishers/
       uses: pypa/gh-action-pypi-publish@release/v1
       with:
         # TODO: Only for testing purposes

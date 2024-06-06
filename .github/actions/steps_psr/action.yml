@@ -18,5 +18,8 @@ runs:
 - name: Python Semantic Release
   id: pythonsemanticrelease
   working-directory: "${{inputs.PkgRootFolder}}"
+  # PSR only used for settingg the version number in setup.py and creating changelog
+  # Everything else outsourced to other apps
+  # See https://github.com/python-semantic-release/python-semantic-release/issues/589
   # TODO: Patch only for testing
   run: semantic-release -vv -c python-semantic-release.json version --patch --changelog --no-commit --no-tag --no-push --no-vcs-release --skip-build
