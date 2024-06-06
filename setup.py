@@ -13,7 +13,7 @@ from typing import List
 
 # DO NOT CHANGE
 # THIS IS UPDATED AUTOMATICALLY THROUGH PYTHON-SEMANTIC-RELEASE
-VERSION = "0.0.1"
+VERSION = "0.0.0"
 
 with open("INFO.md") as info_file:
     info = info_file.read()
