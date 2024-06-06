@@ -1,4 +1,3 @@
 # Used for installation/building/packaging/uploading
-twine
 wheel
 pip
