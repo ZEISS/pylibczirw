@@ -1,5 +1,5 @@
 # Environment variables defined in a calling workflow are not accessible to this reusable workflow. Refer to the documentation for further details on this limitation.
-name: pypi_build_test_deploy
+name: Build Reusable
 on:
   workflow_call:
     secrets:
@@ -50,6 +50,7 @@ jobs:
         # Python Semantic Release needs access to the full history to determine whether a release should be made.
         fetch-depth: 0
     - id: psr
+      name: Python Semantic Release
       uses: "./.github/actions/steps_psr"
       with:
         PyVersionLatest: "${{inputs.PyVersionLatest}}"
@@ -137,6 +138,7 @@ jobs:
         # Python Semantic Release needs access to the full history to determine whether a release should be made.
         fetch-depth: 0
     - uses: "./.github/actions/steps_package"
+      name: Package
       with:
         PyVersionLatest: "${{inputs.PyVersionLatest}}"
         PkgRootFolder: "${{ github.workspace }}/${{inputs.PkgRootFolder}}"
@@ -155,6 +157,7 @@ jobs:
         # Python Semantic Release needs access to the full history to determine whether a release should be made.
         fetch-depth: 0
     - uses: "./.github/actions/steps_psr"
+      name: Python Semantic Release
       with:
         PyVersionLatest: "${{inputs.PyVersionLatest}}"
         PkgRootFolder: "${{ github.workspace }}/${{inputs.PkgRootFolder}}"
@@ -180,6 +183,7 @@ jobs:
         # Python Semantic Release needs access to the full history to determine whether a release should be made.
         fetch-depth: 0
     - uses: "./.github/actions/steps_psr"
+      name: Python Semantic Release
       with:
         PyVersionLatest: "${{inputs.PyVersionLatest}}"
         PkgRootFolder: "${{ github.workspace }}/${{inputs.PkgRootFolder}}"
@@ -207,10 +211,12 @@ jobs:
         # Python Semantic Release needs access to the full history to determine whether a release should be made.
         fetch-depth: 0
     - uses: "./.github/actions/steps_psr"
+      name: Python Semantic Release
       with:
         PyVersionLatest: "${{inputs.PyVersionLatest}}"
         PkgRootFolder: "${{ github.workspace }}/${{inputs.PkgRootFolder}}"
     - uses: "./.github/actions/steps_download"
+      name: Download Wheels
       with:
         PyVersionLatest: "${{inputs.PyVersionLatest}}"
         ArtifactName: Wheel${{inputs.PyVersionLatest}}
@@ -220,6 +226,7 @@ jobs:
     if: inputs.Pure == true
     needs: PackageWheelsPure
   DownloadTestSdist:
+    name: Test Sdist
     strategy:
       matrix:
         config:
@@ -240,10 +247,12 @@ jobs:
         # Python Semantic Release needs access to the full history to determine whether a release should be made.
         fetch-depth: 0
     - uses: "./.github/actions/steps_psr"
+      name: Python Semantic Release
       with:
         PyVersionLatest: "${{inputs.PyVersionLatest}}"
         PkgRootFolder: "${{ github.workspace }}/${{inputs.PkgRootFolder}}"
     - uses: "./.github/actions/steps_download"
+      name: Download Sdist
       with:
         PyVersionLatest: "${{inputs.PyVersionLatest}}"
         ArtifactName: Sdist
@@ -306,7 +315,8 @@ jobs:
     permissions:
       contents: write
     needs: Upload
-    if: needs.Upload.result == 'success'
+    # Aftermath of if-conditional of Upload job
+    if: always() && needs.Upload.result == 'success'
     runs-on: windows-2019
     steps:
     - uses: actions/checkout@v4.1.0

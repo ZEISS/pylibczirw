@@ -1,4 +1,4 @@
-name: Download
+name: Download Composite
 inputs:
   ArtifactName:
     required: true

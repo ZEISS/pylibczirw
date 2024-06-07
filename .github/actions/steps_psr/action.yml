@@ -1,4 +1,4 @@
-name: Python Semantic Release
+name: Python Semantic Release Composite
 inputs:
   PyVersionLatest:
     required: true
@@ -23,11 +23,11 @@ runs:
     with:
       python-version: "${{inputs.PyVersionLatest}}"
       architecture: x64
-  - name: Python Semantic Release Setup
+  - name: PSR Setup
     run: python -m pip install --upgrade python-semantic-release
     working-directory: "${{inputs.PkgRootFolder}}"
     shell: bash
-  - name: Python Semantic Release
+  - name: PSR Version
     id: pythonsemanticrelease
     working-directory: "${{inputs.PkgRootFolder}}"
     # PSR only used for settingg the version number in setup.py and creating changelog

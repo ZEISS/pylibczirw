@@ -1,4 +1,4 @@
-name: Package
+name: Package Composite
 inputs:
   PyVersionLatest:
     required: true
@@ -12,6 +12,7 @@ runs:
   using: composite
   steps:
   - uses: "./.github/actions/steps_psr"
+    name: Python Semantic Release
     with:
       PyVersionLatest: "${{inputs.PyVersionLatest}}"
       PkgRootFolder: "${{inputs.PkgRootFolder}}"
