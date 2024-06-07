@@ -39,9 +39,9 @@ jobs:
     name: Static Analysis and Tests
     runs-on: windows-2019
     outputs:
-      pypi_released: ${{ steps.pythonsemanticrelease.outputs.released }}
-      pypi_version: ${{ steps.pythonsemanticrelease.outputs.version }}
-      pypi_tag: ${{ steps.pythonsemanticrelease.outputs.tag }}
+      pypi_released: ${{ steps.psr.outputs.pypi_released }}
+      pypi_version: ${{ steps.psr.outputs.pypi_version }}
+      pypi_tag: ${{ steps.psr.outputs.pypi_tag }}
     steps:
     - uses: actions/checkout@v4.1.0
       with:
@@ -49,7 +49,8 @@ jobs:
         submodules: recursive
         # Python Semantic Release needs access to the full history to determine whether a release should be made.
         fetch-depth: 0
-    - uses: "./.github/actions/steps_psr"
+    - id: psr
+      uses: "./.github/actions/steps_psr"
       with:
         PyVersionLatest: "${{inputs.PyVersionLatest}}"
         PkgRootFolder: "${{ github.workspace }}/${{inputs.PkgRootFolder}}"

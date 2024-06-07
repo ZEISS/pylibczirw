@@ -4,6 +4,11 @@ inputs:
     required: true
   PkgRootFolder:
     required: true
+outputs:
+  # https://docs.github.com/en/actions/creating-actions/creating-a-composite-action
+  pypi_released: ${{ steps.pythonsemanticrelease.outputs.released }}
+  pypi_version: ${{ steps.pythonsemanticrelease.outputs.version }}
+  pypi_tag: ${{ steps.pythonsemanticrelease.outputs.tag }}
 runs:
   using: composite
   steps:
