@@ -314,7 +314,9 @@ jobs:
   Tag:
     permissions:
       contents: write
-    needs: Upload
+    needs:
+      - CodeQualityAnalysis-Test
+      - Upload
     # Aftermath of if-conditional of Upload job
     if: always() && needs.Upload.result == 'success'
     runs-on: windows-2019
