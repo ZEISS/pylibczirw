@@ -2,7 +2,7 @@
 # Configuration file for MegaLinter
 # See all available variables at https://megalinter.io/configuration/ and in linters documentation
 
-APPLY_FIXES: none
+APPLY_FIXES: EDITORCONFIG_EDITORCONFIG_CHECKER
 FORMATTERS_DISABLE_ERRORS: false # Treat formatter errors as errors instead of warnings
 DISABLE:
   - COPYPASTE # Comment to enable checks of excessive copy-pastes

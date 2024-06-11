@@ -27,11 +27,8 @@ CZIreadAPI::CZIreadAPI(const std::string &stream_class_name,
     stream = StreamsFactory::CreateDefaultStreamForFile(fileName.c_str());
   } else if (stream_class_name == "curl") {
     StreamsFactory::CreateStreamInfo create_info;
-    create_info.class_name =
-        kStaticContext.GetStreamClassNameForCurlReader(); // set the
-                                                          // libczi-stream-class-name
-                                                          // for the python
-                                                          // reader class "curl"
+    create_info.class_name = kStaticContext.GetStreamClassNameForCurlReader();
+
     kStaticContext.SetDefaultPropertiesForReader(
         create_info); // and have the default-properties set for this class
 
