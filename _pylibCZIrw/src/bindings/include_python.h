@@ -1,7 +1,8 @@
 #pragma once
 
-// on Windows, there are problems with a debug-build and linking to the Python library
-// (c.f. https://stackoverflow.com/questions/59126760/building-a-python-c-extension-on-windows-with-a-debug-python-installation).
+// on Windows, there are problems with a debug-build and linking to the Python
+// library (c.f.
+// https://stackoverflow.com/questions/59126760/building-a-python-c-extension-on-windows-with-a-debug-python-installation).
 // We use the following workaround:
 // - we undefine the preprocessor macro _DEBUG before including Python.h
 // - and afterwards, we restore its initial value
