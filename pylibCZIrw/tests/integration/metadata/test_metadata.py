@@ -1,14 +1,14 @@
 """Module implementing integration tests for the properties of the CziReader class"""
 
-from typing import Dict, Tuple, Optional, Any
-import tempfile
 import os
-from unittest.mock import patch, PropertyMock
+import tempfile
+from typing import Any, Dict, Optional, Tuple
+from unittest.mock import PropertyMock, patch
+
+import numpy as np
 import pytest
 import xmltodict
-import numpy as np
-
-from pylibCZIrw.czi import create_czi, open_czi, Rectangle, CziReader
+from pylibCZIrw.czi import CziReader, Rectangle, create_czi, open_czi
 
 working_dir = os.path.dirname(os.path.abspath(__file__))
 
@@ -259,7 +259,9 @@ def test_custom_attributes(custom_attributes: Optional[Dict[str, Any]]) -> None:
         {"key1": (1, 2)},
     ],
 )
-def test_custom_attributes_write_error(custom_attributes: Optional[Dict[str, Any]]) -> None:
+def test_custom_attributes_write_error(
+    custom_attributes: Optional[Dict[str, Any]]
+) -> None:
     """Test if throws errors when the type of custom attributes is not accepted while writing"""
     with tempfile.TemporaryDirectory() as temp_directory:
         with create_czi(os.path.join(temp_directory, "./test.czi")) as test_czi:

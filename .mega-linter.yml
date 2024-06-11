@@ -1,9 +1,25 @@
+---
 # Configuration file for MegaLinter
 # See all available variables at https://megalinter.io/configuration/ and in linters documentation
 
 APPLY_FIXES: none
+FORMATTERS_DISABLE_ERRORS: false # Treat formatter errors as errors instead of warnings
+DISABLE:
+  - COPYPASTE # Comment to enable checks of excessive copy-pastes
+  - SPELL # Comment to enable checks of spelling mistakes
+DISABLE_LINTERS:
+  - PYTHON_PYRIGHT # Not used as of now in favour of MYPY
 DISABLE_ERRORS_LINTERS:
   - MARKDOWN_MARKDOWN_LINK_CHECK # Make non-blocking due to network timeouts etc.
+  - REPOSITORY_DEVSKIM # disable due to detected dubious ownership in repository at
+# Python
+PYTHON_BLACK_ARGUMENTS: -v --line-length 120 --safe --check --diff --color
+PYTHON_MYPY_ARGUMENTS: -v --install-types --non-interactive
+PYTHON_FLAKE8_ARGUMENTS: -v
+PYTHON_PYLINT_ARGUMENTS: -v --enable-all-extensions
+PYTHON_BANDIT_ARGUMENTS: -v -r
+
+REPOSITORY_KICS_ARGUMENTS: --fail-on critical,high,medium
 CPP_CPPLINT_ARGUMENTS: --verbose=2
 JSON_JSONLINT_ARGUMENTS: -B
 SHOW_ELAPSED_TIME: true
@@ -14,4 +30,5 @@ EMAIL_REPORTER: false
 VALIDATE_ALL_CODEBASE: true
 # Exclude submodules
 ADDITIONAL_EXCLUDED_DIRECTORIES:
-  - "libs"
+  - libs
+  - venv

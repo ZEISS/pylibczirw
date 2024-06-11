@@ -1,3 +1,4 @@
+---
 name: Python Semantic Release Composite
 inputs:
   PyVersionLatest:
@@ -18,21 +19,21 @@ outputs:
 runs:
   using: composite
   steps:
-  - name: Use Python ${{inputs.PyVersionLatest}}
-    uses: actions/setup-python@v5.0.0
-    with:
-      python-version: "${{inputs.PyVersionLatest}}"
-      architecture: x64
-  - name: PSR Setup
-    run: python -m pip install --upgrade python-semantic-release
-    working-directory: "${{inputs.PkgRootFolder}}"
-    shell: bash
-  - name: PSR Version
-    id: pythonsemanticrelease
-    working-directory: "${{inputs.PkgRootFolder}}"
-    # PSR only used for settingg the version number in setup.py and creating changelog
-    # Everything else outsourced to other apps
-    # See https://github.com/python-semantic-release/python-semantic-release/issues/589
-    # TODO: Patch only for testing
-    run: semantic-release -vv -c python-semantic-release.json version --minor --changelog --no-commit --no-tag --no-push --no-vcs-release --skip-build
-    shell: bash
+    - name: Use Python ${{inputs.PyVersionLatest}}
+      uses: actions/setup-python@v5.0.0
+      with:
+        python-version: "${{inputs.PyVersionLatest}}"
+        architecture: x64
+    - name: PSR Setup
+      run: python -m pip install --upgrade python-semantic-release
+      working-directory: "${{inputs.PkgRootFolder}}"
+      shell: bash
+    - name: PSR Version
+      id: pythonsemanticrelease
+      working-directory: "${{inputs.PkgRootFolder}}"
+      # PSR only used for settingg the version number in setup.py and creating changelog
+      # Everything else outsourced to other apps
+      # See https://github.com/python-semantic-release/python-semantic-release/issues/589
+      # TODO: Patch only for testing
+      run: semantic-release -vv -c python-semantic-release.json version --minor --changelog --no-commit --no-tag --no-push --no-vcs-release --skip-build
+      shell: bash

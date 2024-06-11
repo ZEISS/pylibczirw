@@ -1,3 +1,4 @@
+---
 name: Build
 on:
   push:
@@ -14,7 +15,7 @@ jobs:
     uses: "./.github/workflows/build-reusable.yml"
     with:
       Pure: false
-      PyVersionLatest: '3.11'
+      PyVersionLatest: "3.11"
       # Relative to github.workspace
       PySourceFolder: "pylibCZIrw"
       PkgName: pylibCZIrw

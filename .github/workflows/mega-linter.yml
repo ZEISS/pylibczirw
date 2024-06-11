@@ -5,9 +5,9 @@ name: MegaLinter
 
 on:
   push:
-    branches: ["main"]  # run only when merge with main branch
+    branches: ["main"] # run only when merge with main branch
   pull_request:
-    branches: ["main"]  # run only when merge with main branch
+    branches: ["main"] # run only when merge with main branch
 
 concurrency:
   group: ${{ github.ref }}-${{ github.workflow }}

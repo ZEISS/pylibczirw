@@ -1,11 +1,11 @@
 """Module implementing minimal integration tests for CziReader using URI"""
 
-from typing import Dict, Tuple, Optional
-import tempfile
 import os
-import pytest
+import tempfile
+from typing import Dict, Optional, Tuple
 
-from pylibCZIrw.czi import create_czi, open_czi, Rectangle, ReaderFileInputTypes
+import pytest
+from pylibCZIrw.czi import ReaderFileInputTypes, Rectangle, create_czi, open_czi
 
 working_dir = os.path.dirname(os.path.abspath(__file__))
 

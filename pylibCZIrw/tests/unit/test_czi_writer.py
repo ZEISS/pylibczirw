@@ -2,17 +2,15 @@
 
 import re
 import tempfile
+from os.path import join
 from typing import Dict, Optional
 from unittest import mock
 from unittest.mock import call, patch
-from os.path import join
-
-import pytest
-import numpy as np
 
 import _pylibCZIrw
-from pylibCZIrw.czi import CziWriter, CziReader, create_czi
-
+import numpy as np
+import pytest
+from pylibCZIrw.czi import CziReader, CziWriter, create_czi
 
 # testing static functions
 
@@ -37,7 +35,11 @@ def test_format_plane(plane: Dict[str, int], expected: str) -> None:
     [
         ({"C": 0, "T": 0, "Z": 8}, 0, {"T": 0, "Z": 8, "C": 0, "S": 0}),
         ({"R": 0, "Z": 100, "T": 8}, 3, {"T": 8, "Z": 100, "C": 0, "S": 3}),
-        ({"C": 0, "T": 0, "Z": 8, "H": 200, "B": 3, "R": -1}, 5, {"T": 0, "Z": 8, "C": 0, "S": 5}),
+        (
+            {"C": 0, "T": 0, "Z": 8, "H": 200, "B": 3, "R": -1},
+            5,
+            {"T": 0, "Z": 8, "C": 0, "S": 5},
+        ),
     ],
 )
 def test_create_plane(plane: Dict[str, int], scene: int, expected: Dict[str, int]) -> None:
@@ -210,7 +212,8 @@ def test_format_data_rgb() -> None:
         dtype="uint8",
     )
     expected = _pylibCZIrw.PImage(
-        data.reshape((data.shape[0], data.shape[1], data.shape[2])), _pylibCZIrw.PixelType.Bgr24
+        data.reshape((data.shape[0], data.shape[1], data.shape[2])),
+        _pylibCZIrw.PixelType.Bgr24,
     )
     data_libczi = CziWriter._format_data(data)
     np.testing.assert_array_equal(np.array(data_libczi), np.array(expected))
@@ -227,7 +230,10 @@ def test_channel_dimension() -> None:
         dtype="uint8",
     )
     with pytest.raises(ValueError, match="Incorrect Channel dimension!"):
-        _ = _pylibCZIrw.PImage(data.reshape((data.shape[0], data.shape[1], data.shape[2])), _pylibCZIrw.PixelType.Bgr24)
+        _ = _pylibCZIrw.PImage(
+            data.reshape((data.shape[0], data.shape[1], data.shape[2])),
+            _pylibCZIrw.PixelType.Bgr24,
+        )
         _ = CziWriter._format_data(data)
 
 
@@ -243,7 +249,9 @@ def test_metadata_written_on_close(write_metadata_mock: mock.Mock) -> None:
 
 
 @mock.patch("pylibCZIrw.czi.CziWriter.write_metadata")
-def test_metadata_not_written_if_already_written(write_metadata_mock: mock.Mock) -> None:
+def test_metadata_not_written_if_already_written(
+    write_metadata_mock: mock.Mock,
+) -> None:
     """Tests that metadata is written when closing the file, if no metadata was yet written."""
     with tempfile.TemporaryDirectory() as td:
         writer = CziWriter(join(td, "test"))
@@ -307,7 +315,7 @@ def test_write_czi_check_file_compression_none(compression_options: str) -> None
         test_czi.close()
         np.testing.assert_array_equal(pixeldata, data)
         assert bounding_box["X"] == (0, 2) and bounding_box["Y"] == (0, 3)
-        assert bounding_box["C"] == (0, 1) and bounding_box["T"] == (0, 1) and bounding_box["Z"] == (0, 1)
+        assert (bounding_box["C"] == (0, 1) and bounding_box["T"] == (0, 1) and bounding_box["Z"] == (0, 1))
 
 
 def test_write_czi_check_file_compression_invalid() -> None:
@@ -338,7 +346,9 @@ def test_write_czi_check_file_compression_invalid() -> None:
         "zstd1:ExplicitLevel=0",
     ],
 )
-def test_write_czi_with_write_specific_compressionoptions_check_file(compression_options: str) -> None:
+def test_write_czi_with_write_specific_compressionoptions_check_file(
+    compression_options: str,
+) -> None:
     """Write a subblock to a newly created CZI-file, read the CZI-file and compare the pixeldata - while
     using different compression_options with the write-call.
     """
@@ -364,7 +374,7 @@ def test_write_czi_with_write_specific_compressionoptions_check_file(compression
         test_czi.close()
         np.testing.assert_array_equal(pixeldata, data)
         assert bounding_box["X"] == (0, 2) and bounding_box["Y"] == (0, 3)
-        assert bounding_box["C"] == (0, 1) and bounding_box["T"] == (0, 1) and bounding_box["Z"] == (0, 1)
+        assert (bounding_box["C"] == (0, 1) and bounding_box["T"] == (0, 1) and bounding_box["Z"] == (0, 1))
 
 
 @pytest.mark.parametrize(
@@ -373,7 +383,9 @@ def test_write_czi_with_write_specific_compressionoptions_check_file(compression
 )
 @patch("pylibCZIrw.czi.CziWriter.write")
 def test_overwrite_compression(
-    write_mock: mock.Mock, compression_options_global: Optional[str], compression_options_overwrite: Optional[str]
+    write_mock: mock.Mock,
+    compression_options_global: Optional[str],
+    compression_options_overwrite: Optional[str],
 ) -> None:
     """Write a subblock to a newly created CZI-file, while overwriting the compression_option in write function.
     Check if the compression_options are overwritten successfully.
@@ -389,7 +401,10 @@ def test_overwrite_compression(
     calls = [call(data, (0, 0), {"C": 0, "T": 0, "Z": 0}, compression_options_overwrite, 0)]
 
     with tempfile.TemporaryDirectory() as td:
-        with create_czi(filepath=join(td, "test.czi"), compression_options=compression_options_global) as test_czi:
+        with create_czi(
+            filepath=join(td, "test.czi"),
+            compression_options=compression_options_global,
+        ) as test_czi:
             test_czi.write(data, (0, 0), {"C": 0, "T": 0, "Z": 0}, compression_options_overwrite, 0)
             test_czi.write_metadata()
 

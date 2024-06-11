@@ -1,13 +1,13 @@
 """Module implementing integration tests for the read function of the CziReader class"""
 
 import os
-from typing import Dict, Tuple, List, Optional
-from functools import partial
 from concurrent.futures import ThreadPoolExecutor
-import pytest
-import numpy as np
+from functools import partial
+from typing import Dict, List, Optional, Tuple
 
-from pylibCZIrw.czi import open_czi, CacheType, CacheOptions, ReaderFileInputTypes
+import numpy as np
+import pytest
+from pylibCZIrw.czi import CacheOptions, CacheType, ReaderFileInputTypes, open_czi
 
 working_dir = os.path.dirname(os.path.abspath(__file__))
 
@@ -23,10 +23,18 @@ EXPECTED_PLANE_ZOOM07_TEST3 = np.load(os.path.join(working_dir, "../test_data", 
 
 CZI_DOCUMENT_TEST4 = os.path.join(working_dir, "../test_data", "c1_gray8_s2_non_overlapping_bounding_boxes.czi")
 EXPECTED_PLANE_S0_ZOOM05_TEST4 = np.load(
-    os.path.join(working_dir, "../test_data", "c1_gray8_s2_non_overlapping_bounding_boxes_plane_s0_zoom05.npz")
+    os.path.join(
+        working_dir,
+        "../test_data",
+        "c1_gray8_s2_non_overlapping_bounding_boxes_plane_s0_zoom05.npz",
+    )
 )["arr"]
 EXPECTED_PLANE_S1_TEST4 = np.load(
-    os.path.join(working_dir, "../test_data", "c1_gray8_s2_non_overlapping_bounding_boxes_plane_s1.npz")
+    os.path.join(
+        working_dir,
+        "../test_data",
+        "c1_gray8_s2_non_overlapping_bounding_boxes_plane_s1.npz",
+    )
 )["arr"]
 
 CZI_DOCUMENT_TEST5 = os.path.join(working_dir, "../test_data", "c1_gray8_s2_overlapping_bounding_boxes.czi")
@@ -51,7 +59,7 @@ EXPECTED_PLANE_S1_C0_Z4_T1_TEST8 = np.load(
     os.path.join(working_dir, "../test_data", "c2_gray8_t3_z5_s2_plane_s1_c0_z4_t1.npz")
 )["arr"]
 # Note: This file is not part of the repo and so is untracked. If tests fail, make sure that this have not been deleted.
-CZI_DOCUMENT_TEST9 = "https://cadevelop.blob.core.windows.net/public/pylibCZIrwTestFiles/c1_bgr24.czi"
+CZI_DOCUMENT_TEST9 = ("https://cadevelop.blob.core.windows.net/public/pylibCZIrwTestFiles/c1_bgr24.czi")
 EXPECTED_PLANE_TEST9 = np.load(os.path.join(working_dir, "../test_data", "c1_bgr24_plane.npz"))["arr"]
 
 
@@ -311,7 +319,18 @@ EXPECTED_PLANE_TEST9 = np.load(os.path.join(working_dir, "../test_data", "c1_bgr
             0,
             EXPECTED_PLANE_C1_TEST7,
         ),
-        (CZI_DOCUMENT_TEST9, None, None, 1.0, None, None, ReaderFileInputTypes.Curl, None, None, EXPECTED_PLANE_TEST9),
+        (
+            CZI_DOCUMENT_TEST9,
+            None,
+            None,
+            1.0,
+            None,
+            None,
+            ReaderFileInputTypes.Curl,
+            None,
+            None,
+            EXPECTED_PLANE_TEST9,
+        ),
         (
             CZI_DOCUMENT_TEST9,
             None,
@@ -454,19 +473,32 @@ def test_read(
         )
         np.testing.assert_array_equal(plane_array, expected_result)
     if expected_cache_elements_count is not None:
-        assert czi_document.get_cache_info().elements_count == expected_cache_elements_count
+        assert (czi_document.get_cache_info().elements_count == expected_cache_elements_count)
 
 
 @pytest.mark.parametrize(
     "czi_path, plane, scene, zoom, rois, pixel_type, expected",
     [
-        (CZI_DOCUMENT_TEST1, None, None, 1.0, [None] * 3, None, [EXPECTED_PLANE_TEST1] * 3),
+        (
+            CZI_DOCUMENT_TEST1,
+            None,
+            None,
+            1.0,
+            [None] * 3,
+            None,
+            [EXPECTED_PLANE_TEST1] * 3,
+        ),
         (
             CZI_DOCUMENT_TEST1,
             None,
             None,
             None,
-            [(0, 0, 100, 100), (0, 0, 200, 200), (100, 100, 100, 100), (100, 100, 200, 200)],
+            [
+                (0, 0, 100, 100),
+                (0, 0, 200, 200),
+                (100, 100, 100, 100),
+                (100, 100, 200, 200),
+            ],
             None,
             [
                 EXPECTED_PLANE_TEST1[:100, :100],
@@ -491,7 +523,14 @@ def test_read_concurrently(
         with ThreadPoolExecutor() as executor:
             plane_arrays = list(
                 executor.map(
-                    partial(czi_document.read, plane=plane, scene=scene, zoom=zoom, pixel_type=pixel_type), rois
+                    partial(
+                        czi_document.read,
+                        plane=plane,
+                        scene=scene,
+                        zoom=zoom,
+                        pixel_type=pixel_type,
+                    ),
+                    rois,
                 )
             )
 

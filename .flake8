@@ -1,0 +1,18 @@
+# Use black for general linting decision-making
+[flake8]
+# Thin wrapper around pydocstyle that directly calls check() API
+# See https://pypi.org/project/flake8-docstrings/
+# Benefits over using pydocstyle directly:
+# - proper output format (same as the rest of flake8) that can be regex-parsed
+# - no stupid match patterns that silently ignore test files
+# activated when running flake8 as soon as flake8-docstrings is installed (no further configuration required)
+# Beware of the following issues/bugs:
+# https://github.com/PyCQA/pydocstyle/issues/459
+# https://github.com/PyCQA/pydocstyle/issues/461
+docstring-convention=google
+# ignore 1 blank line between summary line and description (D205) enforcement since we do not always use summary lines.
+# ignore First line should end with a period, question mark, or exclamation point (D415) for the same reason
+# Following https://github.com/psf/black/blob/master/docs/compatible_configs.md#black-compatible-configurations
+max-line-length=120
+extend-ignore=D205,D415,E203
+extend-exclude=build/,out/,libs/

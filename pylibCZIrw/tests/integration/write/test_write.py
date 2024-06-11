@@ -1,16 +1,21 @@
 """Module implementing integration tests for the write function of the CziWriter class"""
 
 import os
-from os.path import join, abspath, dirname
-from collections import OrderedDict
 import tempfile
-from typing import List, Tuple, Optional, Union, Iterator, Dict
-from unittest.mock import patch, MagicMock
-import pytest
-import numpy as np
+from collections import OrderedDict
+from os.path import abspath, dirname, join
+from typing import Dict, Iterator, List, Optional, Tuple, Union
+from unittest.mock import MagicMock, patch
 
-from pylibCZIrw.czi import create_czi, ChannelDisplaySettingsDataClass, Rgb8Color, TintingMode
-from pylibCZIrw.czi import open_czi
+import numpy as np
+import pytest
+from pylibCZIrw.czi import (
+    ChannelDisplaySettingsDataClass,
+    Rgb8Color,
+    TintingMode,
+    create_czi,
+    open_czi,
+)
 
 working_dir = dirname(abspath(__file__))
 
@@ -57,7 +62,10 @@ def get_plane(path: str, roi: Optional[Tuple[int, int, int, int]]) -> np.ndarray
     ],
 )
 def test_write_roi_pixeltypes(
-    plane: str, location: Tuple[int, int], roi: Optional[Tuple[int, int, int, int]], expected: np.ndarray
+    plane: str,
+    location: Tuple[int, int],
+    roi: Optional[Tuple[int, int, int, int]],
+    expected: np.ndarray,
 ) -> None:
     """Integration tests for the basic features of the write function"""
     with tempfile.TemporaryDirectory() as temp_directory:
@@ -165,7 +173,7 @@ def test_write_metadata_application_version_matches_package_version() -> None:
         # Assert
         with open_czi(join(td, "test.czi")) as czi_document:
             actual_metadata = czi_document.metadata
-        assert actual_metadata["ImageDocument"]["Metadata"]["Information"]["Application"]["Version"] == setup_version
+        assert (actual_metadata["ImageDocument"]["Metadata"]["Information"]["Application"]["Version"] == setup_version)
 
 
 @pytest.mark.parametrize(
@@ -175,15 +183,35 @@ def test_write_metadata_application_version_matches_package_version() -> None:
             {0: "TestCh0", 1: "TestCh1"},
             {
                 0: ChannelDisplaySettingsDataClass(
-                    True, TintingMode.Color, Rgb8Color(np.uint8(0x01), np.uint8(0x02), np.uint8(0x03)), 0.2, 0.8
+                    True,
+                    TintingMode.Color,
+                    Rgb8Color(np.uint8(0x01), np.uint8(0x02), np.uint8(0x03)),
+                    0.2,
+                    0.8,
                 ),
                 1: ChannelDisplaySettingsDataClass(
-                    True, TintingMode.Color, Rgb8Color(np.uint8(0xFF), np.uint8(0xFE), np.uint8(0xFD)), 0.3, 0.7
+                    True,
+                    TintingMode.Color,
+                    Rgb8Color(np.uint8(0xFF), np.uint8(0xFE), np.uint8(0xFD)),
+                    0.3,
+                    0.7,
                 ),
             },
             [
-                {"IsSelected": "true", "Color": "#FF010203", "ColorMode": "Color", "Low": "0.2", "High": "0.8"},
-                {"IsSelected": "true", "Color": "#FFFFFEFD", "ColorMode": "Color", "Low": "0.3", "High": "0.7"},
+                {
+                    "IsSelected": "true",
+                    "Color": "#FF010203",
+                    "ColorMode": "Color",
+                    "Low": "0.2",
+                    "High": "0.8",
+                },
+                {
+                    "IsSelected": "true",
+                    "Color": "#FFFFFEFD",
+                    "ColorMode": "Color",
+                    "Low": "0.3",
+                    "High": "0.7",
+                },
             ],
         ),
         (None, None, None),
@@ -226,12 +254,19 @@ def test_write_sample_metadata_and_compare(
             channels_parsed = list(__flatten(list(actual_display_settings["Channels"].values())))
         else:
             channels_parsed = None
-        assert channels_parsed == expected  # Do not rely on name of channels but rather the order
+        assert (channels_parsed == expected)  # Do not rely on name of channels but rather the order
 
 
 @pytest.mark.parametrize(
     "shape",
-    [(3600, 3600, 3), (3601, 3601, 3), (20, 400000, 3), (3601, 3601, 1), (480, 640), (3008, 4096)],
+    [
+        (3600, 3600, 3),
+        (3601, 3601, 3),
+        (20, 400000, 3),
+        (3601, 3601, 1),
+        (480, 640),
+        (3008, 4096),
+    ],
 )
 @patch("_pylibCZIrw.czi_writer.AddTile")
 def test_different_image_shapes(_divide_image_patch: MagicMock, shape: Tuple[int, int, int]) -> None:

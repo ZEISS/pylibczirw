@@ -5,17 +5,17 @@ This czi document can be use to read and write czi.
 """
 
 import contextlib
-from os import makedirs
-from os.path import isfile, abspath, dirname
-from typing import Callable, Dict, Tuple, Optional, NamedTuple, Union, Generator, Any
+import uuid
 from dataclasses import dataclass
 from enum import Enum
-import uuid
-import numpy as np
-import xmltodict
-import validators
+from os import makedirs
+from os.path import abspath, dirname, isfile
+from typing import Any, Callable, Dict, Generator, NamedTuple, Optional, Tuple, Union
 
 import _pylibCZIrw
+import numpy as np
+import validators
+import xmltodict
 
 Rectangle = NamedTuple("Rectangle", [("x", int), ("y", int), ("w", int), ("h", int)])
 Location = NamedTuple("Location", [("x", int), ("y", int)])
@@ -288,7 +288,8 @@ class CziReader:
         return total_bounding_box_layer0
 
     def _extract_scenes_bounding_rectangles(
-        self, extract_scene_bounding_box: Callable[[_pylibCZIrw.BoundingBoxes], Rectangle]
+        self,
+        extract_scene_bounding_box: Callable[[_pylibCZIrw.BoundingBoxes], Rectangle],
     ) -> Dict[int, Rectangle]:
         """Get the bounding rectangle of all scenes in the document and returns it
         in a dictionary where scene indexes are the keys and the bounding rectangles the values.
@@ -1067,7 +1068,7 @@ class CziWriter:
             for j in range(num_rows):
                 right = None if i == num_cols - 1 else (width // num_cols) * (i + 1)
                 bottom = None if j == num_rows - 1 else (length // num_rows) * (j + 1)
-                subdata = data[(width // num_cols) * i : right, (length // num_rows) * j : bottom]
+                subdata = data[(width // num_cols) * i: right, (length // num_rows) * j: bottom]
                 yield subdata
 
     def write(
@@ -1113,7 +1114,12 @@ class CziWriter:
             location_libczi = Location(curr_x, curr_y)
             if compression_options is None:
                 if not self._czi_writer.AddTile(
-                    plane_libczi, data_libczi, location_libczi.x, location_libczi.y, m_index, retiling_id
+                    plane_libczi,
+                    data_libczi,
+                    location_libczi.x,
+                    location_libczi.y,
+                    m_index,
+                    retiling_id,
                 ):
                     return False
             else:
@@ -1163,7 +1169,9 @@ class CziWriter:
         return customvalue
 
     @staticmethod
-    def _create_display_setting(value: ChannelDisplaySettingsDataClass) -> _pylibCZIrw.ChannelDisplaySettingsStruct:
+    def _create_display_setting(
+        value: ChannelDisplaySettingsDataClass,
+    ) -> _pylibCZIrw.ChannelDisplaySettingsStruct:
         """Convert the ChannelDisplaySettingsDataClass value into a ChannelDisplaySettingsPOD object
 
         Parameters
@@ -1233,14 +1241,26 @@ class CziWriter:
         channel_names = channel_names or {}
         display_settings_dict = {}
         if display_settings:
-            for display_settings_key, display_settings_value in display_settings.items():
-                display_settings_dict[display_settings_key] = self._create_display_setting(display_settings_value)
+            for (
+                display_settings_key,
+                display_settings_value,
+            ) in display_settings.items():
+                display_settings_dict[display_settings_key] = (self._create_display_setting(display_settings_value))
         custom_attributes_dict = {}
         if custom_attributes:
-            for custom_attributes_key, custom_attributes_value in custom_attributes.items():
-                custom_attributes_dict[custom_attributes_key] = self._create_customvalue(custom_attributes_value)
+            for (
+                custom_attributes_key,
+                custom_attributes_value,
+            ) in custom_attributes.items():
+                custom_attributes_dict[custom_attributes_key] = (self._create_customvalue(custom_attributes_value))
         self._czi_writer.WriteMetadata(
-            document_name, scale_x, scale_y, scale_z, channel_names, custom_attributes_dict, display_settings_dict
+            document_name,
+            scale_x,
+            scale_y,
+            scale_z,
+            channel_names,
+            custom_attributes_dict,
+            display_settings_dict,
         )
         self._metadata_writen = True
 
