@@ -83,4 +83,4 @@ disable=broad-except,
 
 [PARAMETER DOCUMENTATION]
 
-default-docstring-type = "google"
+default-docstring-type = google

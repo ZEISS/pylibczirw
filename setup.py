@@ -173,10 +173,10 @@ class CMakeBuild(build_ext):
             os.makedirs(self.build_temp)
         if self.debug:
             print("cmake build path: " + self.build_temp)
-            print("cmake compile: " + " ".join(["cmake", ext.sourcedir, cmake_args]))
+            print("cmake compile: " + " ".join(["cmake", str(ext.sourcedir), cmake_args]))
         subprocess.check_call(["cmake", ext.sourcedir] + cmake_args, cwd=self.build_temp, env=env)  # nosec
         if self.debug:
-            print(" ".join(["cmake build:", "cmake", "--build", ".", "--target", "_pylibCZIrw", build_args]))
+            print(" ".join(["cmake build:", "cmake", "--build", ".", "--target", "_pylibCZIrw", str(build_args)]))
         subprocess.check_call(  # nosec
             ["cmake", "--build", ".", "--target", "_pylibCZIrw"] + build_args,
             cwd=self.build_temp,
