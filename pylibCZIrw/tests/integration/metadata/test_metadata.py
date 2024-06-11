@@ -259,9 +259,7 @@ def test_custom_attributes(custom_attributes: Optional[Dict[str, Any]]) -> None:
         {"key1": (1, 2)},
     ],
 )
-def test_custom_attributes_write_error(
-    custom_attributes: Optional[Dict[str, Any]]
-) -> None:
+def test_custom_attributes_write_error(custom_attributes: Optional[Dict[str, Any]]) -> None:
     """Test if throws errors when the type of custom attributes is not accepted while writing"""
     with tempfile.TemporaryDirectory() as temp_directory:
         with create_czi(os.path.join(temp_directory, "./test.czi")) as test_czi:

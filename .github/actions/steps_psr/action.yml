@@ -1,5 +1,6 @@
 ---
 name: Python Semantic Release Composite
+description: Composite action to calculate semantic version through PSR
 inputs:
   PyVersionLatest:
     required: true

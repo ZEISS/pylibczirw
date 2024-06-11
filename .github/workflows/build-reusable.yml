@@ -49,7 +49,6 @@ jobs:
           fetch-depth: 0
       - id: psr
         name: Python Semantic Release
-        description: Determine PSR Version
         uses: "./.github/actions/steps_psr"
         with:
           PyVersionLatest: "${{inputs.PyVersionLatest}}"
@@ -115,7 +114,6 @@ jobs:
           fetch-depth: 0
       - uses: "./.github/actions/steps_package"
         name: Package
-        description: Package wheels
         with:
           PyVersionLatest: "${{inputs.PyVersionLatest}}"
           PkgRootFolder: "${{ github.workspace }}/${{inputs.PkgRootFolder}}"
@@ -189,14 +187,12 @@ jobs:
           fetch-depth: 0
       - id: psr
         name: Python Semantic Release
-        description: Determine PSR Version
         uses: "./.github/actions/steps_psr"
         with:
           PyVersionLatest: "${{inputs.PyVersionLatest}}"
           PkgRootFolder: "${{ github.workspace }}/${{inputs.PkgRootFolder}}"
       - uses: "./.github/actions/steps_download"
         name: Download Wheels
-        description: Download wheels
         with:
           PyVersionLatest: "${{inputs.PyVersionLatest}}"
           ArtifactName: Wheel${{inputs.PyVersionLatest}}
@@ -222,7 +218,6 @@ jobs:
           fetch-depth: 0
       - id: psr
         name: Python Semantic Release
-        description: Determine PSR Version
         uses: "./.github/actions/steps_psr"
         with:
           PyVersionLatest: "${{inputs.PyVersionLatest}}"
@@ -253,11 +248,11 @@ jobs:
     # If conditional based on https://github.com/actions/runner/issues/491#issuecomment-850884422
     if: |
       always() &&
-      github.event_name != 'pull_request' && 
-      contains(fromJSON('["skipped", "success"]'), needs.DownloadTestSdist.result) && 
-      contains(fromJSON('["skipped", "success"]'), needs.DownloadTestWheelsPure.result) && 
-      contains(fromJSON('["skipped", "success"]'), needs.PackageWheelsNonPure.result) && 
-      contains(fromJSON('["skipped", "success"]'), needs.PackageWheelsPure.result) && 
+      github.event_name != 'pull_request' &&
+      contains(fromJSON('["skipped", "success"]'), needs.DownloadTestSdist.result) &&
+      contains(fromJSON('["skipped", "success"]'), needs.DownloadTestWheelsPure.result) &&
+      contains(fromJSON('["skipped", "success"]'), needs.PackageWheelsNonPure.result) &&
+      contains(fromJSON('["skipped", "success"]'), needs.PackageWheelsPure.result) &&
       contains(fromJSON('["skipped", "success"]'), needs.PackageSdist.result) &&
       needs.CodeQualityAnalysis-Test.result == 'success' &&
       needs.CodeQualityAnalysis-Test.outputs.pypi_released == 'true'

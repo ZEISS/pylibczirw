@@ -59,7 +59,7 @@ EXPECTED_PLANE_S1_C0_Z4_T1_TEST8 = np.load(
     os.path.join(working_dir, "../test_data", "c2_gray8_t3_z5_s2_plane_s1_c0_z4_t1.npz")
 )["arr"]
 # Note: This file is not part of the repo and so is untracked. If tests fail, make sure that this have not been deleted.
-CZI_DOCUMENT_TEST9 = ("https://cadevelop.blob.core.windows.net/public/pylibCZIrwTestFiles/c1_bgr24.czi")
+CZI_DOCUMENT_TEST9 = "https://cadevelop.blob.core.windows.net/public/pylibCZIrwTestFiles/c1_bgr24.czi"
 EXPECTED_PLANE_TEST9 = np.load(os.path.join(working_dir, "../test_data", "c1_bgr24_plane.npz"))["arr"]
 
 
@@ -473,7 +473,7 @@ def test_read(
         )
         np.testing.assert_array_equal(plane_array, expected_result)
     if expected_cache_elements_count is not None:
-        assert (czi_document.get_cache_info().elements_count == expected_cache_elements_count)
+        assert czi_document.get_cache_info().elements_count == expected_cache_elements_count
 
 
 @pytest.mark.parametrize(

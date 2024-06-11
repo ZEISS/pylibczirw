@@ -315,7 +315,7 @@ def test_write_czi_check_file_compression_none(compression_options: str) -> None
         test_czi.close()
         np.testing.assert_array_equal(pixeldata, data)
         assert bounding_box["X"] == (0, 2) and bounding_box["Y"] == (0, 3)
-        assert (bounding_box["C"] == (0, 1) and bounding_box["T"] == (0, 1) and bounding_box["Z"] == (0, 1))
+        assert bounding_box["C"] == (0, 1) and bounding_box["T"] == (0, 1) and bounding_box["Z"] == (0, 1)
 
 
 def test_write_czi_check_file_compression_invalid() -> None:
@@ -374,7 +374,7 @@ def test_write_czi_with_write_specific_compressionoptions_check_file(
         test_czi.close()
         np.testing.assert_array_equal(pixeldata, data)
         assert bounding_box["X"] == (0, 2) and bounding_box["Y"] == (0, 3)
-        assert (bounding_box["C"] == (0, 1) and bounding_box["T"] == (0, 1) and bounding_box["Z"] == (0, 1))
+        assert bounding_box["C"] == (0, 1) and bounding_box["T"] == (0, 1) and bounding_box["Z"] == (0, 1)
 
 
 @pytest.mark.parametrize(

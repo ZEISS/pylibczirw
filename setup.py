@@ -3,7 +3,7 @@
 import os
 import platform
 import re
-import subprocess
+import subprocess  # nosec blacklist
 import sys
 from distutils.version import LooseVersion
 from pathlib import Path
@@ -35,7 +35,7 @@ class CMakeExtension(Extension):
 class CMakeBuild(build_ext):
     def run(self) -> None:
         try:
-            out = subprocess.check_output(["cmake", "--version"])
+            out = subprocess.check_output(["cmake", "--version"])  # nosec
         except OSError:
             raise RuntimeError(
                 "CMake must be installed and available at PATH ({0}) to build the following extensions: {1}".format(
@@ -111,23 +111,23 @@ class CMakeBuild(build_ext):
                 # On the CI/CD-server, we set the variable "BUILDWHEEL_STATIC_OPENSSL" in order to instruct running a
                 # local build of openSSL (and instruct the libCZI-build to use it)
                 print("Building static openssl and zlib dependencies locally.")
-                subprocess.run(
+                subprocess.run(  # nosec
                     "cd /tmp && "
                     "git clone --branch v1.3 https://github.com/madler/zlib.git && "
                     "cd zlib && "
                     "CFLAGS=-fPIC ./configure --static && "
                     "make -j2 && "
                     "make install",
-                    shell=True,
+                    shell=True,  # nosec
                 )
-                subprocess.run(
+                subprocess.run(  # nosec
                     "cd /tmp && "
                     "git clone --branch openssl-3.2.0 https://github.com/openssl/openssl.git && "
                     "cd openssl && "
                     "mkdir build && "
                     "./config no-shared -static zlib -fPIC -L/usr/lib no-docs no-tests && "
                     "make -j2",
-                    shell=True,
+                    shell=True,  # nosec
                 )
                 cmake_args += [
                     "-DOPENSSL_USE_STATIC_LIBS=TRUE"
@@ -174,10 +174,10 @@ class CMakeBuild(build_ext):
         if self.debug:
             print("cmake build path: " + self.build_temp)
             print("cmake compile: " + " ".join(["cmake", ext.sourcedir, cmake_args]))
-        subprocess.check_call(["cmake", ext.sourcedir] + cmake_args, cwd=self.build_temp, env=env)
+        subprocess.check_call(["cmake", ext.sourcedir] + cmake_args, cwd=self.build_temp, env=env)  # nosec
         if self.debug:
             print(" ".join(["cmake build:", "cmake", "--build", ".", "--target", "_pylibCZIrw", build_args]))
-        subprocess.check_call(
+        subprocess.check_call(  # nosec
             ["cmake", "--build", ".", "--target", "_pylibCZIrw"] + build_args,
             cwd=self.build_temp,
             env=env,
@@ -187,7 +187,7 @@ class CMakeBuild(build_ext):
 def check_and_install_packages(packages: List[str], triplet: str, vcpkg_root: str) -> None:
     for package in packages:
         vcpkg_executable = os.path.join(vcpkg_root, "vcpkg")
-        result = subprocess.run(
+        result = subprocess.run(  # nosec
             [
                 vcpkg_executable,
                 "list",
@@ -202,7 +202,7 @@ def check_and_install_packages(packages: List[str], triplet: str, vcpkg_root: st
             print(f"{package} is already installed.")
         else:
             print(f"Installing {package}")
-            subprocess.run(
+            subprocess.run(  # nosec
                 [
                     vcpkg_executable,
                     "install",

@@ -1,5 +1,6 @@
 ---
 name: Package Composite
+description: Composite action to package and publish wheels
 inputs:
   PyVersionLatest:
     required: true

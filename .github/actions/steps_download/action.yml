@@ -1,5 +1,6 @@
 ---
 name: Download Composite
+description: Composite action to download and test wheels
 inputs:
   ArtifactName:
     required: true

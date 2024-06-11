@@ -279,7 +279,7 @@ def test_extract_scenes_bounding_box(
     test_czi = CziReader("filepath")
     test_czi._stats.sceneBoundingBoxes = scene_bounding_boxes
     test_czi._czi_reader.GetDimensionSize = mock.Mock(return_value=len(scene_bounding_boxes))
-    assert (test_czi._extract_scenes_bounding_rectangles(lambda x: x) == expected_scenes_bounding_rectangles)
+    assert test_czi._extract_scenes_bounding_rectangles(lambda x: x) == expected_scenes_bounding_rectangles
 
 
 @mock.patch("pylibCZIrw.czi._pylibCZIrw.czi_reader", mock.Mock())
@@ -432,14 +432,10 @@ def test_create_roi(roi: Optional[Rectangle], scene: Optional[int], expected: Re
 @mock.patch("pylibCZIrw.czi._pylibCZIrw.czi_reader", mock.Mock())
 def test_create_roi_raises_error_on_incorrect_scene() -> None:
     """Unit tests for _create_roi error messages"""
-    expected_error_message = (
-        "The scene index provided does not mach existing scenes in the czi document"
-    )
+    expected_error_message = "The scene index provided does not mach existing scenes in the czi document"
     with pytest.raises(ValueError, match=expected_error_message):
         test_czi = CziReader("filepath")
-        test_czi._stats = GetSubBlockStatsTest(
-            create_rectangle(0, 0, 1000, 1000), sceneBoundingBoxesTest3
-        )
+        test_czi._stats = GetSubBlockStatsTest(create_rectangle(0, 0, 1000, 1000), sceneBoundingBoxesTest3)
         test_czi._czi_reader.GetDimensionSize = dimension_sizes_test3.get
         test_czi._create_roi(None, 10)
 

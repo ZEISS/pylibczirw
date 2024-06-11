@@ -1068,7 +1068,7 @@ class CziWriter:
             for j in range(num_rows):
                 right = None if i == num_cols - 1 else (width // num_cols) * (i + 1)
                 bottom = None if j == num_rows - 1 else (length // num_rows) * (j + 1)
-                subdata = data[(width // num_cols) * i: right, (length // num_rows) * j: bottom]
+                subdata = data[(width // num_cols) * i : right, (length // num_rows) * j : bottom]
                 yield subdata
 
     def write(
@@ -1245,14 +1245,14 @@ class CziWriter:
                 display_settings_key,
                 display_settings_value,
             ) in display_settings.items():
-                display_settings_dict[display_settings_key] = (self._create_display_setting(display_settings_value))
+                display_settings_dict[display_settings_key] = self._create_display_setting(display_settings_value)
         custom_attributes_dict = {}
         if custom_attributes:
             for (
                 custom_attributes_key,
                 custom_attributes_value,
             ) in custom_attributes.items():
-                custom_attributes_dict[custom_attributes_key] = (self._create_customvalue(custom_attributes_value))
+                custom_attributes_dict[custom_attributes_key] = self._create_customvalue(custom_attributes_value)
         self._czi_writer.WriteMetadata(
             document_name,
             scale_x,

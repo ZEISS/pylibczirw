@@ -11,7 +11,8 @@ DISABLE_LINTERS:
   - PYTHON_PYRIGHT # Not used as of now in favour of MYPY
 DISABLE_ERRORS_LINTERS:
   - MARKDOWN_MARKDOWN_LINK_CHECK # Make non-blocking due to network timeouts etc.
-  - REPOSITORY_DEVSKIM # disable due to detected dubious ownership in repository at
+  - REPOSITORY_DEVSKIM # Make non-blocking due to detected dubious ownership in repository at
+  - MARKDOWN_MARKDOWNLINT
 # Python
 PYTHON_BLACK_ARGUMENTS: -v --line-length 120 --safe --check --diff --color
 PYTHON_MYPY_ARGUMENTS: -v --install-types --non-interactive

@@ -173,7 +173,7 @@ def test_write_metadata_application_version_matches_package_version() -> None:
         # Assert
         with open_czi(join(td, "test.czi")) as czi_document:
             actual_metadata = czi_document.metadata
-        assert (actual_metadata["ImageDocument"]["Metadata"]["Information"]["Application"]["Version"] == setup_version)
+        assert actual_metadata["ImageDocument"]["Metadata"]["Information"]["Application"]["Version"] == setup_version
 
 
 @pytest.mark.parametrize(
@@ -254,7 +254,7 @@ def test_write_sample_metadata_and_compare(
             channels_parsed = list(__flatten(list(actual_display_settings["Channels"].values())))
         else:
             channels_parsed = None
-        assert (channels_parsed == expected)  # Do not rely on name of channels but rather the order
+        assert channels_parsed == expected  # Do not rely on name of channels but rather the order
 
 
 @pytest.mark.parametrize(
