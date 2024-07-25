@@ -38,13 +38,12 @@ runs:
       # PSR only used for setting the version number in setup.py and creating changelog
       # Everything else outsourced to other apps
       # See https://github.com/python-semantic-release/python-semantic-release/issues/589
-      # TODO: Patch only for testing
       # Use static version in detached head (which in principle should only happen in PR)
       # Reason: https://github.com/python-semantic-release/python-semantic-release/issues/823
       run: |-
         if [[ "${{ github.event_name }}" != "pull_request" ]]
         then
-          semantic-release -vv -c python-semantic-release.json version --minor --changelog --no-commit --no-tag --no-push --no-vcs-release --skip-build
+          semantic-release -vv -c python-semantic-release.json version --changelog --no-commit --no-tag --no-push --no-vcs-release --skip-build
         else
           ver=$(python setup.py --version)
           echo "version=$ver" >> "$GITHUB_OUTPUT"

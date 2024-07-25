@@ -269,19 +269,19 @@ jobs:
         # Move to dist as default folder for publish action
         run: New-Item -Path "." -Name "dist" -ItemType "directory"; Get-ChildItem -Path ".\*.whl",".\*.tar.gz" -Recurse | Move-Item -Destination ".\dist"
         shell: pwsh
-  #    - name: Upload to PyPI
-  #      # As of 06/2024, trusted publishing does not work within reusable workflows located in a different repo
-  #      # Tracked in:
-  #      # https://github.com/pypa/gh-action-pypi-publish/issues/166
-  #      # https://github.com/pypi/warehouse/issues/11096
-  #      # https://docs.pypi.org/trusted-publishers/troubleshooting/#reusable-workflows-on-github
-  #      # More info on trusted publishing: https://blog.pypi.org/posts/2023-04-20-introducing-trusted-publishers/
-  #      uses: pypa/gh-action-pypi-publish@release/v1
-  #      with:
-  #        # TODO: Only for testing purposes
-  #        repository-url: https://test.pypi.org/legacy/
-  #        # Basically runs twine check
-  #        verify-metadata: true
+      - name: Upload to PyPI
+        # As of 06/2024, trusted publishing does not work within reusable workflows located in a different repo
+        # Tracked in:
+        # https://github.com/pypa/gh-action-pypi-publish/issues/166
+        # https://github.com/pypi/warehouse/issues/11096
+        # https://docs.pypi.org/trusted-publishers/troubleshooting/#reusable-workflows-on-github
+        # More info on trusted publishing: https://blog.pypi.org/posts/2023-04-20-introducing-trusted-publishers/
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          # TODO: Only for testing purposes (remove repository-url to push to PyPI)
+          repository-url: https://test.pypi.org/legacy/
+          # Basically runs twine check
+          verify-metadata: true
   Tag:
     permissions:
       contents: write
