@@ -7,9 +7,10 @@ from typing import Dict, Optional
 from unittest import mock
 from unittest.mock import call, patch
 
-import _pylibCZIrw
 import numpy as np
 import pytest
+
+import _pylibCZIrw
 from pylibCZIrw.czi import CziReader, CziWriter, create_czi
 
 # testing static functions

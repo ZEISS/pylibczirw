@@ -12,10 +12,11 @@ from os import makedirs
 from os.path import abspath, dirname, isfile
 from typing import Any, Callable, Dict, Generator, NamedTuple, Optional, Tuple, Union
 
-import _pylibCZIrw
 import numpy as np
 import validators
 import xmltodict
+
+import _pylibCZIrw
 
 Rectangle = NamedTuple("Rectangle", [("x", int), ("y", int), ("w", int), ("h", int)])
 Location = NamedTuple("Location", [("x", int), ("y", int)])
@@ -842,10 +843,11 @@ class CziWriter:
             String representation of compression options to be used as default (for this instance). If
             not specified, uncompressed is used.
         """
-        if compression_options is None:
-            czi_writer = _pylibCZIrw.czi_writer(filepath)
-        else:
-            czi_writer = _pylibCZIrw.czi_writer(filepath, compression_options)
+        czi_writer = (
+            _pylibCZIrw.czi_writer(filepath)
+            if compression_options is None
+            else _pylibCZIrw.czi_writer(filepath, compression_options)
+        )
 
         self._czi_writer: _pylibCZIrw.czi_writer = czi_writer
         self._m_dict: Dict[str, int] = {}
@@ -853,7 +855,7 @@ class CziWriter:
 
     def close(self) -> None:
         """Close the document and finalize the writing"""
-        try:
+        try:  # pylint: disable=too-many-try-statements
             if not self._metadata_writen:
                 self.write_metadata()
         finally:
@@ -1023,10 +1025,8 @@ class CziWriter:
         : int
             max length / width
         """
-        if cls._is_rgb(data):
-            max_extent = 1800
-        else:
-            max_extent = 3100
+        max_extent = 1800 if cls._is_rgb(data) else 3100
+
         return max_extent
 
     @staticmethod
@@ -1104,10 +1104,8 @@ class CziWriter:
         data_size = data.nbytes / 1000000
         retiling_id = str(uuid.uuid4())
 
-        if data_size > 10.0:
-            subdata_generator = self._divide_data(data)
-        else:
-            subdata_generator = (item for item in [data])
+        subdata_generator = self._divide_data(data) if data_size > 10.0 else (item for item in [data])
+
         for subarray in subdata_generator:
             m_index = self._get_m_index(plane_libczi)
             data_libczi = self._format_data(np.ascontiguousarray(subarray))
@@ -1123,7 +1121,7 @@ class CziWriter:
                 ):
                     return False
             else:
-                if not self._czi_writer.AddTileEx(
+                if not self._czi_writer.AddTileEx(  # pylint: disable=confusing-consecutive-elif, else-if-used
                     plane_libczi,
                     data_libczi,
                     location_libczi.x,

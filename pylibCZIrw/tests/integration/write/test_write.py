@@ -9,6 +9,7 @@ from unittest.mock import MagicMock, patch
 
 import numpy as np
 import pytest
+
 from pylibCZIrw.czi import (
     ChannelDisplaySettingsDataClass,
     Rgb8Color,
@@ -250,10 +251,11 @@ def test_write_sample_metadata_and_compare(
         with open_czi(join(td, "test.czi")) as czi_document:
             actual_metadata = czi_document.metadata
         actual_display_settings = actual_metadata["ImageDocument"]["Metadata"].get("DisplaySetting", None)
-        if actual_display_settings:
-            channels_parsed = list(__flatten(list(actual_display_settings["Channels"].values())))
-        else:
-            channels_parsed = None
+
+        channels_parsed = (
+            list(__flatten(list(actual_display_settings["Channels"].values()))) if actual_display_settings else None
+        )
+
         assert channels_parsed == expected  # Do not rely on name of channels but rather the order
 
 
@@ -289,10 +291,9 @@ def test_different_image_shapes(_divide_image_patch: MagicMock, shape: Tuple[int
     channel = 1
     if len(data.shape) > 2:
         channel = data.shape[-1]
-    if channel == 1:
-        max_extent = 3100
-    else:
-        max_extent = 1800
+
+    max_extent = 3100 if channel == 1 else 1800
+
     num_cols = _compute_num_parts(width, max_extent)
     num_rows = _compute_num_parts(length, max_extent)
     num_subblocks = num_cols * num_rows

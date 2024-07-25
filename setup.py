@@ -16,10 +16,10 @@ from setuptools.command.build_ext import build_ext
 # THIS IS UPDATED AUTOMATICALLY THROUGH PYTHON-SEMANTIC-RELEASE
 VERSION = "0.0.0"
 
-with open("INFO.md") as info_file:
+with open("INFO.md", encoding="utf-8") as info_file:
     info = info_file.read()
 
-with open("CHANGELOG.md") as changelog_file:
+with open("CHANGELOG.md", encoding="utf-8") as changelog_file:
     changelog = changelog_file.read()
 
 # List any runtime requirements here
@@ -27,21 +27,25 @@ requirements = ["numpy", "cmake", "xmltodict", "validators"]
 
 
 class CMakeExtension(Extension):
+    """Manages CMake specifics of this module."""
+
     def __init__(self, name: str, sourcedir: str = ""):
         Extension.__init__(self, name, sources=[])
         self.sourcedir = os.path.abspath(sourcedir)
 
 
 class CMakeBuild(build_ext):
+    """Manages CMake build specifics of this module."""
+
     def run(self) -> None:
+        """Runs CMake build."""
         try:
             out = subprocess.check_output(["cmake", "--version"])  # nosec
-        except OSError:
+        except OSError as exc:
             raise RuntimeError(
-                "CMake must be installed and available at PATH ({0}) to build the following extensions: {1}".format(
-                    os.environ.get("PATH"), ", ".join(e.name for e in self.extensions)
-                )
-            )
+                f"CMake must be installed and available at PATH ({os.environ.get('PATH')}) "
+                f"to build the following extensions: {', '.join(e.name for e in self.extensions)}"
+            ) from exc
         cmake_version = LooseVersion(
             re.search(r"version\s*([\d.]+)", out.decode()).group(1)  # type: ignore[union-attr]
         )
@@ -56,6 +60,8 @@ class CMakeBuild(build_ext):
             self.build_extension(ext)
 
     def build_extension(self, ext):  # type: ignore[no-untyped-def]
+        """Builds CMake extension."""
+
         path_var = os.environ["PATH"]
         path_var = str(Path(sys.executable).parent) + ":" + path_var
         env = dict(os.environ.copy(), PATH=path_var)
@@ -75,7 +81,7 @@ class CMakeBuild(build_ext):
         cmake_args += ["-DPYLIBCZIRW_VERSION=" + VERSION]  # Have the same version as the Python package
 
         if platform.system() == "Windows":
-            cmake_args += ["-DCMAKE_LIBRARY_OUTPUT_DIRECTORY_{}={}".format(cfg.upper(), extdir)]
+            cmake_args += [f"-DCMAKE_LIBRARY_OUTPUT_DIRECTORY_{cfg.upper()}={extdir}"]
             cmake_args += ["-DVCPKG_TARGET_TRIPLET=x64-windows-static"]
             vcpkg_installation_root = os.environ.get("VCPKG_INSTALLATION_ROOT", "C:\\vcpkg")
             if os.path.exists(vcpkg_installation_root):
@@ -119,6 +125,7 @@ class CMakeBuild(build_ext):
                     "make -j2 && "
                     "make install",
                     shell=True,  # nosec
+                    check=False,
                 )
                 subprocess.run(  # nosec
                     "cd /tmp && "
@@ -128,6 +135,7 @@ class CMakeBuild(build_ext):
                     "./config no-shared -static zlib -fPIC -L/usr/lib no-docs no-tests && "
                     "make -j2",
                     shell=True,  # nosec
+                    check=False,
                 )
                 cmake_args += [
                     "-DOPENSSL_USE_STATIC_LIBS=TRUE"
@@ -168,12 +176,14 @@ class CMakeBuild(build_ext):
             cmake_args += ["-DCMAKE_BUILD_TYPE=" + cfg]
             build_args += ["--", "-j2"]
 
-        env["CXXFLAGS"] = '{} -DVERSION_INFO=\\"{}\\"'.format(env.get("CXXFLAGS", ""), self.distribution.get_version())
+        env["CXXFLAGS"] = '{} -DVERSION_INFO=\\"{}\\"'.format(  # pylint: disable=consider-using-f-string
+            env.get("CXXFLAGS", ""), self.distribution.get_version()
+        )
         if not os.path.exists(self.build_temp):
             os.makedirs(self.build_temp)
         if self.debug:
             print("cmake build path: " + self.build_temp)
-            print("cmake compile: " + " ".join(["cmake", str(ext.sourcedir), cmake_args]))
+            print("cmake compile: " + " ".join(["cmake", str(ext.sourcedir), str(cmake_args)]))
         subprocess.check_call(["cmake", ext.sourcedir] + cmake_args, cwd=self.build_temp, env=env)  # nosec
         if self.debug:
             print(" ".join(["cmake build:", "cmake", "--build", ".", "--target", "_pylibCZIrw", str(build_args)]))
@@ -185,6 +195,8 @@ class CMakeBuild(build_ext):
 
 
 def check_and_install_packages(packages: List[str], triplet: str, vcpkg_root: str) -> None:
+    """Checks and installs required packages."""
+
     for package in packages:
         vcpkg_executable = os.path.join(vcpkg_root, "vcpkg")
         result = subprocess.run(  # nosec
@@ -197,6 +209,7 @@ def check_and_install_packages(packages: List[str], triplet: str, vcpkg_root: st
             ],
             capture_output=True,
             text=True,
+            check=False,
         )
         if package in result.stdout:
             print(f"{package} is already installed.")
@@ -209,7 +222,8 @@ def check_and_install_packages(packages: List[str], triplet: str, vcpkg_root: st
                     package,
                     f"--triplet={triplet}",
                     f"--vcpkg-root={vcpkg_root}",
-                ]
+                ],
+                check=False,
             )
     print("Installations complete")
 
@@ -227,7 +241,7 @@ setup(
     keywords="czi, imaging",
     ext_modules=[CMakeExtension("_pylibCZIrw")],
     packages=["pylibCZIrw"],
-    cmdclass=dict(build_ext=CMakeBuild),
+    cmdclass={"build_ext": CMakeBuild},
     install_requires=requirements,
     # we require at least python version 3.7
     python_requires=">=3.7,<3.12",

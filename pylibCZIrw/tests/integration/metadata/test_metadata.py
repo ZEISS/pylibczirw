@@ -8,6 +8,7 @@ from unittest.mock import PropertyMock, patch
 import numpy as np
 import pytest
 import xmltodict
+
 from pylibCZIrw.czi import CziReader, Rectangle, create_czi, open_czi
 
 working_dir = os.path.dirname(os.path.abspath(__file__))

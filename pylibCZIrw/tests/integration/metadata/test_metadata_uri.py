@@ -5,6 +5,7 @@ import tempfile
 from typing import Dict, Optional, Tuple
 
 import pytest
+
 from pylibCZIrw.czi import ReaderFileInputTypes, Rectangle, create_czi, open_czi
 
 working_dir = os.path.dirname(os.path.abspath(__file__))

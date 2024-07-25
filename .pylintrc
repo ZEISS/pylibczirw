@@ -1,9 +1,4 @@
 [MAIN]
-# A comma-separated list of package or module names from where C extensions may
-# be loaded. Extensions are loading into the active Python interpreter and may
-# run arbitrary code.
-extension-pkg-allow-list=_pylibCZIrw
-
 # Files or directories to be skipped. They should be base names, not paths.
 ignore=build,out,libs
 
@@ -57,6 +52,16 @@ logging-format-style=new
 # missing-yield-doc: Usually sufficiently described in summary.
 # missing-return-doc: Usually sufficiently described in summary.
 # import-error: Flaky and will anyway be detected through failing runtime tests
+# DISABLE as of regression from PYLINT 2.* to 3.*
+# consider-alternative-union-syntax
+# c-extension-no-member: See https://pylint.pycqa.org/en/v3.2.6/user_guide/messages/error/no-member.html
+# magic-value-comparison: Not critical
+# deprecated-typing-alias: Include again once dropping support for Python < 3.9 (https://peps.python.org/pep-0585/)
+# consider-using-assignment-expr: Include again once dropping support for Python < 3.9
+# See https://pylint.pycqa.org/en/latest/user_guide/messages/refactor/consider-using-assignment-expr.html)
+# deprecated-module
+# consider-using-tuple: No performance impact/benefit (only style).
+# See https://pylint.readthedocs.io/en/latest/user_guide/messages/refactor/consider-using-tuple.html
 disable=broad-except,
         invalid-name,
         no-member,
@@ -79,7 +84,14 @@ disable=broad-except,
         missing-yield-doc,
         missing-return-doc,
         missing-raises-doc,
-        import-error
+        import-error,
+        consider-alternative-union-syntax,
+        c-extension-no-member,
+        magic-value-comparison,
+        deprecated-typing-alias,
+        consider-using-assignment-expr,
+        deprecated-module,
+        consider-using-tuple
 
 [PARAMETER DOCUMENTATION]
 
