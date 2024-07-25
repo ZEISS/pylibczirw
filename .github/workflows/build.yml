@@ -2,9 +2,9 @@
 name: Build
 on:
   push:
-    branches: ["main"]
+    branches: ["test-tag"]
   pull_request:
-    branches: ["main"]
+    branches: ["test-tag"]
 permissions:
   contents: write
   # IMPORTANT: this permission is mandatory for trusted publishing
