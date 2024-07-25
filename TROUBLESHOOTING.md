@@ -4,11 +4,11 @@
 - [Visual Studio CMake Error](#visual-studio-cmake-error)
 - [Libs folder empty](#libs-folder-empty)
 - [Latest version of libczi isn't present](#latest-version-of-libczi-isnt-present)
-- [Pip install .all sticks](#Pip-install-all-sticks)
-- [Pip install or test fails with python version issue](#Pip-install-or-test-fails-with-python-version-issue)
-- [Pip install succeeds but tests fail to find interface](#Pip-install-succeeds-but-tests-fail-to-find-interface)
-- [Unable to add new interpreter to RMS_PyPi_pylibCZIrw](#Unable-to-add-new-interpreter-to-RMS_PyPi_pylibCZIrw)
-- [Libs Submodule keeps showing a change](#Libs-Submodule-keeps-showing-a-change)
+- [Pip install .all sticks](#pip-install-all-sticks)
+- [Pip install or test fails with python version issue](#pip-install-or-test-fails-with-python-version-issue)
+- [Pip install succeeds but tests fail to find interface](#pip-install-succeeds-but-tests-fail-to-find-interface)
+- [Unable to add new interpreter to RMS_PyPi_pylibCZIrw](#unable-to-add-new-interpreter-to-rms_pypi_pylibczirw)
+- [Libs Submodule keeps showing a change](#libs-submodule-keeps-showing-a-change)
 
 ## Visual Studio CMake Error
 Visual studio build shows CMAKE_C_COMPILER and CMAKE_CXX_COMPILER error.
@@ -25,7 +25,7 @@ Use ``` git submodule update --remote ``` and keep the latest hash from libczi.
 
 ## Pip install .all sticks
 Pip version requires ``` --use-feature=in-tree-build ```
-run ``` pip install --use-feature=in-tree-build .[all]```
+run ```pip install --use-feature=in-tree-build .[all]```
 
 ## Pip install or test fails with python version issue
 The virtual environment has some python version dependency, so change to that version of python using ``` conda install python==<version_number> ```
