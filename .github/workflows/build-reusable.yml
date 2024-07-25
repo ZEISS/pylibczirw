@@ -36,9 +36,6 @@ jobs:
   Tag:
     permissions:
       contents: write
-    needs:
-      - CodeQualityAnalysis-Test
-      - Upload
     # Aftermath of if-conditional of Upload job
     if: github.event_name != 'pull_request'
     runs-on: windows-2019
