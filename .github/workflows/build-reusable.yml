@@ -36,7 +36,7 @@ jobs:
   Tag:
     permissions:
       contents: write
-    # Aftermath of if-conditional of Upload job
+    # Aftermath of if-conditional of Upload jobs
     if: github.event_name != 'pull_request'
     runs-on: windows-2019
     steps:
@@ -48,6 +48,6 @@ jobs:
             github.rest.git.createRef({
               owner: context.repo.owner,
               repo: context.repo.repo,
-              ref: 'refs/tags/v1.0.0',
+              ref: 'refs/tags/v3.0.0',
               sha: context.sha
             })
