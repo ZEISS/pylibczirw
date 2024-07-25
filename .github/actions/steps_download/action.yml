@@ -3,14 +3,19 @@ name: Download Composite
 description: Composite action to download and test wheels
 inputs:
   ArtifactName:
+    description: artifact pushed previously as part of this pipeline
     required: true
   PyVersionLatest:
+    description: Latest supported Python version
     required: true
   PkgRootFolder:
+    description: root folder of Python package
     required: true
   RunShell:
+    description: shell to use to execute run command
     required: true
   PkgVersion:
+    description: Python package version
     required: true
 runs:
   using: composite

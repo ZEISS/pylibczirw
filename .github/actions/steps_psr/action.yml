@@ -3,8 +3,10 @@ name: Python Semantic Release Composite
 description: Composite action to calculate semantic version through PSR
 inputs:
   PyVersionLatest:
+    description: Latest supported Python version
     required: true
   PkgRootFolder:
+    description: root folder of Python package
     required: true
 outputs:
   # https://docs.github.com/en/actions/creating-actions/creating-a-composite-action

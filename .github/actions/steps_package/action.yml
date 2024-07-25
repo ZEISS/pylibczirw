@@ -3,12 +3,16 @@ name: Package Composite
 description: Composite action to package and publish wheels
 inputs:
   PyVersionLatest:
+    description: Latest supported Python version
     required: true
   CIBWBEFOREALL:
+    description: arguments to cibuildwheel
     required: true
   PkgRootFolder:
+    description: root folder of Python package
     required: true
   OS:
+    description: operating system
     required: true
 runs:
   using: composite
