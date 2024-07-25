@@ -33,11 +33,263 @@ on:
 permissions:
   contents: read
 jobs:
+  CodeQualityAnalysis-Test:
+    name: Static Analysis and Tests
+    runs-on: windows-2019
+    outputs:
+      pypi_released: ${{ steps.psr.outputs.pypi_released }}
+      pypi_version: ${{ steps.psr.outputs.pypi_version }}
+      pypi_tag: ${{ steps.psr.outputs.pypi_tag }}
+    steps:
+      - uses: actions/checkout@v4.1.0
+        with:
+          lfs: true
+          submodules: recursive
+          # Python Semantic Release needs access to the full history to determine whether a release should be made.
+          fetch-depth: 0
+      - id: psr
+        name: Python Semantic Release
+        uses: "./.github/actions/steps_psr"
+        with:
+          PyVersionLatest: "${{inputs.PyVersionLatest}}"
+          PkgRootFolder: "${{ github.workspace }}/${{inputs.PkgRootFolder}}"
+      - name: Environment Setup
+        run: python -m pip install --upgrade --requirement requirements_test.txt
+        working-directory: "${{ github.workspace }}/${{inputs.PkgRootFolder}}"
+      - name: Check Python Versions Consistency
+        # Only specify tox.ini and setup.py since .yml uses cibuildwheel
+        run: check-python-versions ${{ github.workspace }}\${{inputs.PkgRootFolder}} --only tox.ini,setup.py
+      - name: Set TEMP to ${{ runner.temp }}
+        if: success() || failure()
+        run: echo "TEMP=${{ runner.temp }}" >> "$GITHUB_ENV"
+        shell: bash
+      - name: Set TMP to ${{ runner.temp }}
+        if: success() || failure()
+        run: echo "TMP=${{ runner.temp }}" >> "$GITHUB_ENV"
+        shell: bash
+      - name: Set TMPDIR to ${{ runner.temp }}
+        if: success() || failure()
+        run: echo "TMPDIR=${{ runner.temp }}" >> "$GITHUB_ENV"
+        shell: bash
+      - name: Unit and Integration Tests
+        if: success() || failure()
+        run: tox -vv -r -s false
+        working-directory: "${{ github.workspace }}/${{inputs.PkgRootFolder}}"
+        env:
+          CovResultsPath: "${{ runner.temp }}\\cov_results\\cov.xml"
+          TestResultsPath: "${{ runner.temp }}\\results"
+      - name: Upload Coverage
+        if: success() || failure()
+        # Keep to v3 until issues revolving around coverage files not being found are resolved
+        uses: codecov/codecov-action@v3
+        with:
+          # Hard copy from step above due to https://github.com/actions/runner/issues/2204
+          directory: ${{ runner.temp }}/cov_results
+          files: cov.xml
+          fail_ci_if_error: true
+          verbose: true
+          token: ${{ secrets.CODECOV_TOKEN }}
+  PackageWheelsNonPure:
+    name: Package Non-pure Wheels for ${{ matrix.config.OS }}
+    runs-on: ${{ matrix.config.PoolImage }}
+    strategy:
+      matrix:
+        config:
+          - {
+            PoolImage: ubuntu-latest,
+            OS: Linux,
+            CIBWBEFOREALL: "${{inputs.CIBWBEFOREALLLINUX}}",
+          }
+          - {
+            PoolImage: windows-2019,
+            OS: Windows,
+            CIBWBEFOREALL: "${{inputs.CIBWBEFOREALLWindows}}",
+          }
+    steps:
+      - uses: actions/checkout@v4.1.0
+        with:
+          lfs: true
+          submodules: recursive
+          # Python Semantic Release needs access to the full history to determine whether a release should be made.
+          fetch-depth: 0
+      - uses: "./.github/actions/steps_package"
+        name: Package
+        with:
+          PyVersionLatest: "${{inputs.PyVersionLatest}}"
+          PkgRootFolder: "${{ github.workspace }}/${{inputs.PkgRootFolder}}"
+          OS: "${{matrix.config.OS}}"
+          CIBWBEFOREALL: "${{matrix.config.CIBWBEFOREALL}}"
+    if: inputs.Pure == false
+  PackageWheelsPure:
+    name: Package Pure Wheels
+    runs-on: windows-2019
+    if: inputs.Pure == true
+    steps:
+      - uses: actions/checkout@v4.1.0
+        with:
+          lfs: true
+          submodules: recursive
+          # Python Semantic Release needs access to the full history to determine whether a release should be made.
+          fetch-depth: 0
+      - uses: "./.github/actions/steps_psr"
+        name: Python Semantic Release
+        with:
+          PyVersionLatest: "${{inputs.PyVersionLatest}}"
+          PkgRootFolder: "${{ github.workspace }}/${{inputs.PkgRootFolder}}"
+      - name: Environment Setup
+        run: python -m pip install --upgrade --requirement requirements_deploy.txt
+        working-directory: "${{ github.workspace }}/${{inputs.PkgRootFolder}}"
+      - name: Build Distribution
+        run: python setup.py bdist_wheel
+        working-directory: "${{ github.workspace }}/${{inputs.PkgRootFolder}}"
+      - name: Publish Wheel for Python ${{inputs.PyVersionLatest}}
+        uses: actions/upload-artifact@v4.1.0
+        with:
+          name: Wheel${{inputs.PyVersionLatest}}
+          path: "${{ github.workspace }}\\${{inputs.PkgRootFolder}}\\dist"
+  PackageSDist:
+    name: Package Source Distribution
+    runs-on: windows-2019
+    steps:
+      - uses: actions/checkout@v4.1.0
+        with:
+          lfs: true
+          submodules: recursive
+          # Python Semantic Release needs access to the full history to determine whether a release should be made.
+          fetch-depth: 0
+      - uses: "./.github/actions/steps_psr"
+        name: Python Semantic Release
+        with:
+          PyVersionLatest: "${{inputs.PyVersionLatest}}"
+          PkgRootFolder: "${{ github.workspace }}/${{inputs.PkgRootFolder}}"
+      - name: Environment Setup
+        run: python -m pip install --upgrade --requirement requirements_deploy.txt
+        working-directory: "${{ github.workspace }}/${{inputs.PkgRootFolder}}"
+      - name: Build Distribution
+        run: python setup.py sdist
+        working-directory: "${{ github.workspace }}/${{inputs.PkgRootFolder}}"
+      - name: Publish Sdist
+        uses: actions/upload-artifact@v4.1.0
+        with:
+          name: Sdist
+          path: "${{ github.workspace }}\\${{inputs.PkgRootFolder}}\\dist"
+  DownloadTestWheelsPure:
+    # No need to re-test wheels for non-pure wheels produced through cibuildwheel since already tested there
+    # Can be tested anywhere since it is pure
+    name: Test Wheel on windows-2019
+    runs-on: windows-2019
+    steps:
+      - uses: actions/checkout@v4.1.0
+        with:
+          lfs: true
+          submodules: recursive
+          # Python Semantic Release needs access to the full history to determine whether a release should be made.
+          fetch-depth: 0
+      - id: psr
+        name: Python Semantic Release
+        uses: "./.github/actions/steps_psr"
+        with:
+          PyVersionLatest: "${{inputs.PyVersionLatest}}"
+          PkgRootFolder: "${{ github.workspace }}/${{inputs.PkgRootFolder}}"
+      - uses: "./.github/actions/steps_download"
+        name: Download Wheels
+        with:
+          PyVersionLatest: "${{inputs.PyVersionLatest}}"
+          ArtifactName: Wheel${{inputs.PyVersionLatest}}
+          PkgRootFolder: "${{ github.workspace }}/${{inputs.PkgRootFolder}}"
+          RunShell: cmd
+          PkgVersion: "${{ steps.psr.outputs.pypi_version }}"
+    if: inputs.Pure == true
+    needs: PackageWheelsPure
+  DownloadTestSdist:
+    name: Test Sdist
+    strategy:
+      matrix:
+        config:
+          - { OS: ubuntu-latest, RunShell: bash }
+          - { OS: windows-2019, RunShell: cmd }
+    runs-on: ${{ matrix.config.OS }}
+    steps:
+      - uses: actions/checkout@v4.1.0
+        with:
+          lfs: true
+          submodules: recursive
+          # Python Semantic Release needs access to the full history to determine whether a release should be made.
+          fetch-depth: 0
+      - id: psr
+        name: Python Semantic Release
+        uses: "./.github/actions/steps_psr"
+        with:
+          PyVersionLatest: "${{inputs.PyVersionLatest}}"
+          PkgRootFolder: "${{ github.workspace }}/${{inputs.PkgRootFolder}}"
+      - uses: "./.github/actions/steps_download"
+        name: Download Sdist
+        with:
+          PyVersionLatest: "${{inputs.PyVersionLatest}}"
+          ArtifactName: Sdist
+          PkgRootFolder: "${{ github.workspace }}/${{inputs.PkgRootFolder}}"
+          RunShell: ${{ matrix.config.RunShell }}
+          PkgVersion: "${{ steps.psr.outputs.pypi_version }}"
+    needs: PackageSDist
+  Upload:
+    permissions:
+      contents: read
+      # IMPORTANT: this permission is mandatory for trusted publishing
+      id-token: write
+    needs:
+      - CodeQualityAnalysis-Test
+      - DownloadTestSdist
+      - DownloadTestWheelsPure
+      - PackageWheelsNonPure
+      - PackageWheelsPure
+      - PackageSdist
+    # Needs to run on ubuntu
+    runs-on: ubuntu-latest
+    # If conditional based on https://github.com/actions/runner/issues/491#issuecomment-850884422
+    if: |
+      always() &&
+      github.event_name != 'pull_request' &&
+      contains(fromJSON('["skipped", "success"]'), needs.DownloadTestSdist.result) &&
+      contains(fromJSON('["skipped", "success"]'), needs.DownloadTestWheelsPure.result) &&
+      contains(fromJSON('["skipped", "success"]'), needs.PackageWheelsNonPure.result) &&
+      contains(fromJSON('["skipped", "success"]'), needs.PackageWheelsPure.result) &&
+      contains(fromJSON('["skipped", "success"]'), needs.PackageSdist.result) &&
+      needs.CodeQualityAnalysis-Test.result == 'success' &&
+      needs.CodeQualityAnalysis-Test.outputs.pypi_released == 'true'
+    environment:
+      # TODO: Only for testing purposes
+      # name: pypi
+      # url: https://pypi.org/project/pylibCZIrw/${{needs.CodeQualityAnalysis-Test.outputs.pypi_version}}
+      name: testpypi
+      url: https://test.pypi.org/p/pylibCZIrw/${{needs.CodeQualityAnalysis-Test.outputs.pypi_version}}
+    steps:
+      - name: Download Wheels and Source Distribution
+        uses: actions/download-artifact@v4.1.0
+      - name: Collect Wheels and Source Distribution
+        # Move to dist as default folder for publish action
+        run: New-Item -Path "." -Name "dist" -ItemType "directory"; Get-ChildItem -Path ".\*.whl",".\*.tar.gz" -Recurse | Move-Item -Destination ".\dist"
+        shell: pwsh
+      - name: Upload to PyPI
+        # As of 06/2024, trusted publishing does not work within reusable workflows located in a different repo
+        # Tracked in:
+        # https://github.com/pypa/gh-action-pypi-publish/issues/166
+        # https://github.com/pypi/warehouse/issues/11096
+        # https://docs.pypi.org/trusted-publishers/troubleshooting/#reusable-workflows-on-github
+        # More info on trusted publishing: https://blog.pypi.org/posts/2023-04-20-introducing-trusted-publishers/
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          # TODO: Only for testing purposes (remove repository-url to push to PyPI)
+          repository-url: https://test.pypi.org/legacy/
+          # Basically runs twine check
+          verify-metadata: true
   Tag:
     permissions:
       contents: write
-    # Aftermath of if-conditional of Upload jobs
-    if: github.event_name != 'pull_request'
+    needs:
+      - CodeQualityAnalysis-Test
+      - Upload
+    # Aftermath of if-conditional of Upload job
+    if: always() && needs.Upload.result == 'success'
     runs-on: windows-2019
     steps:
       - uses: actions/checkout@v4.1.0
@@ -48,6 +300,6 @@ jobs:
             github.rest.git.createRef({
               owner: context.repo.owner,
               repo: context.repo.repo,
-              ref: 'refs/tags/v3.0.0',
+              ref: 'refs/tags/${{needs.CodeQualityAnalysis-Test.outputs.pypi_tag}}',
               sha: context.sha
             })
