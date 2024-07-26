@@ -1,13 +1,14 @@
 """Module implementing unit tests for the CziReader class"""
 
+from typing import Dict, NamedTuple, Optional, Tuple
 from unittest import mock
-from typing import NamedTuple, Dict, Tuple, Optional
-import pytest
+
 import numpy as np
+import pytest
 
 # pylint: disable=no-name-in-module
-from _pylibCZIrw import IntRect, DimensionIndex, RgbFloatColor, PixelType
-from pylibCZIrw.czi import CziReader, Rectangle, Color
+from _pylibCZIrw import DimensionIndex, IntRect, PixelType, RgbFloatColor
+from pylibCZIrw.czi import Color, CziReader, Rectangle
 
 # testing static functions
 
@@ -248,15 +249,24 @@ def test_total_bounding_box(
         ({0: create_rectangle(0, 0, 10, 10)}, {0: Rectangle(0, 0, 10, 10)}),
         ({16: create_rectangle(0, 0, 10, 10)}, {16: Rectangle(0, 0, 10, 10)}),
         (
-            {0: create_rectangle(0, 0, 10, 10), 1: create_rectangle(123, 233, 231, 111)},
+            {
+                0: create_rectangle(0, 0, 10, 10),
+                1: create_rectangle(123, 233, 231, 111),
+            },
             {0: Rectangle(0, 0, 10, 10), 1: Rectangle(123, 233, 231, 111)},
         ),
         (
-            {0: create_rectangle(0, 0, 10, 10), 24: create_rectangle(123, 233, 231, 111)},
+            {
+                0: create_rectangle(0, 0, 10, 10),
+                24: create_rectangle(123, 233, 231, 111),
+            },
             {0: Rectangle(0, 0, 10, 10), 24: Rectangle(123, 233, 231, 111)},
         ),
         (
-            {1: create_rectangle(0, 0, 10, 10), 24: create_rectangle(123, 233, 231, 111)},
+            {
+                1: create_rectangle(0, 0, 10, 10),
+                24: create_rectangle(123, 233, 231, 111),
+            },
             {1: Rectangle(0, 0, 10, 10), 24: Rectangle(123, 233, 231, 111)},
         ),
     ],
@@ -277,9 +287,27 @@ def test_extract_scenes_bounding_box(
     "scene_bounding_boxes, dimension_size",
     [
         ({0: create_rectangle(0, 0, 10, 10)}, 0),
-        ({0: create_rectangle(0, 0, 10, 10), 1: create_rectangle(123, 233, 231, 111)}, 1),
-        ({0: create_rectangle(0, 0, 10, 10), 24: create_rectangle(123, 233, 231, 111)}, 3),
-        ({1: create_rectangle(0, 0, 10, 10), 24: create_rectangle(123, 233, 231, 111)}, -1),
+        (
+            {
+                0: create_rectangle(0, 0, 10, 10),
+                1: create_rectangle(123, 233, 231, 111),
+            },
+            1,
+        ),
+        (
+            {
+                0: create_rectangle(0, 0, 10, 10),
+                24: create_rectangle(123, 233, 231, 111),
+            },
+            3,
+        ),
+        (
+            {
+                1: create_rectangle(0, 0, 10, 10),
+                24: create_rectangle(123, 233, 231, 111),
+            },
+            -1,
+        ),
     ],
 )
 def test_extract_scenes_bounding_box_raises_error(

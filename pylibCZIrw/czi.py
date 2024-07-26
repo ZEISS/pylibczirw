@@ -5,15 +5,16 @@ This czi document can be use to read and write czi.
 """
 
 import contextlib
-from os import makedirs
-from os.path import isfile, abspath, dirname
-from typing import Callable, Dict, Tuple, Optional, NamedTuple, Union, Generator, Any
+import uuid
 from dataclasses import dataclass
 from enum import Enum
-import uuid
+from os import makedirs
+from os.path import abspath, dirname, isfile
+from typing import Any, Callable, Dict, Generator, NamedTuple, Optional, Tuple, Union
+
 import numpy as np
-import xmltodict
 import validators
+import xmltodict
 
 import _pylibCZIrw
 
@@ -288,7 +289,8 @@ class CziReader:
         return total_bounding_box_layer0
 
     def _extract_scenes_bounding_rectangles(
-        self, extract_scene_bounding_box: Callable[[_pylibCZIrw.BoundingBoxes], Rectangle]
+        self,
+        extract_scene_bounding_box: Callable[[_pylibCZIrw.BoundingBoxes], Rectangle],
     ) -> Dict[int, Rectangle]:
         """Get the bounding rectangle of all scenes in the document and returns it
         in a dictionary where scene indexes are the keys and the bounding rectangles the values.
@@ -841,10 +843,11 @@ class CziWriter:
             String representation of compression options to be used as default (for this instance). If
             not specified, uncompressed is used.
         """
-        if compression_options is None:
-            czi_writer = _pylibCZIrw.czi_writer(filepath)
-        else:
-            czi_writer = _pylibCZIrw.czi_writer(filepath, compression_options)
+        czi_writer = (
+            _pylibCZIrw.czi_writer(filepath)
+            if compression_options is None
+            else _pylibCZIrw.czi_writer(filepath, compression_options)
+        )
 
         self._czi_writer: _pylibCZIrw.czi_writer = czi_writer
         self._m_dict: Dict[str, int] = {}
@@ -852,7 +855,7 @@ class CziWriter:
 
     def close(self) -> None:
         """Close the document and finalize the writing"""
-        try:
+        try:  # pylint: disable=too-many-try-statements
             if not self._metadata_writen:
                 self.write_metadata()
         finally:
@@ -1022,10 +1025,8 @@ class CziWriter:
         : int
             max length / width
         """
-        if cls._is_rgb(data):
-            max_extent = 1800
-        else:
-            max_extent = 3100
+        max_extent = 1800 if cls._is_rgb(data) else 3100
+
         return max_extent
 
     @staticmethod
@@ -1103,21 +1104,24 @@ class CziWriter:
         data_size = data.nbytes / 1000000
         retiling_id = str(uuid.uuid4())
 
-        if data_size > 10.0:
-            subdata_generator = self._divide_data(data)
-        else:
-            subdata_generator = (item for item in [data])
+        subdata_generator = self._divide_data(data) if data_size > 10.0 else (item for item in [data])
+
         for subarray in subdata_generator:
             m_index = self._get_m_index(plane_libczi)
             data_libczi = self._format_data(np.ascontiguousarray(subarray))
             location_libczi = Location(curr_x, curr_y)
             if compression_options is None:
                 if not self._czi_writer.AddTile(
-                    plane_libczi, data_libczi, location_libczi.x, location_libczi.y, m_index, retiling_id
+                    plane_libczi,
+                    data_libczi,
+                    location_libczi.x,
+                    location_libczi.y,
+                    m_index,
+                    retiling_id,
                 ):
                     return False
             else:
-                if not self._czi_writer.AddTileEx(
+                if not self._czi_writer.AddTileEx(  # pylint: disable=confusing-consecutive-elif, else-if-used
                     plane_libczi,
                     data_libczi,
                     location_libczi.x,
@@ -1163,7 +1167,9 @@ class CziWriter:
         return customvalue
 
     @staticmethod
-    def _create_display_setting(value: ChannelDisplaySettingsDataClass) -> _pylibCZIrw.ChannelDisplaySettingsStruct:
+    def _create_display_setting(
+        value: ChannelDisplaySettingsDataClass,
+    ) -> _pylibCZIrw.ChannelDisplaySettingsStruct:
         """Convert the ChannelDisplaySettingsDataClass value into a ChannelDisplaySettingsPOD object
 
         Parameters
@@ -1233,14 +1239,26 @@ class CziWriter:
         channel_names = channel_names or {}
         display_settings_dict = {}
         if display_settings:
-            for display_settings_key, display_settings_value in display_settings.items():
+            for (
+                display_settings_key,
+                display_settings_value,
+            ) in display_settings.items():
                 display_settings_dict[display_settings_key] = self._create_display_setting(display_settings_value)
         custom_attributes_dict = {}
         if custom_attributes:
-            for custom_attributes_key, custom_attributes_value in custom_attributes.items():
+            for (
+                custom_attributes_key,
+                custom_attributes_value,
+            ) in custom_attributes.items():
                 custom_attributes_dict[custom_attributes_key] = self._create_customvalue(custom_attributes_value)
         self._czi_writer.WriteMetadata(
-            document_name, scale_x, scale_y, scale_z, channel_names, custom_attributes_dict, display_settings_dict
+            document_name,
+            scale_x,
+            scale_y,
+            scale_z,
+            channel_names,
+            custom_attributes_dict,
+            display_settings_dict,
         )
         self._metadata_writen = True
 

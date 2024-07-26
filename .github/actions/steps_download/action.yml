@@ -1,40 +1,47 @@
+---
 name: Download Composite
+description: Composite action to download and test wheels
 inputs:
   ArtifactName:
+    description: artifact pushed previously as part of this pipeline
     required: true
   PyVersionLatest:
+    description: Latest supported Python version
     required: true
   PkgRootFolder:
+    description: root folder of Python package
     required: true
   RunShell:
+    description: shell to use to execute run command
     required: true
   PkgVersion:
+    description: Python package version
     required: true
 runs:
   using: composite
   steps:
-  - name: Download ${{inputs.ArtifactName}}
-    uses: actions/download-artifact@v4.1.0
-    with:
-      name: "${{inputs.ArtifactName}}"
-      path: "${{runner.workspace}}/${{inputs.ArtifactName}}"
-  - name: Use Python ${{inputs.PyVersionLatest}}
-    uses: actions/setup-python@v5.0.0
-    with:
-      python-version: "${{inputs.PyVersionLatest}}"
-      architecture: x64
-  - name: Environment Setup
-    run: python -m pip install --upgrade --requirement requirements_test.txt
-    working-directory: "${{inputs.PkgRootFolder}}"
-    shell: bash
-  - name: Unit and Integration Tests
-    env:
-      TEMP: "${{ runner.temp }}"
-      TMP: "${{ runner.temp }}"
-      TESTRESULTSPATH: "${{ runner.temp }}"
-      COVRESULTSPATH: "${{ runner.temp }}\\cov.xml"
-      # Optionally used inside test environment to check for version specific functionality
-      PYTHON_SEMANTIC_RELEASE_VERSION: "${{inputs.PkgVersion}}"
-    run: tox --installpkg ${{ runner.workspace }}/${{inputs.ArtifactName}}/* -vv -r -s true
-    shell: "${{inputs.RunShell}}"
-    working-directory: "${{inputs.PkgRootFolder}}"
+    - name: Download ${{inputs.ArtifactName}}
+      uses: actions/download-artifact@v4.1.0
+      with:
+        name: "${{inputs.ArtifactName}}"
+        path: "${{runner.workspace}}/${{inputs.ArtifactName}}"
+    - name: Use Python ${{inputs.PyVersionLatest}}
+      uses: actions/setup-python@v5.0.0
+      with:
+        python-version: "${{inputs.PyVersionLatest}}"
+        architecture: x64
+    - name: Environment Setup
+      run: python -m pip install --upgrade --requirement requirements_test.txt
+      working-directory: "${{inputs.PkgRootFolder}}"
+      shell: bash
+    - name: Unit and Integration Tests
+      env:
+        TEMP: "${{ runner.temp }}"
+        TMP: "${{ runner.temp }}"
+        TESTRESULTSPATH: "${{ runner.temp }}"
+        COVRESULTSPATH: "${{ runner.temp }}\\cov.xml"
+        # Optionally used inside test environment to check for version specific functionality
+        PYTHON_SEMANTIC_RELEASE_VERSION: "${{inputs.PkgVersion}}"
+      run: tox --installpkg ${{ runner.workspace }}/${{inputs.ArtifactName}}/* -vv -r -s true
+      shell: "${{inputs.RunShell}}"
+      working-directory: "${{inputs.PkgRootFolder}}"

@@ -32,7 +32,7 @@ with pyczi.open_czi(filepath) as czidoc:
 
 The detailed usage can be inferred from the [sample notebooks](https://github.com/ZEISS/pylibczirw/tree/main/doc/jupyter_notebooks).  
 
-For more detailed information (on the latest version) refer to https://zeiss.github.io/pylibczirw/.  
+For more detailed information (on the latest version) refer to <https://zeiss.github.io/pylibczirw/>.  
 
 ## Installation
 In case there is no wheel available for your system configuration, you can:  

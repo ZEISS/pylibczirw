@@ -1,14 +1,15 @@
 """Module implementing integration tests for the properties of the CziReader class"""
 
-from typing import Dict, Tuple, Optional, Any
-import tempfile
 import os
-from unittest.mock import patch, PropertyMock
+import tempfile
+from typing import Any, Dict, Optional, Tuple
+from unittest.mock import PropertyMock, patch
+
+import numpy as np
 import pytest
 import xmltodict
-import numpy as np
 
-from pylibCZIrw.czi import create_czi, open_czi, Rectangle, CziReader
+from pylibCZIrw.czi import CziReader, Rectangle, create_czi, open_czi
 
 working_dir = os.path.dirname(os.path.abspath(__file__))
 

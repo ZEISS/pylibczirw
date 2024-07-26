@@ -1,40 +1,46 @@
+---
 name: Package Composite
+description: Composite action to package and publish wheels
 inputs:
   PyVersionLatest:
+    description: Latest supported Python version
     required: true
   CIBWBEFOREALL:
+    description: arguments to cibuildwheel
     required: true
   PkgRootFolder:
+    description: root folder of Python package
     required: true
   OS:
+    description: operating system
     required: true
 runs:
   using: composite
   steps:
-  - uses: "./.github/actions/steps_psr"
-    name: Python Semantic Release
-    with:
-      PyVersionLatest: "${{inputs.PyVersionLatest}}"
-      PkgRootFolder: "${{inputs.PkgRootFolder}}"
-  - name: Install dependencies
-    run: |-
-      set -o errexit
-      python -m pip install --upgrade pip
-      pip install cibuildwheel~=2.3
-    shell: bash
-  - name: Build wheels
-    env:
-      CIBW_BUILD_FRONTEND: build
-      CIBW_ARCHS: auto64
-      CIBW_SKIP: pp* *-musllinux_*
-      CIBW_BEFORE_ALL: "${{inputs.CIBWBEFOREALL}}"
-      CIBW_TEST_REQUIRES: "-r requirements_test.txt"
-      CIBW_TEST_COMMAND: tox -c {project}/tox_cibuildwheel.ini -e base --skip-pkg-install --current-env -vv
-    run: cibuildwheel --output-dir wheelhouse .
-    shell: bash
-    working-directory: "${{inputs.PkgRootFolder}}"
-  - name: Publish Wheels for ${{inputs.OS}}
-    uses: actions/upload-artifact@v4.1.0
-    with:
-      name: Wheels${{inputs.OS}}
-      path: "${{inputs.PkgRootFolder}}/wheelhouse"
+    - uses: "./.github/actions/steps_psr"
+      name: Python Semantic Release
+      with:
+        PyVersionLatest: "${{inputs.PyVersionLatest}}"
+        PkgRootFolder: "${{inputs.PkgRootFolder}}"
+    - name: Install dependencies
+      run: |-
+        set -o errexit
+        python -m pip install --upgrade pip
+        pip install cibuildwheel~=2.3
+      shell: bash
+    - name: Build wheels
+      env:
+        CIBW_BUILD_FRONTEND: build
+        CIBW_ARCHS: auto64
+        CIBW_SKIP: pp* *-musllinux_*
+        CIBW_BEFORE_ALL: "${{inputs.CIBWBEFOREALL}}"
+        CIBW_TEST_REQUIRES: "-r requirements_test.txt"
+        CIBW_TEST_COMMAND: tox -c {project}/tox_cibuildwheel.ini -e base --skip-pkg-install --current-env -vv
+      run: cibuildwheel --output-dir wheelhouse .
+      shell: bash
+      working-directory: "${{inputs.PkgRootFolder}}"
+    - name: Publish Wheels for ${{inputs.OS}}
+      uses: actions/upload-artifact@v4.1.0
+      with:
+        name: Wheels${{inputs.OS}}
+        path: "${{inputs.PkgRootFolder}}/wheelhouse"
