@@ -1,0 +1,8 @@
+# Following https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/customizing-your-repository/about-code-owners#codeowners-and-branch-protection:
+# To protect a repository fully against unauthorized changes, 
+# you also need to define an owner for the CODEOWNERS file itself. 
+# The most secure method is to define a CODEOWNERS file in the .github 
+# directory of the repository ...
+# A member of the group of security engineers will be requested for review
+# of the CODEOWNERS file itself and other IaC files.
+/.github/ @ZEISS/ZSE_RMS
