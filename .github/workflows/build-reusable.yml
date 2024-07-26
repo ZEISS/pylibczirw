@@ -267,11 +267,8 @@ jobs:
       needs.CodeQualityAnalysis-Test.result == 'success' &&
       needs.CodeQualityAnalysis-Test.outputs.pypi_released == 'true'
     environment:
-      # TODO: Only for testing purposes
-      # name: pypi
-      # url: https://pypi.org/project/pylibCZIrw/${{needs.CodeQualityAnalysis-Test.outputs.pypi_version}}
-      name: testpypi
-      url: https://test.pypi.org/p/pylibCZIrw/${{needs.CodeQualityAnalysis-Test.outputs.pypi_version}}
+      name: pypi
+      url: https://pypi.org/project/pylibCZIrw/${{needs.CodeQualityAnalysis-Test.outputs.pypi_version}}
     steps:
       - name: Download Wheels and Source Distribution
         uses: actions/download-artifact@v4.1.0
@@ -288,8 +285,6 @@ jobs:
         # More info on trusted publishing: https://blog.pypi.org/posts/2023-04-20-introducing-trusted-publishers/
         uses: pypa/gh-action-pypi-publish@release/v1
         with:
-          # TODO: Only for testing purposes (remove repository-url to push to PyPI)
-          repository-url: https://test.pypi.org/legacy/
           # Basically runs twine check
           verify-metadata: true
   Tag:
