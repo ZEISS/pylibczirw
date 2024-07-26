@@ -78,13 +78,20 @@ jobs:
         env:
           CovResultsPath: "${{ runner.temp }}\\cov_results\\cov.xml"
           TestResultsPath: "${{ runner.temp }}\\results"
+      # Note: Need to move coverage file due to ongoing bugs with finding coverage files names differently than
+      # tool defaults and put under folders away from working directory
+      - name: Move coverage file for upload
+        if: success() || failure()
+        run: Move-Item -Path ${{ runner.temp }}\cov_results\cov.xml -Destination ${{ github.workspace }}\TestResults\coverage.xml
+        shell: pwsh
       - name: Upload Coverage
         if: success() || failure()
         uses: codecov/codecov-action@v4
         with:
           # Hard copy from step above due to https://github.com/actions/runner/issues/2204
-          directory: ${{ runner.temp }}/cov_results
-          files: cov.xml
+          # In principle we could also omit directory and files due to the note above
+          directory: ${{ github.workspace }}/TestResults
+          files: coverage.xml
           fail_ci_if_error: true
           verbose: true
           token: ${{ secrets.CODECOV_TOKEN }}
