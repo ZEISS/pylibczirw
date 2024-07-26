@@ -94,7 +94,8 @@ jobs:
         if: success() || failure()
         uses: codecov/codecov-action@v4
         with:
-          # Relying on built-in search logic due to note above
+          directory: ${{ github.workspace }}/TestResults
+          files: coverage.xml
           fail_ci_if_error: true
           verbose: true
           token: ${{ secrets.CODECOV_TOKEN }}
