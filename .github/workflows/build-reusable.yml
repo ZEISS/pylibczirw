@@ -84,11 +84,11 @@ jobs:
       - name: Move coverage file for upload
         if: success() || failure()
         run: |-
-          $dest = ${{ github.workspace }}\TestResults
+          $dest = "${{ github.workspace }}\TestResults"
           if (-Not (Test-Path -Path $dest)) {
             New-Item -ItemType "directory" -Path $dest
           }
-          Move-Item -Path ${{ runner.temp }}\cov_results\cov.xml -Destination $dest\coverage.xml
+          Move-Item -Path "${{ runner.temp }}\cov_results\cov.xml" -Destination "$dest\coverage.xml"
         shell: pwsh
       - name: Upload Coverage
         if: success() || failure()
