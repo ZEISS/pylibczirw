@@ -31,6 +31,6 @@ Files: test_data/*
 Copyright: 2017-2022 Carl Zeiss Microscopy GmbH
 License: LGPL-3.0-or-later
 
-Files: cla_*.txt CODE_OF_CONDUCT.md CONTRIBUTING.md README.md SECURITY.md API.md CHANGELOG.md INFO.md TROUBLESHOOTING.md CMake* MANIFEST.in NOTICE.txt python-semantic-release.json .gitignore .gitattributes .gitmodules [Doc]* bandit.yaml requirements_*.txt setup.cfg setup.py tox.ini tox_cibuildwheel.ini
+Files: cla_*.txt CODE_OF_CONDUCT.md CONTRIBUTING.md README.md SECURITY.md API.md CHANGELOG.md INFO.md TROUBLESHOOTING.md CMake* MANIFEST.in NOTICE.txt python-semantic-release.json .gitignore .gitattributes .gitmodules .mega-linter.yml CPPLINT.cfg .editorconfig [Doc]* .bandit.yml requirements_*.txt setup.py tox.ini tox_cibuildwheel.ini .flake8 .isort.cfg .mypy.ini .pylintrc
 Copyright: 2017-2022 Carl Zeiss Microscopy GmbH
 License: LGPL-3.0-or-later
