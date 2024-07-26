@@ -19,10 +19,10 @@ permissions:
   # required to fetch internal or private CodeQL packs
   packages: read
 
+# No need to run on PR due to enforced rule to wait for scanning
+# https://docs.github.com/en/repositories/configuring-branches-and-merges-in-your-repository/managing-rulesets/available-rules-for-rulesets#set-code-scanning-merge-protection
 on:
   push:
-    branches: ["main"]
-  pull_request:
     branches: ["main"]
   schedule:
     - cron: "41 9 * * 4"
