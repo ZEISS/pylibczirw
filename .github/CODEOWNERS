@@ -1,9 +1,3 @@
-# These owners will be the default owners for everything in
-# the repo. Unless a later match takes precedence,
-# @ZEISS/CZI will be requested for
-# review when someone opens a pull request.
-* @ZEISS/CZI
-
 # Following https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/customizing-your-repository/about-code-owners#codeowners-and-branch-protection:
 # To protect a repository fully against unauthorized changes, 
 # you also need to define an owner for the CODEOWNERS file itself. 
