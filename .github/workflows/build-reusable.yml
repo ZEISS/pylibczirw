@@ -78,14 +78,24 @@ jobs:
         env:
           CovResultsPath: "${{ runner.temp }}\\cov_results\\cov.xml"
           TestResultsPath: "${{ runner.temp }}\\results"
+      # Note: Need to move coverage file due to ongoing bugs with finding coverage files names differently than
+      # tool defaults and put under folders away from working directory in codecov v4
+      # code based on https://devblogs.microsoft.com/powershell-community/determine-if-a-folder-exists/
+      - name: Move coverage file for upload
+        if: success() || failure()
+        run: |-
+          $dest = "${{ github.workspace }}\TestResults"
+          if (-Not (Test-Path -Path $dest)) {
+            New-Item -ItemType "directory" -Path $dest
+          }
+          Move-Item -Path "${{ runner.temp }}\cov_results\cov.xml" -Destination "$dest\coverage.xml"
+        shell: pwsh
       - name: Upload Coverage
         if: success() || failure()
-        # Keep to v3 until issues revolving around coverage files not being found are resolved
-        uses: codecov/codecov-action@v3
+        uses: codecov/codecov-action@v4
         with:
-          # Hard copy from step above due to https://github.com/actions/runner/issues/2204
-          directory: ${{ runner.temp }}/cov_results
-          files: cov.xml
+          directory: ${{ github.workspace }}/TestResults
+          files: coverage.xml
           fail_ci_if_error: true
           verbose: true
           token: ${{ secrets.CODECOV_TOKEN }}
