@@ -41,7 +41,7 @@ jobs:
       pypi_version: ${{ steps.psr.outputs.pypi_version }}
       pypi_tag: ${{ steps.psr.outputs.pypi_tag }}
     steps:
-      - uses: actions/checkout@v4.1.0
+      - uses: actions/checkout@v4
         with:
           lfs: true
           submodules: recursive
@@ -116,7 +116,7 @@ jobs:
             CIBWBEFOREALL: "${{inputs.CIBWBEFOREALLWindows}}",
           }
     steps:
-      - uses: actions/checkout@v4.1.0
+      - uses: actions/checkout@v4
         with:
           lfs: true
           submodules: recursive
@@ -135,61 +135,61 @@ jobs:
     runs-on: windows-2019
     if: inputs.Pure == true
     steps:
-      - uses: actions/checkout@v4.1.0
-        with:
-          lfs: true
-          submodules: recursive
-          # Python Semantic Release needs access to the full history to determine whether a release should be made.
-          fetch-depth: 0
-      - uses: "./.github/actions/steps_psr"
-        name: Python Semantic Release
-        with:
-          PyVersionLatest: "${{inputs.PyVersionLatest}}"
-          PkgRootFolder: "${{ github.workspace }}/${{inputs.PkgRootFolder}}"
-      - name: Environment Setup
-        run: python -m pip install --upgrade --requirement requirements_deploy.txt
-        working-directory: "${{ github.workspace }}/${{inputs.PkgRootFolder}}"
-      - name: Build Distribution
-        run: python setup.py bdist_wheel
-        working-directory: "${{ github.workspace }}/${{inputs.PkgRootFolder}}"
-      - name: Publish Wheel for Python ${{inputs.PyVersionLatest}}
-        uses: actions/upload-artifact@v4.1.0
-        with:
-          name: Wheel${{inputs.PyVersionLatest}}
-          path: "${{ github.workspace }}\\${{inputs.PkgRootFolder}}\\dist"
+    - uses: actions/checkout@v4
+      with:
+        lfs: true
+        submodules: recursive
+        # Python Semantic Release needs access to the full history to determine whether a release should be made.
+        fetch-depth: 0
+    - uses: "./.github/actions/steps_psr"
+      name: Python Semantic Release
+      with:
+        PyVersionLatest: "${{inputs.PyVersionLatest}}"
+        PkgRootFolder: "${{ github.workspace }}/${{inputs.PkgRootFolder}}"
+    - name: Environment Setup
+      run: python -m pip install --upgrade --requirement requirements_deploy.txt
+      working-directory: "${{ github.workspace }}/${{inputs.PkgRootFolder}}"
+    - name: Build Distribution
+      run: python setup.py bdist_wheel
+      working-directory: "${{ github.workspace }}/${{inputs.PkgRootFolder}}"
+    - name: Publish Wheel for Python ${{inputs.PyVersionLatest}}
+      uses: actions/upload-artifact@v4.1.0
+      with:
+        name: Wheel${{inputs.PyVersionLatest}}
+        path: "${{ github.workspace }}\\${{inputs.PkgRootFolder}}\\dist"
   PackageSDist:
     name: Package Source Distribution
     runs-on: windows-2019
     steps:
-      - uses: actions/checkout@v4.1.0
-        with:
-          lfs: true
-          submodules: recursive
-          # Python Semantic Release needs access to the full history to determine whether a release should be made.
-          fetch-depth: 0
-      - uses: "./.github/actions/steps_psr"
-        name: Python Semantic Release
-        with:
-          PyVersionLatest: "${{inputs.PyVersionLatest}}"
-          PkgRootFolder: "${{ github.workspace }}/${{inputs.PkgRootFolder}}"
-      - name: Environment Setup
-        run: python -m pip install --upgrade --requirement requirements_deploy.txt
-        working-directory: "${{ github.workspace }}/${{inputs.PkgRootFolder}}"
-      - name: Build Distribution
-        run: python setup.py sdist
-        working-directory: "${{ github.workspace }}/${{inputs.PkgRootFolder}}"
-      - name: Publish Sdist
-        uses: actions/upload-artifact@v4.1.0
-        with:
-          name: Sdist
-          path: "${{ github.workspace }}\\${{inputs.PkgRootFolder}}\\dist"
+    - uses: actions/checkout@v4
+      with:
+        lfs: true
+        submodules: recursive
+        # Python Semantic Release needs access to the full history to determine whether a release should be made.
+        fetch-depth: 0
+    - uses: "./.github/actions/steps_psr"
+      name: Python Semantic Release
+      with:
+        PyVersionLatest: "${{inputs.PyVersionLatest}}"
+        PkgRootFolder: "${{ github.workspace }}/${{inputs.PkgRootFolder}}"
+    - name: Environment Setup
+      run: python -m pip install --upgrade --requirement requirements_deploy.txt
+      working-directory: "${{ github.workspace }}/${{inputs.PkgRootFolder}}"
+    - name: Build Distribution
+      run: python setup.py sdist
+      working-directory: "${{ github.workspace }}/${{inputs.PkgRootFolder}}"
+    - name: Publish Sdist
+      uses: actions/upload-artifact@v4.1.0
+      with:
+        name: Sdist
+        path: "${{ github.workspace }}\\${{inputs.PkgRootFolder}}\\dist"
   DownloadTestWheelsPure:
     # No need to re-test wheels for non-pure wheels produced through cibuildwheel since already tested there
     # Can be tested anywhere since it is pure
     name: Test Wheel on windows-2019
     runs-on: windows-2019
     steps:
-      - uses: actions/checkout@v4.1.0
+      - uses: actions/checkout@v4
         with:
           lfs: true
           submodules: recursive
@@ -220,7 +220,7 @@ jobs:
           - { OS: windows-2019, RunShell: cmd }
     runs-on: ${{ matrix.config.OS }}
     steps:
-      - uses: actions/checkout@v4.1.0
+      - uses: actions/checkout@v4
         with:
           lfs: true
           submodules: recursive
@@ -297,7 +297,7 @@ jobs:
     if: always() && needs.Upload.result == 'success'
     runs-on: windows-2019
     steps:
-      - uses: actions/checkout@v4.1.0
+      - uses: actions/checkout@v4
       - name: Tag with PyPI version
         uses: actions/github-script@v7
         with:
