@@ -644,6 +644,8 @@ class CziReader:
 
     def _create_default_plane_coords(self) -> Dict[str, int]:
         """Generates a default plane coordinates dictionary with all indexes to 0.
+        This default plane coordinate contains all dimensions reported being used by
+        the CZI-document, but includes only dimensions for which the size is >1.
 
         Returns
         -------
@@ -653,7 +655,7 @@ class CziReader:
         return {
             dim: 0
             for dim, dim_index in self.CZI_DIMS.items()
-            if self._czi_reader.GetDimensionSize(_pylibCZIrw.DimensionIndex(dim_index)) > 0
+            if self._czi_reader.GetDimensionSize(_pylibCZIrw.DimensionIndex(dim_index)) > 1
         }
 
     def _create_plane_coords(
