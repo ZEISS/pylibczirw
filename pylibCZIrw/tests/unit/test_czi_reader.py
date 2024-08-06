@@ -444,14 +444,14 @@ def test_create_roi_raises_error_on_incorrect_scene() -> None:
 @pytest.mark.parametrize(
     "GetDimensionSize, expected",
     [
-        (dimension_sizes_test1, {"C": 0}),
+        (dimension_sizes_test1, {}),
         (
             dimension_sizes_test2,
-            {"C": 0, "I": 0, "R": 0, "V": 0},
+            {"C": 0, "R": 0, "V": 0},
         ),
         (
             dimension_sizes_test3,
-            {"Z": 0, "C": 0, "T": 0, "R": 0, "I": 0, "H": 0, "V": 0, "B": 0},
+            {"Z": 0, "C": 0, "T": 0, "R": 0, "I": 0, "V": 0, "B": 0},
         ),
     ],
 )
@@ -469,17 +469,17 @@ def test_create_default_plane_coords(
 @pytest.mark.parametrize(
     "plane, GetDimensionSize, expected",
     [
-        (None, dimension_sizes_test1, {"C": 0}),
-        ({"C": 1, "Z": 3, "T": 4}, dimension_sizes_test1, {"C": 1}),
+        (None, dimension_sizes_test1, {}),
+        ({"C": 1, "Z": 3, "T": 4}, dimension_sizes_test1, {}),
         (
             {"C": 5, "Z": 3, "T": 4, "B": 12},
             dimension_sizes_test2,
-            {"C": 5, "I": 0, "R": 0, "V": 0},
+            {"C": 5, "R": 0, "V": 0},
         ),
         (
             None,
             dimension_sizes_test3,
-            {"Z": 0, "C": 0, "T": 0, "R": 0, "I": 0, "H": 0, "V": 0, "B": 0},
+            {"Z": 0, "C": 0, "T": 0, "R": 0, "I": 0, "V": 0, "B": 0},
         ),
     ],
 )
