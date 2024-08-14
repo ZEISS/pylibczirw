@@ -1,6 +1,6 @@
 # Used for testing
 mypy
 check-python-versions
-tox==3.27.1
+tox==4.18.0
 tox-current-env
 pytest
