@@ -200,6 +200,8 @@ def test_write_metadata_application_version_matches_package_version() -> None:
             },
             [
                 {
+                    "@Id": "Channel:0",
+                    "@Name": "TestCh0",
                     "IsSelected": "true",
                     "Color": "#FF010203",
                     "ColorMode": "Color",
@@ -207,6 +209,8 @@ def test_write_metadata_application_version_matches_package_version() -> None:
                     "High": "0.8",
                 },
                 {
+                    "@Id": "Channel:1",
+                    "@Name": "TestCh1",
                     "IsSelected": "true",
                     "Color": "#FFFFFEFD",
                     "ColorMode": "Color",
@@ -239,6 +243,10 @@ def test_write_sample_metadata_and_compare(
     with tempfile.TemporaryDirectory() as td:
         # Act
         with create_czi(join(td, "test.czi")) as test_czi:
+            # Write data to the CZI since behavior on empty images in not well-defined
+            test_czi.write(data=np.zeros((100, 100), dtype=np.uint8), plane={"C": 0})
+            test_czi.write(data=np.zeros((100, 100), dtype=np.uint8), plane={"C": 1})
+            # Write metadata
             test_czi.write_metadata(
                 document_name="TestWriteMetadata",
                 scale_x=1.0,

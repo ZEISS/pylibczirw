@@ -92,7 +92,7 @@ void CZIwriteAPI::WriteMetadata(
       ssName << "";
       nameIsValid = false;
     }
-    return make_tuple(ssId.str(), make_tuple(true, ssName.str()));
+    return make_tuple(ssId.str(), make_tuple(nameIsValid, ssName.str()));
   };
 
   auto mdBldr = this->spWriter_->GetPreparedMetadata(prepareInfo);
