@@ -156,3 +156,102 @@ SubBlockCacheInfo CZIreadAPI::GetCacheInfo() {
 
   return cacheInfo;
 }
+
+bool CZIreadAPI::NeedsPyramid(uint32_t max_extent_of_image) {
+  ThresholdParameters parameters{ max_extent_of_image };
+
+  const auto statistics = this->spReader->GetStatistics();
+
+  // First, check the overall bounding box
+  if (!CheckOverallBoundingBoxForNecessityOfPyramid(statistics, parameters)) {
+    return false;
+  }
+
+    // Check per-scene bounding boxes
+  const auto per_scene_result = CheckPerSceneBoundingBoxesForNecessityOfPyramid(statistics, parameters);
+  if (per_scene_result.value_or(true) == false) {
+    return false;
+  }
+
+  // Check if pyramid is already present
+  const auto pyramid_statistics = this->spReader->GetPyramidStatistics();
+
+  if (CheckIfPyramidIsPresent(statistics, pyramid_statistics, parameters)) {
+    return false;
+  }
+
+  return true;
+}
+
+bool CZIreadAPI::CheckOverallBoundingBoxForNecessityOfPyramid(const libCZI::SubBlockStatistics& statistics, const ThresholdParameters& threshold_parameters) {
+  if (IsRectangleAboveThreshold(statistics.boundingBoxLayer0Only, threshold_parameters)) {
+    return true;
+  }
+  return false;
+}
+
+std::optional<bool> CZIreadAPI::CheckPerSceneBoundingBoxesForNecessityOfPyramid(const libCZI::SubBlockStatistics& statistics, const ThresholdParameters& threshold_parameters) {
+  if (statistics.sceneBoundingBoxes.empty()) {
+    return std::nullopt;
+  }
+
+  for (const auto& sceneBoundingBox : statistics.sceneBoundingBoxes) {
+    if (IsRectangleAboveThreshold(sceneBoundingBox.second.boundingBoxLayer0, threshold_parameters)) {
+      return true;
+    }
+  }
+
+  return false;
+}
+
+bool CZIreadAPI::IsRectangleAboveThreshold(const libCZI::IntRect& rectangle, const ThresholdParameters& threshold_parameters) {
+  if (static_cast<uint32_t>(rectangle.w) > threshold_parameters.max_extent_of_image || static_cast<uint32_t>(rectangle.h) > threshold_parameters.max_extent_of_image) {
+    return true;
+  }
+  return false;
+}
+
+bool CZIreadAPI::CheckIfPyramidIsPresent(const libCZI::SubBlockStatistics& statistics, const libCZI::PyramidStatistics& pyramid_statistics, const ThresholdParameters& threshold_parameters) {
+  if (statistics.sceneBoundingBoxes.empty()) {
+    // No S-index used; check overall bounding box
+    if (CheckOverallBoundingBoxForNecessityOfPyramid(statistics, threshold_parameters)) {
+      const auto& pyramid_layer_statistics_iterator = pyramid_statistics.scenePyramidStatistics.find(std::numeric_limits<int>::max());
+      if (pyramid_layer_statistics_iterator == pyramid_statistics.scenePyramidStatistics.end()) {
+        // Unexpected; there should always be a pyramid-layer-0
+          return false;
+        }
+
+        if (!DoesContainPyramidLayer(pyramid_layer_statistics_iterator->second)) {
+          return false;
+        }
+      }
+  } else {
+    // Document contains scenes; check per-scene bounding boxes
+    if (CheckPerSceneBoundingBoxesForNecessityOfPyramid(statistics, threshold_parameters)) {
+      for (const auto& sceneBoundingBox : statistics.sceneBoundingBoxes) {
+        if (IsRectangleAboveThreshold(sceneBoundingBox.second.boundingBoxLayer0, threshold_parameters)) {
+          const auto& pyramid_layer_statistics_iterator = pyramid_statistics.scenePyramidStatistics.find(sceneBoundingBox.first);
+          if (pyramid_layer_statistics_iterator == pyramid_statistics.scenePyramidStatistics.end()) {
+            // Unexpected; there should always be a pyramid-layer-0
+            return false;
+          }
+
+          if (!DoesContainPyramidLayer(pyramid_layer_statistics_iterator->second)) {
+            return false;
+          }
+        }
+      }
+    }
+  }
+
+  return true;
+}
+
+bool CZIreadAPI::DoesContainPyramidLayer(const std::vector<libCZI::PyramidStatistics::PyramidLayerStatistics>& pyramid_layer_statistics) {
+  for (const auto& layer_statistics : pyramid_layer_statistics) {
+    if (!layer_statistics.layerInfo.IsLayer0() && layer_statistics.count > 0) {
+      return true;
+    }
+  }
+  return false;
+}

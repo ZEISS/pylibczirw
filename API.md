@@ -112,6 +112,12 @@ We will treat scenes differently at this level for the sake of consistency. The 
 
 *Returns:* The raw metadata of the czi parsed into a dictionary.
 
+### Checking if CZI needs a pyramid
+
+**`needs_pyramid`**
+
+*Returns:* True if a pyramid is needed. False if pyramid is already present, or image is smaller than threshold (default of 4096x4096).
+
 ### Reading custom attributes
 
 **`custom_attributes_metadata`**
