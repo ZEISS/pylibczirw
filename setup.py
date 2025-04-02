@@ -244,7 +244,7 @@ setup(
     cmdclass={"build_ext": CMakeBuild},
     install_requires=requirements,
     # we require at least python version 3.7
-    python_requires=">=3.7,<3.12",
+    python_requires=">=3.7,<3.14",
     license_files=["COPYING", "COPYING.LESSER", "NOTICE"],
     # Classifiers help users find your project by categorizing it.
     # For a list of valid classifiers, see https://pypi.org/classifiers/
@@ -256,6 +256,8 @@ setup(
         "Programming Language :: Python :: 3.9",
         "Programming Language :: Python :: 3.10",
         "Programming Language :: Python :: 3.11",
+        "Programming Language :: Python :: 3.12",
+        "Programming Language :: Python :: 3.13",
         "License :: OSI Approved :: GNU Lesser General Public License v3 (LGPLv3)",
         "Operating System :: Microsoft :: Windows",
         "Operating System :: Unix",
