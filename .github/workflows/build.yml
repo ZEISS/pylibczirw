@@ -15,7 +15,7 @@ jobs:
     uses: "./.github/workflows/build-reusable.yml"
     with:
       Pure: false
-      PyVersionLatest: "3.11"
+      PyVersionLatest: "3.13"
       # Relative to github.workspace
       PkgName: pylibCZIrw
       CIBWBEFOREALLLINUX: yum install -y glibc-static perl-IPC-Cmd
