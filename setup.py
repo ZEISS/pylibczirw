@@ -5,10 +5,10 @@ import platform
 import re
 import subprocess  # nosec blacklist
 import sys
-from distutils.version import LooseVersion
 from pathlib import Path
 from typing import List
 
+from packaging.version import Version
 from setuptools import Extension, setup
 from setuptools.command.build_ext import build_ext
 
@@ -23,7 +23,7 @@ with open("CHANGELOG.md", encoding="utf-8") as changelog_file:
     changelog = changelog_file.read()
 
 # List any runtime requirements here
-requirements = ["numpy", "cmake", "xmltodict", "validators"]
+requirements = ["numpy", "cmake", "xmltodict", "validators", "packaging"]
 
 
 class CMakeExtension(Extension):
@@ -46,14 +46,10 @@ class CMakeBuild(build_ext):
                 f"CMake must be installed and available at PATH ({os.environ.get('PATH')}) "
                 f"to build the following extensions: {', '.join(e.name for e in self.extensions)}"
             ) from exc
-        cmake_version = LooseVersion(
-            re.search(r"version\s*([\d.]+)", out.decode()).group(1)  # type: ignore[union-attr]
-        )
+        cmake_version = Version(re.search(r"version\s*([\d.]+)", out.decode()).group(1))  # type: ignore[union-attr]
         if platform.system() == "Windows":
-            cmake_version = LooseVersion(
-                re.search(r"version\s*([\d.]+)", out.decode()).group(1)  # type: ignore[union-attr]
-            )
-            if cmake_version < "3.1.0":
+            cmake_version = Version(re.search(r"version\s*([\d.]+)", out.decode()).group(1))  # type: ignore[union-attr]
+            if cmake_version < Version("3.1.0"):
                 raise RuntimeError("CMake >= 3.1.0 is required on Windows")
 
         for ext in self.extensions:
@@ -244,18 +240,19 @@ setup(
     cmdclass={"build_ext": CMakeBuild},
     install_requires=requirements,
     # we require at least python version 3.7
-    python_requires=">=3.7,<3.12",
+    python_requires=">=3.8,<3.14",
     license_files=["COPYING", "COPYING.LESSER", "NOTICE"],
     # Classifiers help users find your project by categorizing it.
     # For a list of valid classifiers, see https://pypi.org/classifiers/
     classifiers=[
         "Development Status :: 5 - Production/Stable",
         "Topic :: Scientific/Engineering :: Image Processing",
-        "Programming Language :: Python :: 3.7",
         "Programming Language :: Python :: 3.8",
         "Programming Language :: Python :: 3.9",
         "Programming Language :: Python :: 3.10",
         "Programming Language :: Python :: 3.11",
+        "Programming Language :: Python :: 3.12",
+        "Programming Language :: Python :: 3.13",
         "License :: OSI Approved :: GNU Lesser General Public License v3 (LGPLv3)",
         "Operating System :: Microsoft :: Windows",
         "Operating System :: Unix",
