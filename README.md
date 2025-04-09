@@ -9,6 +9,8 @@
 [![PyPI version](https://badge.fury.io/py/pylibCZIrw.svg)](https://badge.fury.io/py/pylibCZIrw)  
 
 # Contribute
+**Please check [CONTRIBUTING.md](./CONTRIBUTING.md) - especially the section on creating a PR before starting working on a branch!**  
+
 If you intend to **use** this repo, clone the repository on your machine with ``` git clone --recurse-submodules ```.  
 If you intend to also **contribute** to this repo, you are requested to copy ALL files in the hooks directory into your .git/hooks directory right after you cloned this repo!  
 In addition, be sure to ideally always keep your remotes up-to-date with ``` git pull --recurse-submodules ```. Even better, you can set the configuration option _submodule.recurse_ to _true_ locally (this works for git pull since Git 2.15) with ``` git config --local submodule.recurse true ```.  This option will make Git use the _--recurse-submodules_ flag for all commands that support it (except clone). See <https://git-scm.com/book/en/v2/Git-Tools-Submodules> for more information.
@@ -21,11 +23,7 @@ You should ideally have [PyCharm Professional](https://www.jetbrains.com/pycharm
 3. Install necessary packages for building from the activated environment via `pip install .`
 4. Install necessary packages for code quality analysis and testing from the activated environment via `pip install -r requirements_test.txt`  
 
-You may then [configure all relevant 3rd party tools](https://www.jetbrains.com/help/pycharm/configuring-third-party-tools.html#), e.g. pytest, mypy, flake8 or bandit. You may want to check with the corresponding pipeline (template) for which analysis tools are run and their command line.  
-
-This repo follows [GitFlow](https://www.atlassian.com/git/tutorials/comparing-workflows/gitflow-workflow). PR/Build validation is executed on develop and main. Self-approval is allowed on develop. No policy is applied on release/ to allow for PR changes on release/ before merging to main or back to develop. See [Packaging](#packaging) and [Versioning](#versioning) for more information.  
-
-For more information, refer to [CONTRIBUTING.md](./CONTRIBUTING.md).
+You may then [configure all relevant 3rd party tools](https://www.jetbrains.com/help/pycharm/configuring-third-party-tools.html#), e.g. pytest, mypy, flake8 or bandit. You may want to check with the corresponding pipeline (template) for which analysis tools are run and their command line.
 
 # Introduction
 
@@ -116,19 +114,6 @@ Note: When updating major version, this must be synchronised with a [Colab templ
 # Packaging
 
 A package installable through pip is generated as part of a [build](https://github.com/ZEISS/pylibczirw/actions/workflows/build.yml) and pushed to [PyPI](https://pypi.org/project/pylibczirw/).  
-
-# Release Process
-  1. Once changes have been merged to develop, a PR with updated version (see: [Versioning](#versioning)) should be created to develop.  
-     The following files need to have their version updated: CZIwriteAPI.cpp, CMakeLists.txt, setup.py, INFO.md
-  2. Make sure both the [API](#api)s have been updated.
-  3. Next create a release branch based on develop, with naming `release/v_version (ex: release/v_3_4_0)`
-  4. Create a PR to merge this into main.  
-     **WARNING** Do not merge until package is tested.  
-     To create a TestPyPI package, run a manual build of [TC-PyPI-pylibCZIrw](https://dev.azure.com/ZEISSgroup/RMS-DEV/_build?definitionId=5108) with the `Upload` stage selected.  
-     This, when complete will produce a URI to the test package (ex: <https://test.pypi.org/project/pylibCZIrw/3.4.0/>).
-  5. Once this test package is ready, it can be installed using the following command replacing the version with the one specified previously  
-     ``` pip install -i https://test.pypi.org/simple/ pylibCZIrw==3.4.0 ```.
-  6. After testing this package, merge the release branch into main, and then back into develop, if any bugfixes have been made.
 
 # Installation
 Binary wheels for all python versions that this package is considered to be compatible against (see python_requires in setup.py) as well as a source distribution are [packaged](#packaging). Installing from the source distribution requires **cmake** to be available on PATH.
