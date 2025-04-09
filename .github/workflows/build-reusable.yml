@@ -271,7 +271,7 @@ jobs:
       url: https://pypi.org/project/pylibCZIrw/${{needs.CodeQualityAnalysis-Test.outputs.pypi_version}}
     steps:
       - name: Download Wheels and Source Distribution
-        uses: actions/download-artifact@v4.1.0
+        uses: actions/download-artifact@v4.2.1
       - name: Collect Wheels and Source Distribution
         # Move to dist as default folder for publish action
         run: New-Item -Path "." -Name "dist" -ItemType "directory"; Get-ChildItem -Path ".\*.whl",".\*.tar.gz" -Recurse | Move-Item -Destination ".\dist"
