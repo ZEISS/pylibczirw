@@ -30,6 +30,13 @@ on:
         required: false
         default: ""
         type: string
+    outputs:
+      pypi_released:
+        value: ${{ CodeQualityAnalysis-Test.outputs.pypi_released }}
+      pypi_version:
+        value: ${{ CodeQualityAnalysis-Test.outputs.pypi_version }}
+      pypi_tag:
+        value: ${{ CodeQualityAnalysis-Test.outputs.pypi_tag }}
 permissions:
   contents: read
 jobs:
@@ -241,70 +248,3 @@ jobs:
           RunShell: ${{ matrix.config.RunShell }}
           PkgVersion: "${{ steps.psr.outputs.pypi_version }}"
     needs: PackageSDist
-  Upload:
-    permissions:
-      contents: read
-      # IMPORTANT: this permission is mandatory for trusted publishing
-      id-token: write
-    needs:
-      - CodeQualityAnalysis-Test
-      - DownloadTestSdist
-      - DownloadTestWheelsPure
-      - PackageWheelsNonPure
-      - PackageWheelsPure
-      - PackageSdist
-    # Needs to run on ubuntu
-    runs-on: ubuntu-latest
-    # If conditional based on https://github.com/actions/runner/issues/491#issuecomment-850884422
-    if: |
-      always() &&
-      github.event_name != 'pull_request' &&
-      contains(fromJSON('["skipped", "success"]'), needs.DownloadTestSdist.result) &&
-      contains(fromJSON('["skipped", "success"]'), needs.DownloadTestWheelsPure.result) &&
-      contains(fromJSON('["skipped", "success"]'), needs.PackageWheelsNonPure.result) &&
-      contains(fromJSON('["skipped", "success"]'), needs.PackageWheelsPure.result) &&
-      contains(fromJSON('["skipped", "success"]'), needs.PackageSdist.result) &&
-      needs.CodeQualityAnalysis-Test.result == 'success' &&
-      needs.CodeQualityAnalysis-Test.outputs.pypi_released == 'true'
-    environment:
-      name: pypi
-      url: https://pypi.org/project/pylibCZIrw/${{needs.CodeQualityAnalysis-Test.outputs.pypi_version}}
-    steps:
-      - name: Download Wheels and Source Distribution
-        uses: actions/download-artifact@v4.1.0
-      - name: Collect Wheels and Source Distribution
-        # Move to dist as default folder for publish action
-        run: New-Item -Path "." -Name "dist" -ItemType "directory"; Get-ChildItem -Path ".\*.whl",".\*.tar.gz" -Recurse | Move-Item -Destination ".\dist"
-        shell: pwsh
-      - name: Upload to PyPI
-        # As of 06/2024, trusted publishing does not work within reusable workflows located in a different repo
-        # Tracked in:
-        # https://github.com/pypa/gh-action-pypi-publish/issues/166
-        # https://github.com/pypi/warehouse/issues/11096
-        # https://docs.pypi.org/trusted-publishers/troubleshooting/#reusable-workflows-on-github
-        # More info on trusted publishing: https://blog.pypi.org/posts/2023-04-20-introducing-trusted-publishers/
-        uses: pypa/gh-action-pypi-publish@release/v1
-        with:
-          # Basically runs twine check
-          verify-metadata: true
-  Tag:
-    permissions:
-      contents: write
-    needs:
-      - CodeQualityAnalysis-Test
-      - Upload
-    # Aftermath of if-conditional of Upload job
-    if: always() && needs.Upload.result == 'success'
-    runs-on: windows-2019
-    steps:
-      - uses: actions/checkout@v4.1.0
-      - name: Tag with PyPI version
-        uses: actions/github-script@v7
-        with:
-          script: |
-            github.rest.git.createRef({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              ref: 'refs/tags/${{needs.CodeQualityAnalysis-Test.outputs.pypi_tag}}',
-              sha: context.sha
-            })
