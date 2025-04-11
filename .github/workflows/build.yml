@@ -60,6 +60,7 @@ jobs:
           # Basically runs twine check
           verify-metadata: true
   tag:
+    name: Tag with PyPI version
     permissions:
       contents: write
     needs:
