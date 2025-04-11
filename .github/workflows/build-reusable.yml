@@ -32,11 +32,11 @@ on:
         type: string
     outputs:
       pypi_released:
-        value: ${{ CodeQualityAnalysis-Test.outputs.pypi_released }}
+        value: ${{ jobs.CodeQualityAnalysis-Test.outputs.pypi_released }}
       pypi_version:
-        value: ${{ CodeQualityAnalysis-Test.outputs.pypi_version }}
+        value: ${{ jobs.CodeQualityAnalysis-Test.outputs.pypi_version }}
       pypi_tag:
-        value: ${{ CodeQualityAnalysis-Test.outputs.pypi_tag }}
+        value: ${{ jobs.CodeQualityAnalysis-Test.outputs.pypi_tag }}
 permissions:
   contents: read
 jobs:
