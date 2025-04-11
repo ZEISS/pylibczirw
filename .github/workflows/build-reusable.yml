@@ -99,7 +99,7 @@ jobs:
         shell: pwsh
       - name: Upload Coverage
         if: success() || failure()
-        uses: codecov/codecov-action@v4
+        uses: codecov/codecov-action@v5
         with:
           directory: ${{ github.workspace }}/TestResults
           files: coverage.xml
