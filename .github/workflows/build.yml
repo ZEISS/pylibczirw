@@ -5,6 +5,8 @@ on:
     branches: ["main"]
   pull_request:
     branches: ["main"]
+# Force permissions to be set on job-level
+permissions: {}
 jobs:
   build:
     permissions:
