@@ -1270,7 +1270,7 @@ def open_czi(
     filepath: str,
     file_input_type: ReaderFileInputTypes = ReaderFileInputTypes.Standard,
     cache_options: Optional[CacheOptions] = None,
-) -> Generator:
+) -> Generator[CziReader]:
     """Initialize a czi reader object and returns it.
     Opens the filepath and hands it over to the low-level function.
 
@@ -1296,7 +1296,7 @@ def open_czi(
 
 
 @contextlib.contextmanager
-def create_czi(filepath: str, exist_ok: bool = False, compression_options: Optional[str] = None) -> Generator:
+def create_czi(filepath: str, exist_ok: bool = False, compression_options: Optional[str] = None) -> Generator[CziWriter]:
     """Initialize a czi writer object and returns it. Opens the filepath and hands it over to the low-level function.
 
     Any missing intermediate directories are created in case they are missing.
