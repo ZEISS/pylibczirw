@@ -22,6 +22,17 @@ private:
   SubBlockCacheOptions
       subBlockCacheOptions; ///< Options for using the subblock cache
 
+  struct ThresholdParameters {
+    uint32_t max_extent_of_image; ///< Helper struct for threshold parameters
+  };
+
+  /// Helper methods for pyramid checking
+  bool CheckOverallBoundingBoxForNecessityOfPyramid(const libCZI::SubBlockStatistics& statistics, const ThresholdParameters& threshold_parameters);
+  std::optional<bool> CheckPerSceneBoundingBoxesForNecessityOfPyramid(const libCZI::SubBlockStatistics& statistics, const ThresholdParameters& threshold_parameters);
+  bool IsRectangleAboveThreshold(const libCZI::IntRect& rectangle, const ThresholdParameters& threshold_parameters);
+  bool CheckIfPyramidIsPresent(const libCZI::SubBlockStatistics& statistics, const libCZI::PyramidStatistics& pyramid_statistics, const ThresholdParameters& threshold_parameters);
+  bool DoesContainPyramidLayer(const std::vector<libCZI::PyramidStatistics::PyramidLayerStatistics>& pyramid_layer_statistics);
+
 public:
   /// Constructor which constructs a CZIrwAPI object from the given wstring.
   /// Creates a spReader and spAccessor (SingleChannelTilingScalingAccessor) for
@@ -105,4 +116,11 @@ public:
   /// <returns>A SubBlockCacheInfo struct containing the cache
   /// information.</returns>
   SubBlockCacheInfo GetCacheInfo();
+
+  /// <summary>
+  /// Determines whether the CZI document needs a pyramid representation based on the specified threshold.
+  /// </summary>
+  /// <param name="max_extent_of_image>The maximum extent (width or height) of the image before a pyramid is considered necessary</param>
+  /// <returns>True if a pyramid is needed, false otherwise</returns>
+  bool NeedsPyramid(uint32_t max_extent_of_image);
 };

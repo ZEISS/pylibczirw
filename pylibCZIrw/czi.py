@@ -196,6 +196,21 @@ class CziReader:
         """Close the document and finalize the reading"""
         self._czi_reader.close()
 
+    def needs_pyramid(self, max_extent_of_image: int = 4096) -> bool:
+        """Determine whether the CZI document requires a pyramid representation.
+
+        Parameters
+        ----------
+        max_extent_of_image : int, optional
+            The maximum extent (width or height) before a pyramid is required. Defaults to 4096.
+
+        Returns
+        ----------
+        : bool
+            True if a pyramid is needed, False otherwise.
+        """
+        return self._czi_reader.NeedsPyramid(max_extent_of_image)        
+
     @staticmethod
     def _compute_index_ranges(
         rectangle: _pylibCZIrw.IntRect,

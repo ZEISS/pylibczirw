@@ -56,7 +56,9 @@ PYBIND11_MODULE(_pylibCZIrw, m) {
                  pixeltype, roi, bgColor, zoom, coordinateString, SceneIndexes);
              return result;
            })
-      .def("GetCacheInfo", &CZIreadAPI::GetCacheInfo);
+      .def("GetCacheInfo", &CZIreadAPI::GetCacheInfo)
+      .def("NeedsPyramid", &CZIreadAPI::NeedsPyramid, py::arg("max_extent_of_image"),
+             "Determines whether the CZI document needs a pyramid representation based on the specified threshold.");
 
   py::class_<CZIwriteAPI>(m, "czi_writer", py::module_local())
       .def(py::init<const std::wstring &, const std::string &>())
