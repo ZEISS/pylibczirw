@@ -47,7 +47,8 @@ runs:
         else
           set -x
           pip install . > /dev/null
-          ver=$(python setup.py --version)
+          echo "Reading version directly from setup.py"
+          ver=$(grep -Po '(?<=version=")[^"]+' setup.py | head -1)
           echo "version=$ver" >> "$GITHUB_OUTPUT"
           echo "tag=v$ver" >> "$GITHUB_OUTPUT"
           echo "released=false" >> "$GITHUB_OUTPUT"
