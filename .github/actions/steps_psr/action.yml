@@ -45,6 +45,7 @@ runs:
         then
           semantic-release -vv -c python-semantic-release.json version --changelog --no-commit --no-tag --no-push --no-vcs-release --skip-build
         else
+          set -x
           pip install . > /dev/null
           ver=$(python setup.py --version)
           echo "version=$ver" >> "$GITHUB_OUTPUT"
