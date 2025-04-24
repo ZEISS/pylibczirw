@@ -27,9 +27,6 @@ runs:
       with:
         python-version: "${{inputs.PyVersionLatest}}"
         architecture: x64
-    - name: Install dependencies
-      run: python -m pip install packaging setuptools
-      shell: bash
     - name: PSR Setup
       # Pin to 8.* to not face regressions w/o knowing
       run: python -m pip install python-semantic-release==8.*
@@ -48,7 +45,11 @@ runs:
         then
           semantic-release -vv -c python-semantic-release.json version --changelog --no-commit --no-tag --no-push --no-vcs-release --skip-build
         else
-          ver=$(python setup.py --version)
+          set -x
+          pip install . > /dev/null
+          echo "Reading version from setup.py"
+          ver=$(grep -Po '^VERSION\s*=\s*["'\'']\K[^"'\''"]+' setup.py | head -1)
+          echo "Extracted version: $ver"
           echo "version=$ver" >> "$GITHUB_OUTPUT"
           echo "tag=v$ver" >> "$GITHUB_OUTPUT"
           echo "released=false" >> "$GITHUB_OUTPUT"
