@@ -48,7 +48,7 @@ jobs:
       pypi_version: ${{ steps.psr.outputs.pypi_version }}
       pypi_tag: ${{ steps.psr.outputs.pypi_tag }}
     steps:
-      - uses: actions/checkout@v4.1.0
+      - uses: actions/checkout@v5
         with:
           lfs: true
           submodules: recursive
@@ -123,7 +123,7 @@ jobs:
             CIBWBEFOREALL: "${{inputs.CIBWBEFOREALLWindows}}",
           }
     steps:
-      - uses: actions/checkout@v4.1.0
+      - uses: actions/checkout@v5
         with:
           lfs: true
           submodules: recursive
@@ -142,7 +142,7 @@ jobs:
     runs-on: windows-2019
     if: inputs.Pure == true
     steps:
-      - uses: actions/checkout@v4.1.0
+      - uses: actions/checkout@v5
         with:
           lfs: true
           submodules: recursive
@@ -168,7 +168,7 @@ jobs:
     name: Package Source Distribution
     runs-on: windows-2019
     steps:
-      - uses: actions/checkout@v4.1.0
+      - uses: actions/checkout@v5
         with:
           lfs: true
           submodules: recursive
@@ -196,7 +196,7 @@ jobs:
     name: Test Wheel on windows-2019
     runs-on: windows-2019
     steps:
-      - uses: actions/checkout@v4.1.0
+      - uses: actions/checkout@v5
         with:
           lfs: true
           submodules: recursive
@@ -227,7 +227,7 @@ jobs:
           - { OS: windows-2019, RunShell: cmd }
     runs-on: ${{ matrix.config.OS }}
     steps:
-      - uses: actions/checkout@v4.1.0
+      - uses: actions/checkout@v5
         with:
           lfs: true
           submodules: recursive
