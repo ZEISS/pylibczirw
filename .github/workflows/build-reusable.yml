@@ -54,6 +54,12 @@ jobs:
           submodules: recursive
           # Python Semantic Release needs access to the full history to determine whether a release should be made.
           fetch-depth: 0
+      # Set python architecture
+      - name: Set up Python ${{ inputs.PyVersionLatest }} (x64)
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ inputs.PyVersionLatest }}
+          architecture: 'x64'
       - id: psr
         name: Python Semantic Release
         uses: "./.github/actions/steps_psr"
@@ -77,6 +83,17 @@ jobs:
       - name: Set TMPDIR to ${{ runner.temp }}
         if: success() || failure()
         run: echo "TMPDIR=${{ runner.temp }}" >> "$GITHUB_ENV"
+        shell: bash
+      # provide a 64-bit Python 3.8 so tox can create the py38-win env correctly
+      - name: Set up Python 3.8 (x64) for tox
+        if: runner.os == 'Windows'
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.8'
+          architecture: 'x64'
+      # pin virtualenv so tox seeds a pip compatible with Python 3.8
+      - name: Pin virtualenv for Python 3.8 venvs
+        run: python -m pip install "virtualenv<20.33"
         shell: bash
       - name: Unit and Integration Tests
         if: success() || failure()
