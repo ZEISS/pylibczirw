@@ -68,7 +68,7 @@ jobs:
       - upload
     # Aftermath of if-conditional of Upload job
     if: always() && needs.upload.result == 'success'
-    runs-on: windows-2019
+    runs-on: windows-2022
     steps:
       - uses: actions/checkout@v4.1.0
       - name: Tag with PyPI version

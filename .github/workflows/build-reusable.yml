@@ -42,7 +42,7 @@ permissions:
 jobs:
   CodeQualityAnalysis-Test:
     name: Static Analysis and Tests
-    runs-on: windows-2019
+    runs-on: windows-2022
     outputs:
       pypi_released: ${{ steps.psr.outputs.pypi_released }}
       pypi_version: ${{ steps.psr.outputs.pypi_version }}
@@ -118,7 +118,7 @@ jobs:
             CIBWBEFOREALL: "${{inputs.CIBWBEFOREALLLINUX}}",
           }
           - {
-            PoolImage: windows-2019,
+            PoolImage: windows-2022,
             OS: Windows,
             CIBWBEFOREALL: "${{inputs.CIBWBEFOREALLWindows}}",
           }
@@ -139,7 +139,7 @@ jobs:
     if: inputs.Pure == false
   PackageWheelsPure:
     name: Package Pure Wheels
-    runs-on: windows-2019
+    runs-on: windows-2022
     if: inputs.Pure == true
     steps:
       - uses: actions/checkout@v4.1.0
@@ -166,7 +166,7 @@ jobs:
           path: "${{ github.workspace }}\\${{inputs.PkgRootFolder}}\\dist"
   PackageSDist:
     name: Package Source Distribution
-    runs-on: windows-2019
+    runs-on: windows-2022
     steps:
       - uses: actions/checkout@v4.1.0
         with:
@@ -193,8 +193,8 @@ jobs:
   DownloadTestWheelsPure:
     # No need to re-test wheels for non-pure wheels produced through cibuildwheel since already tested there
     # Can be tested anywhere since it is pure
-    name: Test Wheel on windows-2019
-    runs-on: windows-2019
+    name: Test Wheel on windows-2022
+    runs-on: windows-2022
     steps:
       - uses: actions/checkout@v4.1.0
         with:
@@ -224,7 +224,7 @@ jobs:
       matrix:
         config:
           - { OS: ubuntu-latest, RunShell: bash }
-          - { OS: windows-2019, RunShell: cmd }
+          - { OS: windows-2022, RunShell: cmd }
     runs-on: ${{ matrix.config.OS }}
     steps:
       - uses: actions/checkout@v4.1.0
