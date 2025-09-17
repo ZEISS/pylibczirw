@@ -1,6 +1,7 @@
 [submodule "libs/libCZIrw"]
 	path = libs/libCZIrw
-	url = https://github.com/ZEISS/libczi
+	url = https://github.com/ptahmose/libczi-zeiss.git
+	branch = jbl/mask-support
 [submodule "libs/pybind11"]
 	path = libs/pybind11
 	url = https://github.com/pybind/pybind11
