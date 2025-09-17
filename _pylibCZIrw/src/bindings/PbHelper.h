@@ -5,6 +5,7 @@
 #include <pybind11/functional.h>
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
+#include <atomic>
 
 namespace py = pybind11;
 
@@ -19,7 +20,7 @@ private:
   std::uint32_t width;
   std::uint32_t height;
   std::uint32_t stride;
-
+  std::atomic<int> lockCnt = ATOMIC_VAR_INIT(0);
 public:
   CMemBitmapWrapper(libCZI::PixelType pixeltype, std::uint32_t width,
                     std::uint32_t height, std::uint32_t stride)
@@ -42,10 +43,17 @@ public:
     bitmapLockInfo.ptrDataRoi = this->ptrData;
     bitmapLockInfo.stride = this->stride;
     bitmapLockInfo.size = this->stride * static_cast<size_t>(this->height);
+    std::atomic_fetch_add(&this->lockCnt, 1);
     return bitmapLockInfo;
   }
 
-  virtual void Unlock() {}
+  virtual void Unlock() {
+    std::atomic_fetch_sub(&this->lockCnt, 1);
+  }
+
+  virtual int GetLockCount() const {
+    return std::atomic_load(&this->lockCnt);
+  }
 };
 
 /// Returns format descriptor corresponding to each libCZI::PixelType.
