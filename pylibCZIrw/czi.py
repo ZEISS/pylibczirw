@@ -70,6 +70,16 @@ class CacheOptions:
 
 
 @dataclass
+class ReaderOptions:
+    """Reader options data structure.
+
+    Configuration options for CZI reader.
+    """
+    enable_mask_awareness: bool = False             # whether the accessor will use the valid-pixel-mask for the tile-composition
+    enable_visibility_check_optimization = False    # whether the accessor will use the visibility-check-optimization for the tile-composition
+
+
+@dataclass
 class Rgb8Color:
     """Rgb8Color class.
 
@@ -151,6 +161,7 @@ class CziReader:
         filepath: str,
         file_input_type: ReaderFileInputTypes = ReaderFileInputTypes.Standard,
         cache_options: Optional[CacheOptions] = None,
+        reader_options: Optional[ReaderOptions] = None,
     ) -> None:
         """Creates a czi reader object, should only be called through the open_czi() function.
 
@@ -1270,6 +1281,8 @@ def open_czi(
     filepath: str,
     file_input_type: ReaderFileInputTypes = ReaderFileInputTypes.Standard,
     cache_options: Optional[CacheOptions] = None,
+    *,
+    reader_options: Optional[ReaderOptions] = None,
 ) -> Generator:
     """Initialize a czi reader object and returns it.
     Opens the filepath and hands it over to the low-level function.
@@ -1282,6 +1295,9 @@ def open_czi(
         The type of file input, default is local file.
     cache_options : CacheOptions, optional
         The configuration of a subblock cache to be used. Per default no cache is used.
+    reader_options: ReaderOptions, optional
+        Additional configuration options for the reader. Note that there is a keyword-only argument
+        boundary before the reader_options argument.
 
     Returns
     ----------
