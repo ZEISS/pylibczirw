@@ -24,8 +24,8 @@ private:
       subBlockCacheOptions; ///< Options for using the subblock cache
   ReaderOptions
       readerOptions; ///< Options for the reader, such as enabling mask
-                     ///< awareness and visibility check optimizations      
-                     
+                     ///< awareness and visibility check optimizations
+
 public:
   /// Constructor which constructs a CZIrwAPI object from the given wstring.
   /// Creates a spReader and spAccessor (SingleChannelTilingScalingAccessor) for
@@ -88,12 +88,12 @@ public:
   ///                                 the two strings done in the CZIrwAPI constructor.
   /// \param  fileName                Filename (or URI) of the file (the
   ///                                 interpretation of the string is stream class specific).
-  /// \param  subBlockCacheOptions    Options for initializing the subblock cache.             
+  /// \param  subBlockCacheOptions    Options for initializing the subblock cache.
   /// \param  readerOptions           Options controlling the reader operation, such as enabling
   ///                                 mask awareness tile-composition.
   CZIreadAPI(const std::string &stream_class_name, const std::wstring &fileName,
              const SubBlockCacheOptions &subBlockCacheOptions,
-             const ReaderOptions &readerOptions);             
+             const ReaderOptions &readerOptions);
 
   /// Close the Opened czi document
   void close() { this->spReader->Close(); }
