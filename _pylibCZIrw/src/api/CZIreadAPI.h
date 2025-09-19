@@ -22,11 +22,10 @@ private:
                        ///< null (in which case no caching is done)
   SubBlockCacheOptions
       subBlockCacheOptions; ///< Options for using the subblock cache
-
   ReaderOptions
       readerOptions; ///< Options for the reader, such as enabling mask
                      ///< awareness and visibility check optimizations      
-
+                     
 public:
   /// Constructor which constructs a CZIrwAPI object from the given wstring.
   /// Creates a spReader and spAccessor (SingleChannelTilingScalingAccessor) for
