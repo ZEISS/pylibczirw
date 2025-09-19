@@ -78,7 +78,7 @@ class ReaderOptions:
 
     enable_mask_awareness: bool = False
     """Whether the accessor will use the valid-pixel-mask for the tile-composition."""
-    
+
     enable_visibility_check_optimization: bool = True
     """Whether the accessor will use the visibility-check-optimization for the tile-composition."""
 
