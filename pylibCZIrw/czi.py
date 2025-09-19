@@ -229,8 +229,9 @@ class CziReader:
         libczi_reader_options.Clear()
         if reader_options:
             libczi_reader_options.enableMaskAwareness = reader_options.enable_mask_awareness
-            libczi_reader_options.enableVisibilityCheckOptimization =
+            libczi_reader_options.enableVisibilityCheckOptimization = (
                 reader_options.enable_visibility_check_optimization
+            )
         return libczi_reader_options
 
     @staticmethod
