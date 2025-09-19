@@ -76,10 +76,11 @@ class ReaderOptions:
     Configuration options for CZI reader.
     """
 
-    enable_mask_awareness: bool = False  # whether the accessor will use the valid-pixel-mask for the
-    # tile-composition
-    enable_visibility_check_optimization: bool = True  # whether the accessor will use the
-    # visibility-check-optimization for the tile-composition
+    enable_mask_awareness: bool = False
+    """Whether the accessor will use the valid-pixel-mask for the tile-composition."""
+    
+    enable_visibility_check_optimization: bool = True
+    """Whether the accessor will use the visibility-check-optimization for the tile-composition."""
 
 
 @dataclass
@@ -1329,6 +1330,12 @@ def open_czi(
     reader_options: ReaderOptions, optional
         Additional configuration options for the reader. Note that there is a keyword-only argument
         boundary before the reader_options argument.
+        Note: This parameter uses a keyword-only argument separator (*) to prevent 
+        accidental positional argument passing. This design choice ensures that 
+        reader_options must be explicitly named when called, improving code clarity 
+        and preventing errors when the function signature evolves. It also maintains 
+        backward compatibility if new optional parameters are added between 
+        cache_options and reader_options in the future.
 
     Returns
     ----------
