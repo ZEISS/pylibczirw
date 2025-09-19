@@ -22,10 +22,7 @@ CZIreadAPI::CZIreadAPI(const std::string &stream_class_name,
 CZIreadAPI::CZIreadAPI(const std::string &stream_class_name,
                        const std::wstring &fileName,
                        const SubBlockCacheOptions &subBlockCacheOptions) 
-    : CZIreadAPI(stream_class_name, fileName, subBlockCacheOptions,
-                 ReaderOptions()) {}
-
-
+    : CZIreadAPI(stream_class_name, fileName, subBlockCacheOptions, ReaderOptions()) {}
 
 CZIreadAPI::CZIreadAPI(const std::string &stream_class_name,
                        const std::wstring &fileName,
@@ -127,12 +124,11 @@ std::unique_ptr<PImage> CZIreadAPI::GetSingleChannelScalingTileAccessorData(
 
   libCZI::ISingleChannelScalingTileAccessor::Options scstaOptions;
   scstaOptions.Clear();
+  // set the flag "visibility check optimization" as configured by the user
   scstaOptions.useVisibilityCheckOptimization =
-      this->readerOptions.enableVisibilityCheckOptimization; // set the flag "visibility check optimization" 
-                                                             // as configured by the user
-  scstaOptions.maskAware =
-      this->readerOptions.enableMaskAwareness;  // set the flag "mask awareness" as
-                                                // configured by the user
+      this->readerOptions.enableVisibilityCheckOptimization;
+  // set the flag "mask awareness" as configured by the user
+  scstaOptions.maskAware = this->readerOptions.enableMaskAwareness;
   scstaOptions.backGroundColor = bgColor;
   if (this->spSubBlockCache) {
     scstaOptions.subBlockCache = this->spSubBlockCache;
