@@ -230,7 +230,6 @@ class CziReader:
             libczi_reader_options.enableVisibilityCheckOptimization = reader_options.enable_visibility_check_optimization
         return libczi_reader_options
 
-
     @staticmethod
     def _compute_index_ranges(
         rectangle: _pylibCZIrw.IntRect,
