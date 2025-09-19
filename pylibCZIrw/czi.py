@@ -193,7 +193,10 @@ class CziReader:
         else:
             # When reading from disk we only cache compressed subblocks.
             libczi_cache_options.cacheOnlyCompressed = True
-            self._czi_reader = _pylibCZIrw.czi_reader("", filepath, libczi_cache_options, libczi_reader_options)
+            # use the "standard reader class name" for local files
+            self._czi_reader = _pylibCZIrw.czi_reader(
+                ReaderFileInputTypes.Standard.value, filepath, libczi_cache_options, libczi_reader_options
+            )
         self._stats = self._czi_reader.GetSubBlockStats()
 
     @classmethod
