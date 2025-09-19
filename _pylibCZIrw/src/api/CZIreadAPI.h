@@ -77,8 +77,7 @@ public:
   ///                                class specific).
   /// \param  subBlockCacheOptions    Options for initializing the subblock
   ///                                cache.
-  CZIreadAPI(const std::string &stream_class_name,
-             const std::wstring &fileName,
+  CZIreadAPI(const std::string &stream_class_name, const std::wstring &fileName,
              const SubBlockCacheOptions &subBlockCacheOptions);
 
   /// Constructor which constructs a CZIrwAPI object, allowing to specify a
@@ -102,8 +101,7 @@ public:
   /// \param  readerOptions           Options controlling the reader
   ///                                operation, such as enabling mask
   ///                                aware tile-composition.
-  CZIreadAPI(const std::string &stream_class_name, 
-             const std::wstring &fileName,
+  CZIreadAPI(const std::string &stream_class_name, const std::wstring &fileName,
              const SubBlockCacheOptions &subBlockCacheOptions,
              const ReaderOptions &readerOptions);
 
