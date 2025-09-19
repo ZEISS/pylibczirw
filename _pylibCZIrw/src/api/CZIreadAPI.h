@@ -23,8 +23,9 @@ private:
   SubBlockCacheOptions
       subBlockCacheOptions; ///< Options for using the subblock cache
 
-  ReaderOptions readerOptions; ///< Options for the reader, such as enabling mask
-                                 ///< awareness and visibility check optimizations      
+  ReaderOptions
+      readerOptions; ///< Options for the reader, such as enabling mask
+                     ///< awareness and visibility check optimizations      
 
 public:
   /// Constructor which constructs a CZIrwAPI object from the given wstring.
@@ -75,6 +76,22 @@ public:
   CZIreadAPI(const std::string &stream_class_name, const std::wstring &fileName,
              const SubBlockCacheOptions &subBlockCacheOptions);
 
+  /// Constructor which constructs a CZIrwAPI object, allowing to specify a
+  /// stream class name. Possible stream class names are: "standard" for reading
+  /// files in the file system, and "curl" for reading files from a web server.
+  /// "curl" is mapped to the libCZI-streams class "curl_http_inputstream". This
+  /// constructor allows defining a subblock cache to be used for performance
+  /// optimization. In addition, is allows to specify reader options.
+  ///
+  /// \param  stream_class_name       A string identifying the stream class to
+  ///                                 be used (note that this string is *not* the same
+  ///                                 string the libCZI-streams factory uses. There is a mapping between
+  ///                                 the two strings done in the CZIrwAPI constructor.
+  /// \param  fileName                Filename (or URI) of the file (the
+  ///                                 interpretation of the string is stream class specific).
+  /// \param  subBlockCacheOptions    Options for initializing the subblock cache.             
+  /// \param  readerOptions           Options controlling the reader operation, such as enabling
+  ///                                 mask awareness tile-composition.
   CZIreadAPI(const std::string &stream_class_name, const std::wstring &fileName,
              const SubBlockCacheOptions &subBlockCacheOptions,
              const ReaderOptions &readerOptions);             
