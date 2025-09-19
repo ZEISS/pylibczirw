@@ -1,9 +1,9 @@
 #include "../api/CZIreadAPI.h"
 #include "../api/CZIwriteAPI.h"
 #include "../api/PImage.h"
+#include "../api/ReaderOptions.h"
 #include "../api/SubBlockCache.h"
 #include "../api/site.h"
-#include "../api/ReaderOptions.h"
 #include "PbHelper.h"
 
 #include <pybind11/chrono.h>
@@ -38,8 +38,8 @@ PYBIND11_MODULE(_pylibCZIrw, m) {
                        const std::wstring &fileName,
                        const SubBlockCacheOptions &subBlockCacheOptions,
                        const ReaderOptions &readerOptions) {
-        return new CZIreadAPI(stream_class_name, fileName,
-                              subBlockCacheOptions, readerOptions);
+        return new CZIreadAPI(stream_class_name, fileName, subBlockCacheOptions,
+                              readerOptions);
       }))
       .def("close", &CZIreadAPI::close)
       .def("GetXmlMetadata", &CZIreadAPI::GetXmlMetadata)
@@ -229,8 +229,7 @@ PYBIND11_MODULE(_pylibCZIrw, m) {
 
   py::class_<ReaderOptions>(m, "ReaderOptions", py::module_local())
       .def(py::init<>())
-      .def_readwrite("enableMaskAwareness",
-                     &ReaderOptions::enableMaskAwareness)
+      .def_readwrite("enableMaskAwareness", &ReaderOptions::enableMaskAwareness)
       .def_readwrite("enableVisibilityCheckOptimization",
                      &ReaderOptions::enableVisibilityCheckOptimization)
       .def("Clear", &ReaderOptions::Clear);
