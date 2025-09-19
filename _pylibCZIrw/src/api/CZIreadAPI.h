@@ -96,10 +96,10 @@ public:
   ///                                interpretation of the string is stream
   ///                                class specific).
   /// \param  subBlockCacheOptions    Options for initializing the
-  /// 								 subblock cache.
+  ///                                subblock cache.
   /// \param  readerOptions           Options controlling the reader
-  /// 								 operation, such as enabling mask
-  /// 								 aware tile-composition.
+  ///                                operation, such as enabling mask
+  ///                                aware tile-composition.
   CZIreadAPI(const std::string &stream_class_name, 
              const std::wstring &fileName,
              const SubBlockCacheOptions &subBlockCacheOptions,
