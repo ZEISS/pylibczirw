@@ -75,8 +75,10 @@ class ReaderOptions:
 
     Configuration options for CZI reader.
     """
-    enable_mask_awareness: bool = False             # whether the accessor will use the valid-pixel-mask for the tile-composition
-    enable_visibility_check_optimization = True     # whether the accessor will use the visibility-check-optimization for the tile-composition
+    enable_mask_awareness: bool = False             # whether the accessor will use the valid-pixel-mask for the
+                                                    # tile-composition
+    enable_visibility_check_optimization = True     # whether the accessor will use the visibility-check-optimization
+                                                    # for the tile-composition
 
 
 @dataclass
@@ -183,14 +185,14 @@ class CziReader:
                 # And therefore also cache uncompressed subblocks.
                 libczi_cache_options.cacheOnlyCompressed = False
                 self._czi_reader = _pylibCZIrw.czi_reader(
-                    ReaderFileInputTypes.Curl.value, filepath, libczi_cache_options
+                    ReaderFileInputTypes.Curl.value, filepath, libczi_cache_options, libczi_reader_options
                 )
             else:
                 raise FileNotFoundError(f"{filepath} is not a valid URL.")
         else:
             # When reading from disk we only cache compressed subblocks.
             libczi_cache_options.cacheOnlyCompressed = True
-            self._czi_reader = _pylibCZIrw.czi_reader(filepath, libczi_cache_options)
+            self._czi_reader = _pylibCZIrw.czi_reader(filepath, libczi_cache_options, libczi_reader_options)
         self._stats = self._czi_reader.GetSubBlockStats()
 
     @classmethod
@@ -227,7 +229,8 @@ class CziReader:
         libczi_reader_options.Clear()
         if reader_options:
             libczi_reader_options.enableMaskAwareness = reader_options.enable_mask_awareness
-            libczi_reader_options.enableVisibilityCheckOptimization = reader_options.enable_visibility_check_optimization
+            libczi_reader_options.enableVisibilityCheckOptimization =
+                reader_options.enable_visibility_check_optimization
         return libczi_reader_options
 
     @staticmethod
