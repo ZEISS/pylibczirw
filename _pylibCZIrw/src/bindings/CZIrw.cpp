@@ -2,8 +2,8 @@
 #include "../api/CZIwriteAPI.h"
 #include "../api/PImage.h"
 #include "../api/SubBlockCache.h"
-#include "../api/ReaderOptions.h"
 #include "../api/site.h"
+#include "../api/ReaderOptions.h"
 #include "PbHelper.h"
 
 #include <pybind11/chrono.h>
