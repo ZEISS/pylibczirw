@@ -21,6 +21,7 @@ private:
   std::uint32_t height;
   std::uint32_t stride;
   std::atomic<int> lockCnt = ATOMIC_VAR_INIT(0);
+
 public:
   CMemBitmapWrapper(libCZI::PixelType pixeltype, std::uint32_t width,
                     std::uint32_t height, std::uint32_t stride)
