@@ -55,7 +55,7 @@ A `CacheOptions` object allows defining a cache type and upper limits for memory
 ```python
 cache_options = CacheOptions(
   type = CacheType.Standard,
-  max_memory_usge = 500 * 1024**2 # 500 Megabytes
+  max_memory_usage = 500 * 1024**2 # 500 Megabytes
   max_sub_block_count = 100,
 )
 with czi.open_czi(file_path, cache_options=cache_options) as czi:
@@ -73,7 +73,7 @@ The `ReaderOptions` can be passed to `open_czi` like in this example:
 ```python
 cache_options = CacheOptions(
   type = CacheType.Standard,
-  max_memory_usge = 500 * 1024**2 # 500 Megabytes
+  max_memory_usage = 500 * 1024**2 # 500 Megabytes
   max_sub_block_count = 100,
 )
 reader_options = ReaderOptions(
