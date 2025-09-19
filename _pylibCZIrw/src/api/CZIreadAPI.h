@@ -2,6 +2,7 @@
 
 #include "PImage.h"
 #include "SubBlockCache.h"
+#include "ReaderOptions.h"
 #include "inc_libCzi.h"
 #include <iostream>
 #include <optional>
@@ -21,6 +22,9 @@ private:
                        ///< null (in which case no caching is done)
   SubBlockCacheOptions
       subBlockCacheOptions; ///< Options for using the subblock cache
+
+  ReaderOptions readerOptions; ///< Options for the reader, such as enabling mask
+                                 ///< awareness and visibility check optimizations      
 
 public:
   /// Constructor which constructs a CZIrwAPI object from the given wstring.
@@ -47,9 +51,10 @@ public:
   /// Creates a spReader and spAccessor (SingleChannelTilingScalingAccessor) for
   /// the czi document pointed by the given filepath.
   /// This constructor allows defining a subblock cache to be used for
-  /// performance optimization. \param  fileName                Filename of the
-  /// file. \param  subBlockCacheOptions    Options for initializing the
-  /// subblock cache.
+  /// performance optimization.
+  /// \param  fileName                Filename of the file.
+  /// \param  subBlockCacheOptions    Options for initializing the
+  ///                                subblock cache.
   CZIreadAPI(const std::wstring &fileName,
              const SubBlockCacheOptions &subBlockCacheOptions);
 
@@ -61,15 +66,18 @@ public:
   /// optimization.
   ///
   /// \param  stream_class_name       A string identifying the stream class to
-  /// be used (note that this string is *not* the same string the libCZI-streams
-  ///                                 factory uses. There is a mapping between
-  ///                                 the two strings done in the CZIrwAPI
-  ///                                 constructor.
+  ///                                 be used (note that this string is *not* the same
+  ///                                 string the libCZI-streams factory uses. There is a mapping between
+  ///                                 the two strings done in the CZIrwAPI constructor.
   /// \param  fileName                Filename (or URI) of the file (the
-  /// interpretation of the string is stream class specific). \param
-  /// subBlockCacheOptions    Options for initializing the subblock cache.
+  ///                                 interpretation of the string is stream class specific).
+  /// \param  subBlockCacheOptions    Options for initializing the subblock cache.
   CZIreadAPI(const std::string &stream_class_name, const std::wstring &fileName,
              const SubBlockCacheOptions &subBlockCacheOptions);
+
+  CZIreadAPI(const std::string &stream_class_name, const std::wstring &fileName,
+             const SubBlockCacheOptions &subBlockCacheOptions,
+             const ReaderOptions &readerOptions);             
 
   /// Close the Opened czi document
   void close() { this->spReader->Close(); }

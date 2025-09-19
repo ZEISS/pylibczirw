@@ -1,7 +1,7 @@
 """Module implementing the czi interface
 
 The open method will create a czi document.
-This czi document can be use to read and write czi.
+This czi document can be used to read and write czi.
 """
 
 import contextlib
@@ -76,7 +76,7 @@ class ReaderOptions:
     Configuration options for CZI reader.
     """
     enable_mask_awareness: bool = False             # whether the accessor will use the valid-pixel-mask for the tile-composition
-    enable_visibility_check_optimization = False    # whether the accessor will use the visibility-check-optimization for the tile-composition
+    enable_visibility_check_optimization = True     # whether the accessor will use the visibility-check-optimization for the tile-composition
 
 
 @dataclass
@@ -175,6 +175,8 @@ class CziReader:
             The configuration of a subblock cache to be used.
         """
         libczi_cache_options = self._create_default_cache_options(cache_options=cache_options)
+        libczi_reader_options = self._create_reader_options(reader_options=reader_options)
+
         if file_input_type is ReaderFileInputTypes.Curl:
             if validators.url(filepath):
                 # When reading from CURL stream we assume that the connection is slow
@@ -206,6 +208,28 @@ class CziReader:
     def close(self) -> None:
         """Close the document and finalize the reading"""
         self._czi_reader.close()
+
+    @staticmethod
+    def _create_reader_options(reader_options: Optional[ReaderOptions]) -> _pylibCZIrw.ReaderOptions:
+        """Creates a ReaderOptions object from the ReaderOptions dataclass.
+
+        Parameters
+        ----------
+        reader_options : ReaderOptions
+            Reader options dataclass
+
+        Returns
+        -------
+        : _pylibCZIrw.ReaderOptions
+            Reader options object.
+        """
+        libczi_reader_options = _pylibCZIrw.ReaderOptions()
+        libczi_reader_options.Clear()
+        if reader_options:
+            libczi_reader_options.enableMaskAwareness = reader_options.enable_mask_awareness
+            libczi_reader_options.enableVisibilityCheckOptimization = reader_options.enable_visibility_check_optimization
+        return libczi_reader_options
+
 
     @staticmethod
     def _compute_index_ranges(
@@ -1304,7 +1328,7 @@ def open_czi(
      : czi
         CziReader document as a czi object
     """
-    reader = CziReader(filepath, file_input_type, cache_options=cache_options)
+    reader = CziReader(filepath, file_input_type, cache_options=cache_options, reader_options=reader_options)
     try:
         yield reader
     finally:

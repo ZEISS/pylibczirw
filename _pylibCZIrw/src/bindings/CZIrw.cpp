@@ -2,6 +2,7 @@
 #include "../api/CZIwriteAPI.h"
 #include "../api/PImage.h"
 #include "../api/SubBlockCache.h"
+#include "../api/ReaderOptions.h"
 #include "../api/site.h"
 #include "PbHelper.h"
 
@@ -32,6 +33,13 @@ PYBIND11_MODULE(_pylibCZIrw, m) {
                        const SubBlockCacheOptions &subBlockCacheOptions) {
         return new CZIreadAPI(stream_class_name, fileName,
                               subBlockCacheOptions);
+      }))
+      .def(py::init([](const std::string &stream_class_name,
+                       const std::wstring &fileName,
+                       const SubBlockCacheOptions &subBlockCacheOptions,
+                       const ReaderOptions &readerOptions) {
+        return new CZIreadAPI(stream_class_name, fileName,
+                              subBlockCacheOptions, readerOptions);
       }))
       .def("close", &CZIreadAPI::close)
       .def("GetXmlMetadata", &CZIreadAPI::GetXmlMetadata)
@@ -218,6 +226,14 @@ PYBIND11_MODULE(_pylibCZIrw, m) {
       .def(py::init<>())
       .def_readwrite("elements_count", &SubBlockCacheInfo::elementsCount)
       .def_readwrite("memory_usage", &SubBlockCacheInfo::memoryUsage);
+
+  py::class_<ReaderOptions>(m, "ReaderOptions", py::module_local())
+      .def(py::init<>())
+      .def_readwrite("enableMaskAwareness",
+                     &ReaderOptions::enableMaskAwareness)
+      .def_readwrite("enableVisibilityCheckOptimization",
+                     &ReaderOptions::enableVisibilityCheckOptimization)
+      .def("Clear", &ReaderOptions::Clear);
 
   // perform one-time-initialization of libCZI
   OneTimeSiteInitialization();
