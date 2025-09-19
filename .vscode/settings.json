@@ -1,0 +1,10 @@
+{
+    "files.associations": {
+        "xlocbuf": "cpp",
+        "stdexcept": "cpp",
+        "atomic": "cpp"
+    },
+    "github.copilot.advanced": {
+
+    }
+}
