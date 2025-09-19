@@ -22,7 +22,8 @@ CZIreadAPI::CZIreadAPI(const std::string &stream_class_name,
 CZIreadAPI::CZIreadAPI(const std::string &stream_class_name,
                        const std::wstring &fileName,
                        const SubBlockCacheOptions &subBlockCacheOptions)
-    : CZIreadAPI(stream_class_name, fileName, subBlockCacheOptions, ReaderOptions()) {}
+    : CZIreadAPI(stream_class_name, fileName, subBlockCacheOptions,
+                 ReaderOptions()) {}
 
 CZIreadAPI::CZIreadAPI(const std::string &stream_class_name,
                        const std::wstring &fileName,
