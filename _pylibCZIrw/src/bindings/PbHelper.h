@@ -1,11 +1,11 @@
 #include "../api/CZIreadAPI.h"
 #include "include_python.h"
+#include <atomic>
 #include <pybind11/chrono.h>
 #include <pybind11/complex.h>
 #include <pybind11/functional.h>
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
-#include <atomic>
 
 namespace py = pybind11;
 
@@ -48,9 +48,7 @@ public:
     return bitmapLockInfo;
   }
 
-  virtual void Unlock() {
-    std::atomic_fetch_sub(&this->lock_count, 1);
-  }
+  virtual void Unlock() { std::atomic_fetch_sub(&this->lock_count, 1); }
 
   virtual int GetLockCount() const {
     return std::atomic_load(&this->lock_count);
