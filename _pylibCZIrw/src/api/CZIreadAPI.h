@@ -1,14 +1,15 @@
 #pragma once
 
 #include "PImage.h"
-#include "SubBlockCache.h"
 #include "ReaderOptions.h"
+#include "SubBlockCache.h"
 #include "inc_libCzi.h"
 #include <iostream>
 #include <optional>
 
 /// Class used to represent a CZI reader object in pylibCZIrw.
-/// It gathers the libCZI features needed for reading in the pylibCZIrw project.
+/// It gathers the libCZI features needed for reading in the pylibCZIrw
+/// project.
 /// CZIrwAPI will be exposed to python via pybind11 as a czi class.
 class CZIreadAPI {
 
@@ -76,7 +77,8 @@ public:
   ///                                class specific).
   /// \param  subBlockCacheOptions    Options for initializing the subblock
   ///                                cache.
-  CZIreadAPI(const std::string &stream_class_name, const std::wstring &fileName,
+  CZIreadAPI(const std::string &stream_class_name,
+             const std::wstring &fileName,
              const SubBlockCacheOptions &subBlockCacheOptions);
 
   /// Constructor which constructs a CZIrwAPI object, allowing to specify a
