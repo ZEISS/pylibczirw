@@ -66,13 +66,13 @@ public:
   /// optimization.
   ///
   /// \param  stream_class_name       A string identifying the stream class to
-  ///                                be used (note that this string is *not* 
-  ///                                the same string the libCZI-streams 
+  ///                                be used (note that this string is *not*
+  ///                                the same string the libCZI-streams
   ///                                factory uses. There is a mapping between
   ///                                the two strings done in the CZIrwAPI
   ///                                constructor.
   /// \param  fileName                Filename (or URI) of the file (the
-  ///                                interpretation of the string is stream 
+  ///                                interpretation of the string is stream
   ///                                class specific).
   /// \param  subBlockCacheOptions    Options for initializing the subblock
   ///                                cache.
@@ -87,15 +87,21 @@ public:
   /// optimization. In addition, is allows to specify reader options.
   ///
   /// \param  stream_class_name       A string identifying the stream class to
-  ///                                be used (note that this string is *not* the same
-  ///                                string the libCZI-streams factory uses. There is a mapping between
-  ///                                the two strings done in the CZIrwAPI constructor.
+  ///                                be used (note that this string is *not*
+  ///                                the same string the libCZI-streams
+  ///                                factory uses. There is a mapping between
+  ///                                the two strings done in the CZIrwAPI
+  ///                                constructor.
   /// \param  fileName                Filename (or URI) of the file (the
-  ///                                interpretation of the string is stream class specific).
-  /// \param  subBlockCacheOptions    Options for initializing the subblock cache.
-  /// \param  readerOptions           Options controlling the reader operation, such as enabling
-  ///                                mask awareness tile-composition.
-  CZIreadAPI(const std::string &stream_class_name, const std::wstring &fileName,
+  ///                                interpretation of the string is stream
+  ///                                class specific).
+  /// \param  subBlockCacheOptions    Options for initializing the
+  /// 								 subblock cache.
+  /// \param  readerOptions           Options controlling the reader
+  /// 								 operation, such as enabling mask
+  /// 								 aware tile-composition.
+  CZIreadAPI(const std::string &stream_class_name, 
+             const std::wstring &fileName,
              const SubBlockCacheOptions &subBlockCacheOptions,
              const ReaderOptions &readerOptions);
 
