@@ -1330,11 +1330,11 @@ def open_czi(
     reader_options: ReaderOptions, optional
         Additional configuration options for the reader. Note that there is a keyword-only argument
         boundary before the reader_options argument.
-        Note: This parameter uses a keyword-only argument separator (*) to prevent 
-        accidental positional argument passing. This design choice ensures that 
-        reader_options must be explicitly named when called, improving code clarity 
-        and preventing errors when the function signature evolves. It also maintains 
-        backward compatibility if new optional parameters are added between 
+        Note: This parameter uses a keyword-only argument separator (*) to prevent
+        accidental positional argument passing. This design choice ensures that
+        reader_options must be explicitly named when called, improving code clarity
+        and preventing errors when the function signature evolves. It also maintains
+        backward compatibility if new optional parameters are added between
         cache_options and reader_options in the future.
 
     Returns
