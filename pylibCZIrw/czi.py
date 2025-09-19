@@ -76,9 +76,9 @@ class ReaderOptions:
     Configuration options for CZI reader.
     """
     enable_mask_awareness: bool = False             # whether the accessor will use the valid-pixel-mask for the
-                                                    # tile-composition
+    # tile-composition
     enable_visibility_check_optimization = True     # whether the accessor will use the visibility-check-optimization
-                                                    # for the tile-composition
+    # for the tile-composition
 
 
 @dataclass
