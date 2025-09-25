@@ -21,7 +21,14 @@ CZIreadAPI::CZIreadAPI(const std::string &stream_class_name,
 
 CZIreadAPI::CZIreadAPI(const std::string &stream_class_name,
                        const std::wstring &fileName,
-                       const SubBlockCacheOptions &subBlockCacheOptions) {
+                       const SubBlockCacheOptions &subBlockCacheOptions)
+    : CZIreadAPI(stream_class_name, fileName, subBlockCacheOptions,
+                 ReaderOptions()) {}
+
+CZIreadAPI::CZIreadAPI(const std::string &stream_class_name,
+                       const std::wstring &fileName,
+                       const SubBlockCacheOptions &subBlockCacheOptions,
+                       const ReaderOptions &readerOptions) {
   shared_ptr<IStream> stream;
   if (stream_class_name.empty() || stream_class_name == "standard") {
     stream = StreamsFactory::CreateDefaultStreamForFile(fileName.c_str());
@@ -49,6 +56,7 @@ CZIreadAPI::CZIreadAPI(const std::string &stream_class_name,
   this->spAccessor = reader->CreateSingleChannelScalingTileAccessor();
   this->spReader = reader;
   this->subBlockCacheOptions = subBlockCacheOptions;
+  this->readerOptions = readerOptions;
   if (subBlockCacheOptions.cacheType == CacheType::Standard) {
     this->spSubBlockCache = libCZI::CreateSubBlockCache();
   } else if (subBlockCacheOptions.cacheType != CacheType::None) {
@@ -117,8 +125,11 @@ std::unique_ptr<PImage> CZIreadAPI::GetSingleChannelScalingTileAccessorData(
 
   libCZI::ISingleChannelScalingTileAccessor::Options scstaOptions;
   scstaOptions.Clear();
+  // set the flag "visibility check optimization" as configured by the user
   scstaOptions.useVisibilityCheckOptimization =
-      true; // enable the "visibility check optimization"
+      this->readerOptions.enableVisibilityCheckOptimization;
+  // set the flag "mask awareness" as configured by the user
+  scstaOptions.maskAware = this->readerOptions.enableMaskAwareness;
   scstaOptions.backGroundColor = bgColor;
   if (this->spSubBlockCache) {
     scstaOptions.subBlockCache = this->spSubBlockCache;
