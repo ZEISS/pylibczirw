@@ -87,22 +87,14 @@ class CMakeBuild(build_ext):
         build_args = ["--", "/m"]
         return cmake_args, build_args
 
-    def _detect_brew_prefix() -> str:
-        try:
-            return subprocess.check_output(["brew", "--prefix"], text=True).strip()  # nosec
-        except Exception:
-            return ""
-
-    def _build_extension_macos(self, cfg):  # type: ignore[no-untyped-def]
+    @staticmethod
+    def _build_extension_macos(cfg, debug: bool):  # type: ignore[no-untyped-def]
         cmake_args = ["-DCMAKE_BUILD_TYPE=" + cfg]
 
-        # Figure out target arch: let CI override via env; else use native machine
-        arch = os.environ.get("CMAKE_OSX_ARCHITECTURES", platform.machine())  # "arm64" on Apple Silicon
+        arch = os.environ.get("CMAKE_OSX_ARCHITECTURES", platform.machine())
         if arch not in ("arm64", "x86_64"):
-            # Fallback to native if something unexpected is set
             arch = platform.machine()
 
-        # Use a sane default deployment target per arch (CI can override)
         default_target = "11.0" if arch == "arm64" else "10.15"
         mac_target = os.environ.get("MACOSX_DEPLOYMENT_TARGET", default_target)
 
@@ -111,10 +103,14 @@ class CMakeBuild(build_ext):
             f"-DCMAKE_OSX_DEPLOYMENT_TARGET={mac_target}",
         ]
 
-        # Prefer system/package-manager curl; discover OpenSSL via Homebrew if present
-        brew_prefix = _detect_brew_prefix()
-        if brew_prefix:
-            # Try to use Homebrew OpenSSL if installed (works for both /usr/local and /opt/homebrew)
+        # Discover OpenSSL via Homebrew
+        brew_prefix = ""
+        try:
+            brew_prefix = subprocess.check_output(["brew", "--prefix"], text=True).strip()  # nosec
+        except Exception:
+            pass
+
+        if brew_prefix and os.path.exists(brew_prefix):
             openssl_prefix = os.path.join(brew_prefix, "opt", "openssl@3")
             if os.path.exists(openssl_prefix):
                 cmake_args += [
@@ -122,15 +118,12 @@ class CMakeBuild(build_ext):
                     f"-DOPENSSL_LIBRARIES={os.path.join(openssl_prefix, 'lib')}",
                     f"-DOPENSSL_INCLUDE_DIR={os.path.join(openssl_prefix, 'include')}",
                 ]
-            # Use package-manager curl on macOS
             cmake_args += ["-DLIBCZI_BUILD_PREFER_EXTERNALPACKAGE_LIBCURL=ON"]
         else:
-            # No Homebrew; allow libCZI to build libcurl itself if needed
             print("Homebrew not found, attempting to build dependencies locally")
             cmake_args += ["-DLIBCZI_BUILD_PREFER_EXTERNALPACKAGE_LIBCURL=OFF"]
 
-        # Optimize release builds
-        if not self.debug:
+        if not debug:
             cmake_args += [
                 "-DCMAKE_CXX_FLAGS_RELEASE=-O3 -DNDEBUG",
                 "-DCMAKE_C_FLAGS_RELEASE=-O3 -DNDEBUG",
@@ -233,7 +226,7 @@ class CMakeBuild(build_ext):
         if platform.system() == "Windows":
             new_cmake_args, new_build_args = self._build_extension_windows(cfg, extdir)
         elif platform.system() == "Darwin":  # macOS
-            new_cmake_args, new_build_args = self._build_extension_macos(cfg)
+            new_cmake_args, new_build_args = self._build_extension_macos(cfg, self.debug)
         else:  # Linux
             new_cmake_args, new_build_args = self._build_extension_linux(cfg)
         cmake_args += new_cmake_args
