@@ -116,7 +116,6 @@ class CMakeBuild(build_ext):
                     print(f"Homebrew detected but '--prefix' failed: {exc}")
                 brew_prefix = ""
 
-
         if brew_prefix and os.path.exists(brew_prefix):
             openssl_prefix = os.path.join(brew_prefix, "opt", "openssl@3")
             if os.path.exists(openssl_prefix):
