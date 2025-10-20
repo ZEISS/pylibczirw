@@ -101,6 +101,7 @@ class CMakeBuild(build_ext):
         cmake_args += [
             f"-DCMAKE_OSX_ARCHITECTURES={arch}",
             f"-DCMAKE_OSX_DEPLOYMENT_TARGET={mac_target}",
+            f"-DADDITIONAL_LIBS_REQUIRED_FOR_ATOMIC=",
         ]
 
         # Discover OpenSSL via Homebrew
@@ -301,7 +302,7 @@ setup(
     install_requires=requirements,
     # we require at least python version 3.7
     python_requires=">=3.9,<3.14",
-    license_files=["COPYING", "COPYING.LESSER", "NOTICE"],
+    license_files=["COPYING", "COPYING.LESSER", "NOTICE.txt"],
     # Classifiers help users find your project by categorizing it.
     # For a list of valid classifiers, see https://pypi.org/classifiers/
     classifiers=[
