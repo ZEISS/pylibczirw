@@ -109,7 +109,9 @@ class CMakeBuild(build_ext):
         brew_exe = shutil.which("brew")
         if brew_exe:
             try:
-                brew_prefix = subprocess.check_output([brew_exe, "--prefix"], text=True, stderr=subprocess.DEVNULL).strip()  # nosec
+                brew_prefix = subprocess.check_output(
+                    [brew_exe, "--prefix"], text=True, stderr=subprocess.DEVNULL
+                ).strip()  # nosec
             except subprocess.CalledProcessError as exc:
                 # brew exists but failed (e.g., misconfigured); fall back cleanly
                 if os.environ.get("SETUP_VERBOSE"):

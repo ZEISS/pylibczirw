@@ -121,37 +121,37 @@ jobs:
       matrix:
         config:
           - {
-            PoolImage: ubuntu-latest,
-            OS: Linux-x86_64,
-            CIBWBEFOREALL: "${{inputs.CIBWBEFOREALLLINUX}}",
-            CIBW_ENVIRONMENT: "",
-          }
+              PoolImage: ubuntu-latest,
+              OS: Linux-x86_64,
+              CIBWBEFOREALL: "${{inputs.CIBWBEFOREALLLINUX}}",
+              CIBW_ENVIRONMENT: "",
+            }
           - {
-            PoolImage: ubuntu-24.04-arm,
-            OS: Linux-arm64,
-            CIBWBEFOREALL: "${{inputs.CIBWBEFOREALLLINUX}}",
-            CIBW_ENVIRONMENT: "",
-          }
+              PoolImage: ubuntu-24.04-arm,
+              OS: Linux-arm64,
+              CIBWBEFOREALL: "${{inputs.CIBWBEFOREALLLINUX}}",
+              CIBW_ENVIRONMENT: "",
+            }
           - {
-            PoolImage: windows-2022,
-            OS: Windows,
-            CIBWBEFOREALL: "${{inputs.CIBWBEFOREALLWindows}}",
-            CIBW_ENVIRONMENT: "",
-          }
+              PoolImage: windows-2022,
+              OS: Windows,
+              CIBWBEFOREALL: "${{inputs.CIBWBEFOREALLWindows}}",
+              CIBW_ENVIRONMENT: "",
+            }
           - {
-            # macos-13 is x86_64
-            PoolImage: macos-13,
-            OS: macOS-x86_64,
-            CIBWBEFOREALL: "${{inputs.CIBWBEFOREALLMACOS}}",
-            CIBW_ENVIRONMENT: "MACOSX_DEPLOYMENT_TARGET=10.15 CMAKE_OSX_ARCHITECTURES=x86_64",
-          }
+              # macos-13 is x86_64
+              PoolImage: macos-13,
+              OS: macOS-x86_64,
+              CIBWBEFOREALL: "${{inputs.CIBWBEFOREALLMACOS}}",
+              CIBW_ENVIRONMENT: "MACOSX_DEPLOYMENT_TARGET=10.15 CMAKE_OSX_ARCHITECTURES=x86_64",
+            }
           - {
-            # macos-14 is arm64
-            PoolImage: macos-14,
-            OS: macOS-arm64,
-            CIBWBEFOREALL: "${{inputs.CIBWBEFOREALLMACOS}}",
-            CIBW_ENVIRONMENT: "MACOSX_DEPLOYMENT_TARGET=11.0 CMAKE_OSX_ARCHITECTURES=arm64",
-          }
+              # macos-14 is arm64
+              PoolImage: macos-14,
+              OS: macOS-arm64,
+              CIBWBEFOREALL: "${{inputs.CIBWBEFOREALLMACOS}}",
+              CIBW_ENVIRONMENT: "MACOSX_DEPLOYMENT_TARGET=11.0 CMAKE_OSX_ARCHITECTURES=arm64",
+            }
     steps:
       - uses: actions/checkout@v4.1.0
         with:
