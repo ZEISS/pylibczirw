@@ -26,13 +26,6 @@ runs:
       with:
         PyVersionLatest: "${{inputs.PyVersionLatest}}"
         PkgRootFolder: "${{inputs.PkgRootFolder}}"
-    # Python 3.8 on MacOS arm64 is a special case because there is not an
-    # official installer. This setup-python step is the solution.
-    # https://cibuildwheel.pypa.io/en/stable/faq/#macos-building-cpython-38-wheels-on-arm64
-    - uses: actions/setup-python@v5
-      with:
-        python-version: 3.8
-      if: runner.os == 'macOS' && runner.arch == 'ARM64'
     - name: Install dependencies
       run: |-
         set -o errexit

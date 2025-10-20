@@ -3,6 +3,7 @@
 import os
 import platform
 import re
+import shutil
 import subprocess  # nosec blacklist
 import sys
 from pathlib import Path
@@ -105,10 +106,16 @@ class CMakeBuild(build_ext):
 
         # Discover OpenSSL via Homebrew
         brew_prefix = ""
-        try:
-            brew_prefix = subprocess.check_output(["brew", "--prefix"], text=True).strip()  # nosec
-        except Exception:
-            pass
+        brew_exe = shutil.which("brew")
+        if brew_exe:
+            try:
+                brew_prefix = subprocess.check_output([brew_exe, "--prefix"], text=True, stderr=subprocess.DEVNULL).strip()  # nosec
+            except subprocess.CalledProcessError as exc:
+                # brew exists but failed (e.g., misconfigured); fall back cleanly
+                if os.environ.get("SETUP_VERBOSE"):
+                    print(f"Homebrew detected but '--prefix' failed: {exc}")
+                brew_prefix = ""
+
 
         if brew_prefix and os.path.exists(brew_prefix):
             openssl_prefix = os.path.join(brew_prefix, "opt", "openssl@3")
