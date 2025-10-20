@@ -101,7 +101,6 @@ class CMakeBuild(build_ext):
         cmake_args += [
             f"-DCMAKE_OSX_ARCHITECTURES={arch}",
             f"-DCMAKE_OSX_DEPLOYMENT_TARGET={mac_target}",
-            f"-DADDITIONAL_LIBS_REQUIRED_FOR_ATOMIC=",
         ]
 
         # Discover OpenSSL via Homebrew

@@ -4,6 +4,17 @@ cmake_policy(SET CMP0091 NEW) # enable new "MSVC runtime library selection" (htt
 
 project(_pylibCZIrw VERSION ${PYLIBCZIRW_VERSION})
 
+# Ensure every target (and the atomic probe) uses a modern C++ standard
+set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_CXX_EXTENSIONS OFF)
+
+# On macOS we don't need extra libs for std::atomic; avoid probe issues
+if(APPLE)
+  set(ADDITIONAL_LIBS_REQUIRED_FOR_ATOMIC "" CACHE INTERNAL "Additional libs for std::atomic" FORCE)
+endif()
+
+
 # Set library version in the code
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/_pylibCZIrw/src/pylibCZIrw_Config.h.in ${CMAKE_CURRENT_SOURCE_DIR}/_pylibCZIrw/src/pylibCZIrw_Config.h @ONLY)
 
