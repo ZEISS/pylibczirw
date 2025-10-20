@@ -49,14 +49,16 @@ When creating a PR, there will be a linting action run against all changes. This
 To run locally, install docker desktop, then run below
 ```
 docker run --rm -t `
-   -v "${PWD}:/tmp/lint" `
-   -w /tmp/lint `
-   -e VALIDATE_ALL_CODEBASE=true `
-   -e APPLY_FIXES=all `
-   -e FORMATTERS_OUTPUT=files `
-   oxsecurity/megalinter:v7
+  -v "${PWD}:/tmp/lint" `
+  -w /tmp/lint `
+  -e VALIDATE_ALL_CODEBASE=true `
+  -e IGNORE_GIT_SUBMODULES=true `
+  -e PRETTIER_DEFAULT_OPTIONS="--end-of-line=lf" `
+  -e FILTER_REGEX_EXCLUDE="(^|/)?libs/(pybind11|libCZIrw)/" `
+  oxsecurity/megalinter:v7
 ```
-This attempts to also fix some of the errors, but doesn't always work.
+
+This should display the same errors as on the action.
 
 # Attribution
 This template was inspired by <https://github.com/nayafia/contributing-template>.
