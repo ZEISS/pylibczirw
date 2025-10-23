@@ -72,7 +72,7 @@ jobs:
     if: always() && needs.upload.result == 'success'
     runs-on: windows-2022
     steps:
-      - uses: actions/checkout@v4.1.0
+      - uses: actions/checkout@v5
       - name: Tag with PyPI version
         uses: actions/github-script@v7
         with:
