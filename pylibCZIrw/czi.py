@@ -1,7 +1,7 @@
 """Module implementing the czi interface
 
 The open method will create a czi document.
-This czi document can be use to read and write czi.
+This czi document can be used to read and write czi.
 """
 
 import contextlib
@@ -67,6 +67,20 @@ class CacheOptions:
     type: CacheType = CacheType.Standard
     max_memory_usage: Optional[int] = None
     max_sub_block_count: Optional[int] = None
+
+
+@dataclass
+class ReaderOptions:
+    """Reader options data structure.
+
+    Configuration options for CZI reader.
+    """
+
+    enable_mask_awareness: bool = False
+    """Whether the accessor will use the valid-pixel-mask for the tile-composition."""
+
+    enable_visibility_check_optimization: bool = True
+    """Whether the accessor will use the visibility-check-optimization for the tile-composition."""
 
 
 @dataclass
@@ -151,6 +165,7 @@ class CziReader:
         filepath: str,
         file_input_type: ReaderFileInputTypes = ReaderFileInputTypes.Standard,
         cache_options: Optional[CacheOptions] = None,
+        reader_options: Optional[ReaderOptions] = None,
     ) -> None:
         """Creates a czi reader object, should only be called through the open_czi() function.
 
@@ -164,20 +179,25 @@ class CziReader:
             The configuration of a subblock cache to be used.
         """
         libczi_cache_options = self._create_default_cache_options(cache_options=cache_options)
+        libczi_reader_options = self._create_reader_options(reader_options=reader_options)
+
         if file_input_type is ReaderFileInputTypes.Curl:
             if validators.url(filepath):
                 # When reading from CURL stream we assume that the connection is slow
                 # And therefore also cache uncompressed subblocks.
                 libczi_cache_options.cacheOnlyCompressed = False
                 self._czi_reader = _pylibCZIrw.czi_reader(
-                    ReaderFileInputTypes.Curl.value, filepath, libczi_cache_options
+                    ReaderFileInputTypes.Curl.value, filepath, libczi_cache_options, libczi_reader_options
                 )
             else:
                 raise FileNotFoundError(f"{filepath} is not a valid URL.")
         else:
             # When reading from disk we only cache compressed subblocks.
             libczi_cache_options.cacheOnlyCompressed = True
-            self._czi_reader = _pylibCZIrw.czi_reader(filepath, libczi_cache_options)
+            # use the "standard reader class name" for local files
+            self._czi_reader = _pylibCZIrw.czi_reader(
+                ReaderFileInputTypes.Standard.value, filepath, libczi_cache_options, libczi_reader_options
+            )
         self._stats = self._czi_reader.GetSubBlockStats()
 
     @classmethod
@@ -195,6 +215,29 @@ class CziReader:
     def close(self) -> None:
         """Close the document and finalize the reading"""
         self._czi_reader.close()
+
+    @staticmethod
+    def _create_reader_options(reader_options: Optional[ReaderOptions]) -> _pylibCZIrw.ReaderOptions:
+        """Creates a ReaderOptions object from the ReaderOptions dataclass.
+
+        Parameters
+        ----------
+        reader_options : ReaderOptions
+            Reader options dataclass
+
+        Returns
+        -------
+        : _pylibCZIrw.ReaderOptions
+            Reader options object.
+        """
+        libczi_reader_options = _pylibCZIrw.ReaderOptions()
+        libczi_reader_options.Clear()
+        if reader_options:
+            libczi_reader_options.enableMaskAwareness = reader_options.enable_mask_awareness
+            libczi_reader_options.enableVisibilityCheckOptimization = (
+                reader_options.enable_visibility_check_optimization
+            )
+        return libczi_reader_options
 
     @staticmethod
     def _compute_index_ranges(
@@ -1270,6 +1313,8 @@ def open_czi(
     filepath: str,
     file_input_type: ReaderFileInputTypes = ReaderFileInputTypes.Standard,
     cache_options: Optional[CacheOptions] = None,
+    *,
+    reader_options: Optional[ReaderOptions] = None,
 ) -> Generator:
     """Initialize a czi reader object and returns it.
     Opens the filepath and hands it over to the low-level function.
@@ -1282,13 +1327,22 @@ def open_czi(
         The type of file input, default is local file.
     cache_options : CacheOptions, optional
         The configuration of a subblock cache to be used. Per default no cache is used.
+    reader_options: ReaderOptions, optional
+        Additional configuration options for the reader. Note that there is a keyword-only argument
+        boundary before the reader_options argument.
+        Note: This parameter uses a keyword-only argument separator (*) to prevent
+        accidental positional argument passing. This design choice ensures that
+        reader_options must be explicitly named when called, improving code clarity
+        and preventing errors when the function signature evolves. It also maintains
+        backward compatibility if new optional parameters are added between
+        cache_options and reader_options in the future.
 
     Returns
     ----------
      : czi
         CziReader document as a czi object
     """
-    reader = CziReader(filepath, file_input_type, cache_options=cache_options)
+    reader = CziReader(filepath, file_input_type, cache_options=cache_options, reader_options=reader_options)
     try:
         yield reader
     finally:
