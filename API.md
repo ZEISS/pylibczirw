@@ -55,12 +55,34 @@ A `CacheOptions` object allows defining a cache type and upper limits for memory
 ```python
 cache_options = CacheOptions(
   type = CacheType.Standard,
-  max_memory_usge = 500 * 1024**2 # 500 Megabytes
+  max_memory_usage = 500 * 1024**2 # 500 Megabytes
   max_sub_block_count = 100,
 )
 with czi.open_czi(file_path, cache_options=cache_options) as czi:
     ...
 ```
+
+### Specifying additional reader-options
+The `open_czi` method accepts a `ReaderOptions` structure where additional configurations
+can be given controlling the operations. There are two options currently available:
+- `enable_mask_awareness` - whether the tile-composition uses mask-information. This is by default `false`.
+- `enable_visibility_check_optimization` - in the tile-composition, do a visibility-check before reading sub-blocks, potentially reducing the amount of data that must be loaded. This is by default `true`.
+
+The `ReaderOptions` can be passed to `open_czi` like in this example:
+
+```python
+cache_options = CacheOptions(
+  type = CacheType.Standard,
+  max_memory_usage = 500 * 1024**2 # 500 Megabytes
+  max_sub_block_count = 100,
+)
+reader_options = ReaderOptions(
+  enable_mask_awareness = True
+)
+with czi.open_czi(file_path, cache_options=cache_options, reader_options=reader_options) as czi:
+    ...
+```
+
 
 ## Reading a CZI
 
