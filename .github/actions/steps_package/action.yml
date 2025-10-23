@@ -8,6 +8,10 @@ inputs:
   CIBWBEFOREALL:
     description: arguments to cibuildwheel
     required: true
+  CIBW_ENVIRONMENT:
+    description: environment variables to set for cibuildwheel
+    required: false
+    default: ""
   PkgRootFolder:
     description: root folder of Python package
     required: true
@@ -34,6 +38,7 @@ runs:
         CIBW_ARCHS: auto64
         CIBW_SKIP: pp* *-musllinux_*
         CIBW_BEFORE_ALL: "${{inputs.CIBWBEFOREALL}}"
+        CIBW_ENVIRONMENT: "${{inputs.CIBW_ENVIRONMENT}}"
         CIBW_TEST_REQUIRES: "-r requirements_test.txt"
         CIBW_TEST_COMMAND: tox -c {project}/tox_cibuildwheel.ini -e base --skip-pkg-install --current-env -vv
       run: cibuildwheel --output-dir wheelhouse .

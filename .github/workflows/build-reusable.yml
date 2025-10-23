@@ -30,12 +30,27 @@ on:
         required: false
         default: ""
         type: string
+      CIBWBEFOREALLMACOS:
+        required: false
+        default: ""
+        type: string
+      CIBW_ENVIRONMENT_MACOS:
+        required: false
+        default: ""
+        type: string
+    outputs:
+      pypi_released:
+        value: ${{ jobs.CodeQualityAnalysis-Test.outputs.pypi_released }}
+      pypi_version:
+        value: ${{ jobs.CodeQualityAnalysis-Test.outputs.pypi_version }}
+      pypi_tag:
+        value: ${{ jobs.CodeQualityAnalysis-Test.outputs.pypi_tag }}
 permissions:
   contents: read
 jobs:
   CodeQualityAnalysis-Test:
     name: Static Analysis and Tests
-    runs-on: windows-2019
+    runs-on: windows-2022
     outputs:
       pypi_released: ${{ steps.psr.outputs.pypi_released }}
       pypi_version: ${{ steps.psr.outputs.pypi_version }}
@@ -107,13 +122,35 @@ jobs:
         config:
           - {
             PoolImage: ubuntu-latest,
-            OS: Linux,
+            OS: Linux-x86_64,
             CIBWBEFOREALL: "${{inputs.CIBWBEFOREALLLINUX}}",
+            CIBW_ENVIRONMENT: "",
           }
           - {
-            PoolImage: windows-2019,
+            PoolImage: ubuntu-24.04-arm,
+            OS: Linux-arm64,
+            CIBWBEFOREALL: "${{inputs.CIBWBEFOREALLLINUX}}",
+            CIBW_ENVIRONMENT: "",
+          }
+          - {
+            PoolImage: windows-2022,
             OS: Windows,
             CIBWBEFOREALL: "${{inputs.CIBWBEFOREALLWindows}}",
+            CIBW_ENVIRONMENT: "",
+          }
+          - {
+            # macos-13 is x86_64
+            PoolImage: macos-13,
+            OS: macOS-x86_64,
+            CIBWBEFOREALL: "${{inputs.CIBWBEFOREALLMACOS}}",
+            CIBW_ENVIRONMENT: "MACOSX_DEPLOYMENT_TARGET=10.15 CMAKE_OSX_ARCHITECTURES=x86_64",
+          }
+          - {
+            # macos-14 is arm64
+            PoolImage: macos-14,
+            OS: macOS-arm64,
+            CIBWBEFOREALL: "${{inputs.CIBWBEFOREALLMACOS}}",
+            CIBW_ENVIRONMENT: "MACOSX_DEPLOYMENT_TARGET=11.0 CMAKE_OSX_ARCHITECTURES=arm64",
           }
     steps:
       - uses: actions/checkout@v4.1.0
@@ -129,10 +166,11 @@ jobs:
           PkgRootFolder: "${{ github.workspace }}/${{inputs.PkgRootFolder}}"
           OS: "${{matrix.config.OS}}"
           CIBWBEFOREALL: "${{matrix.config.CIBWBEFOREALL}}"
+          CIBW_ENVIRONMENT: "${{matrix.config.CIBW_ENVIRONMENT}}"
     if: inputs.Pure == false
   PackageWheelsPure:
     name: Package Pure Wheels
-    runs-on: windows-2019
+    runs-on: windows-2022
     if: inputs.Pure == true
     steps:
       - uses: actions/checkout@v4.1.0
@@ -159,7 +197,7 @@ jobs:
           path: "${{ github.workspace }}\\${{inputs.PkgRootFolder}}\\dist"
   PackageSDist:
     name: Package Source Distribution
-    runs-on: windows-2019
+    runs-on: windows-2022
     steps:
       - uses: actions/checkout@v4.1.0
         with:
@@ -186,8 +224,8 @@ jobs:
   DownloadTestWheelsPure:
     # No need to re-test wheels for non-pure wheels produced through cibuildwheel since already tested there
     # Can be tested anywhere since it is pure
-    name: Test Wheel on windows-2019
-    runs-on: windows-2019
+    name: Test Wheel on windows-2022
+    runs-on: windows-2022
     steps:
       - uses: actions/checkout@v4.1.0
         with:
@@ -217,7 +255,7 @@ jobs:
       matrix:
         config:
           - { OS: ubuntu-latest, RunShell: bash }
-          - { OS: windows-2019, RunShell: cmd }
+          - { OS: windows-2022, RunShell: cmd }
     runs-on: ${{ matrix.config.OS }}
     steps:
       - uses: actions/checkout@v4.1.0
@@ -241,70 +279,3 @@ jobs:
           RunShell: ${{ matrix.config.RunShell }}
           PkgVersion: "${{ steps.psr.outputs.pypi_version }}"
     needs: PackageSDist
-  Upload:
-    permissions:
-      contents: read
-      # IMPORTANT: this permission is mandatory for trusted publishing
-      id-token: write
-    needs:
-      - CodeQualityAnalysis-Test
-      - DownloadTestSdist
-      - DownloadTestWheelsPure
-      - PackageWheelsNonPure
-      - PackageWheelsPure
-      - PackageSdist
-    # Needs to run on ubuntu
-    runs-on: ubuntu-latest
-    # If conditional based on https://github.com/actions/runner/issues/491#issuecomment-850884422
-    if: |
-      always() &&
-      github.event_name != 'pull_request' &&
-      contains(fromJSON('["skipped", "success"]'), needs.DownloadTestSdist.result) &&
-      contains(fromJSON('["skipped", "success"]'), needs.DownloadTestWheelsPure.result) &&
-      contains(fromJSON('["skipped", "success"]'), needs.PackageWheelsNonPure.result) &&
-      contains(fromJSON('["skipped", "success"]'), needs.PackageWheelsPure.result) &&
-      contains(fromJSON('["skipped", "success"]'), needs.PackageSdist.result) &&
-      needs.CodeQualityAnalysis-Test.result == 'success' &&
-      needs.CodeQualityAnalysis-Test.outputs.pypi_released == 'true'
-    environment:
-      name: pypi
-      url: https://pypi.org/project/pylibCZIrw/${{needs.CodeQualityAnalysis-Test.outputs.pypi_version}}
-    steps:
-      - name: Download Wheels and Source Distribution
-        uses: actions/download-artifact@v4.1.0
-      - name: Collect Wheels and Source Distribution
-        # Move to dist as default folder for publish action
-        run: New-Item -Path "." -Name "dist" -ItemType "directory"; Get-ChildItem -Path ".\*.whl",".\*.tar.gz" -Recurse | Move-Item -Destination ".\dist"
-        shell: pwsh
-      - name: Upload to PyPI
-        # As of 06/2024, trusted publishing does not work within reusable workflows located in a different repo
-        # Tracked in:
-        # https://github.com/pypa/gh-action-pypi-publish/issues/166
-        # https://github.com/pypi/warehouse/issues/11096
-        # https://docs.pypi.org/trusted-publishers/troubleshooting/#reusable-workflows-on-github
-        # More info on trusted publishing: https://blog.pypi.org/posts/2023-04-20-introducing-trusted-publishers/
-        uses: pypa/gh-action-pypi-publish@release/v1
-        with:
-          # Basically runs twine check
-          verify-metadata: true
-  Tag:
-    permissions:
-      contents: write
-    needs:
-      - CodeQualityAnalysis-Test
-      - Upload
-    # Aftermath of if-conditional of Upload job
-    if: always() && needs.Upload.result == 'success'
-    runs-on: windows-2019
-    steps:
-      - uses: actions/checkout@v4.1.0
-      - name: Tag with PyPI version
-        uses: actions/github-script@v7
-        with:
-          script: |
-            github.rest.git.createRef({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              ref: 'refs/tags/${{needs.CodeQualityAnalysis-Test.outputs.pypi_tag}}',
-              sha: context.sha
-            })
