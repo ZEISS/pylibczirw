@@ -44,6 +44,21 @@ For all contributions, please respect the following guidelines:
 Note: PRs submitted from forks external to this organization do not automatically trigger required workflows to run. Approval granted based on [Approving workflow runs from public forks - GitHub Docs](https://docs.github.com/en/actions/managing-workflow-runs/approving-workflow-runs-from-public-forks#approving-workflow-runs-on-a-pull-request-from-a-public-fork).
 Rationale: [Keeping your GitHub Actions and workflows secure Part 1: Preventing pwn requests | GitHub Security Lab](https://securitylab.github.com/research/github-actions-preventing-pwn-requests/)
 
+# Linting
+When creating a PR, there will be a linting action run against all changes. This can be cumbersome to fix one at a time.
+To run locally, install docker desktop, then run below
+```
+docker run --rm -t `
+  -v "${PWD}:/tmp/lint" `
+  -w /tmp/lint `
+  -e VALIDATE_ALL_CODEBASE=true `
+  -e IGNORE_GIT_SUBMODULES=true `
+  -e PRETTIER_DEFAULT_OPTIONS="--end-of-line=lf" `
+  -e FILTER_REGEX_EXCLUDE="(^|/)?libs/(pybind11|libCZIrw)/" `
+  oxsecurity/megalinter:v7
+```
+
+This should display the same errors as on the action.
 
 # Attribution
 This template was inspired by <https://github.com/nayafia/contributing-template>.
