@@ -19,6 +19,8 @@ jobs:
       # Relative to github.workspace
       PkgName: pylibCZIrw
       CIBWBEFOREALLLINUX: yum install -y glibc-static perl-IPC-Cmd
+      # Minimum MacOS version the wheels will support
+      CIBW_ENVIRONMENT_MACOS: "MACOSX_DEPLOYMENT_TARGET=10.15"
     secrets:
       CODECOV_TOKEN: ${{secrets.CODECOV_TOKEN}}
   # Note: This job needs to stay outside a reusable workflow due to https://github.com/ZEISS/pylibczirw/issues/70
@@ -68,7 +70,7 @@ jobs:
       - upload
     # Aftermath of if-conditional of Upload job
     if: always() && needs.upload.result == 'success'
-    runs-on: windows-2019
+    runs-on: windows-2022
     steps:
       - uses: actions/checkout@v4.1.0
       - name: Tag with PyPI version

@@ -1,5 +1,6 @@
 #include "../api/CZIreadAPI.h"
 #include "include_python.h"
+#include <atomic>
 #include <pybind11/chrono.h>
 #include <pybind11/complex.h>
 #include <pybind11/functional.h>
@@ -19,6 +20,7 @@ private:
   std::uint32_t width;
   std::uint32_t height;
   std::uint32_t stride;
+  std::atomic<int> lock_count = ATOMIC_VAR_INIT(0);
 
 public:
   CMemBitmapWrapper(libCZI::PixelType pixeltype, std::uint32_t width,
@@ -42,10 +44,15 @@ public:
     bitmapLockInfo.ptrDataRoi = this->ptrData;
     bitmapLockInfo.stride = this->stride;
     bitmapLockInfo.size = this->stride * static_cast<size_t>(this->height);
+    std::atomic_fetch_add(&this->lock_count, 1);
     return bitmapLockInfo;
   }
 
-  virtual void Unlock() {}
+  virtual void Unlock() { std::atomic_fetch_sub(&this->lock_count, 1); }
+
+  virtual int GetLockCount() const {
+    return std::atomic_load(&this->lock_count);
+  }
 };
 
 /// Returns format descriptor corresponding to each libCZI::PixelType.
