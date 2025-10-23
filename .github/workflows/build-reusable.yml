@@ -56,7 +56,7 @@ jobs:
       pypi_version: ${{ steps.psr.outputs.pypi_version }}
       pypi_tag: ${{ steps.psr.outputs.pypi_tag }}
     steps:
-      - uses: actions/checkout@v4.1.0
+      - uses: actions/checkout@v5
         with:
           lfs: true
           submodules: recursive
@@ -107,7 +107,7 @@ jobs:
         shell: pwsh
       - name: Upload Coverage
         if: success() || failure()
-        uses: codecov/codecov-action@v4
+        uses: codecov/codecov-action@v5
         with:
           directory: ${{ github.workspace }}/TestResults
           files: coverage.xml
@@ -153,7 +153,7 @@ jobs:
             CIBW_ENVIRONMENT: "MACOSX_DEPLOYMENT_TARGET=11.0 CMAKE_OSX_ARCHITECTURES=arm64",
           }
     steps:
-      - uses: actions/checkout@v4.1.0
+      - uses: actions/checkout@v5
         with:
           lfs: true
           submodules: recursive
@@ -173,7 +173,7 @@ jobs:
     runs-on: windows-2022
     if: inputs.Pure == true
     steps:
-      - uses: actions/checkout@v4.1.0
+      - uses: actions/checkout@v5
         with:
           lfs: true
           submodules: recursive
@@ -199,7 +199,7 @@ jobs:
     name: Package Source Distribution
     runs-on: windows-2022
     steps:
-      - uses: actions/checkout@v4.1.0
+      - uses: actions/checkout@v5
         with:
           lfs: true
           submodules: recursive
@@ -227,7 +227,7 @@ jobs:
     name: Test Wheel on windows-2022
     runs-on: windows-2022
     steps:
-      - uses: actions/checkout@v4.1.0
+      - uses: actions/checkout@v5
         with:
           lfs: true
           submodules: recursive
@@ -258,7 +258,7 @@ jobs:
           - { OS: windows-2022, RunShell: cmd }
     runs-on: ${{ matrix.config.OS }}
     steps:
-      - uses: actions/checkout@v4.1.0
+      - uses: actions/checkout@v5
         with:
           lfs: true
           submodules: recursive
