@@ -45,7 +45,7 @@ jobs:
       url: https://pypi.org/project/pylibCZIrw/${{needs.build.outputs.pypi_version}}
     steps:
       - name: Download Wheels and Source Distribution
-        uses: actions/download-artifact@v4.1.0
+        uses: actions/download-artifact@v5.0.0
       - name: Collect Wheels and Source Distribution
         # Move to dist as default folder for publish action
         run: New-Item -Path "." -Name "dist" -ItemType "directory"; Get-ChildItem -Path ".\*.whl",".\*.tar.gz" -Recurse | Move-Item -Destination ".\dist"
@@ -72,7 +72,7 @@ jobs:
     if: always() && needs.upload.result == 'success'
     runs-on: windows-2022
     steps:
-      - uses: actions/checkout@v4.1.0
+      - uses: actions/checkout@v5
       - name: Tag with PyPI version
         uses: actions/github-script@v7
         with:
