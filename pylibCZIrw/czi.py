@@ -1351,9 +1351,7 @@ def open_czi(
 
 @contextlib.contextmanager
 def create_czi(
-    filepath: str,
-    exist_ok: bool = False,
-    compression_options: Optional[str] = None
+    filepath: str, exist_ok: bool = False, compression_options: Optional[str] = None
 ) -> Generator[CziWriter]:
     """Initialize a czi writer object and returns it. Opens the filepath and hands it over to the low-level function.
 
