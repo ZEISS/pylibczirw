@@ -191,7 +191,7 @@ jobs:
         run: python setup.py bdist_wheel
         working-directory: "${{ github.workspace }}/${{inputs.PkgRootFolder}}"
       - name: Publish Wheel for Python ${{inputs.PyVersionLatest}}
-        uses: actions/upload-artifact@v4.1.0
+        uses: actions/upload-artifact@v5
         with:
           name: Wheel${{inputs.PyVersionLatest}}
           path: "${{ github.workspace }}\\${{inputs.PkgRootFolder}}\\dist"
@@ -217,7 +217,7 @@ jobs:
         run: python setup.py sdist
         working-directory: "${{ github.workspace }}/${{inputs.PkgRootFolder}}"
       - name: Publish Sdist
-        uses: actions/upload-artifact@v4.1.0
+        uses: actions/upload-artifact@v5
         with:
           name: Sdist
           path: "${{ github.workspace }}\\${{inputs.PkgRootFolder}}\\dist"
