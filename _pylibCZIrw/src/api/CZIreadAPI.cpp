@@ -173,3 +173,17 @@ SubBlockCacheInfo CZIreadAPI::GetCacheInfo() {
 
   return cacheInfo;
 }
+
+void CZIreadAPI::EnumerateSubBlocks(
+    const std::function<bool(int index, const libCZI::SubBlockInfo &info)>
+        &func) {
+  this->spReader->EnumerateSubBlocks(func);
+}
+
+void CZIreadAPI::EnumerateSubset(
+    const libCZI::IDimCoordinate *planeCoordinate, const libCZI::IntRect *roi,
+    bool onlyLayer0,
+    const std::function<bool(int index, const libCZI::SubBlockInfo &info)>
+        &func) {
+  this->spReader->EnumSubset(planeCoordinate, roi, onlyLayer0, func);
+}

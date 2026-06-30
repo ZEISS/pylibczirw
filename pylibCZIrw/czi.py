@@ -206,7 +206,10 @@ class CziReader:
                 # And therefore also cache uncompressed subblocks.
                 libczi_cache_options.cacheOnlyCompressed = False
                 self._czi_reader = _pylibCZIrw.czi_reader(
-                    ReaderFileInputTypes.Curl.value, filepath, libczi_cache_options, libczi_reader_options
+                    ReaderFileInputTypes.Curl.value,
+                    filepath,
+                    libczi_cache_options,
+                    libczi_reader_options,
                 )
             else:
                 raise FileNotFoundError(f"{filepath} is not a valid URL.")
@@ -215,7 +218,10 @@ class CziReader:
             libczi_cache_options.cacheOnlyCompressed = True
             # use the "standard reader class name" for local files
             self._czi_reader = _pylibCZIrw.czi_reader(
-                ReaderFileInputTypes.Standard.value, filepath, libczi_cache_options, libczi_reader_options
+                ReaderFileInputTypes.Standard.value,
+                filepath,
+                libczi_cache_options,
+                libczi_reader_options,
             )
         self._stats = self._czi_reader.GetSubBlockStats()
 
@@ -243,7 +249,9 @@ class CziReader:
         self._czi_reader.close()
 
     @staticmethod
-    def _create_reader_options(reader_options: Optional[ReaderOptions]) -> _pylibCZIrw.ReaderOptions:
+    def _create_reader_options(
+        reader_options: Optional[ReaderOptions],
+    ) -> _pylibCZIrw.ReaderOptions:
         """Creates a ReaderOptions object from the ReaderOptions dataclass.
 
         Parameters
@@ -813,6 +821,94 @@ class CziReader:
         """
         return self._czi_reader.GetCacheInfo()
 
+    def enumerate_subblocks(self, func: Callable[[int, _pylibCZIrw.SubBlockInfo], bool]) -> None:
+        """Enumerate all subblocks in the CZI document.
+
+        This method provides access to subblock header information without loading pixel data.
+        For each subblock, the provided function is called with the subblock index and its
+        SubBlockInfo containing metadata like coordinates, bounds, pixel type, and compression.
+
+        Parameters
+        ----------
+        func : Callable[[int, _pylibCZIrw.SubBlockInfo], bool]
+            A function that will be called for each subblock. It receives:
+            - index (int): The subblock index
+            - info (_pylibCZIrw.SubBlockInfo): Subblock header information
+            Returns True to continue enumeration, False to stop.
+
+        Examples
+        --------
+        >>> def print_subblock(index, info):
+        ...     print(f"Subblock {index}: {info.logicalRect}")
+        ...     return True  # continue enumeration
+        >>> czi_doc.enumerate_subblocks(print_subblock)
+        """
+        self._czi_reader.EnumerateSubBlocks(func)
+
+    def enumerate_subblocks_subset(
+        self,
+        func: Callable[[int, _pylibCZIrw.SubBlockInfo], bool],
+        plane: Optional[Union[str, Dict[str, int]]] = None,
+        roi: Optional[Union[Tuple[int, int, int, int], Rectangle]] = None,
+        only_layer0: bool = False,
+    ) -> None:
+        """Enumerate a filtered subset of subblocks.
+
+        This method allows filtering subblocks by plane coordinates, region of interest,
+        and/or pyramid layer. Only subblock header information is accessed, not pixel data.
+
+        Parameters
+        ----------
+        func : Callable[[int, _pylibCZIrw.SubBlockInfo], bool]
+            A function called for each matching subblock. It receives:
+            - index (int): The subblock index
+            - info (_pylibCZIrw.SubBlockInfo): Subblock header information
+            Returns True to continue enumeration, False to stop.
+        plane : Optional[Union[str, Dict[str, int]]]
+            Optional plane coordinate filter. Can be:
+            - A coordinate string like "C0Z5T2"
+            - A dictionary like {"C": 0, "Z": 5, "T": 2}
+            - None for no coordinate filtering
+        roi : Optional[Union[Tuple[int, int, int, int], Rectangle]]
+            Optional region of interest. Only subblocks intersecting this ROI are enumerated.
+            Specified as (x, y, width, height) tuple or Rectangle.
+        only_layer0 : bool
+            If True, only pyramid layer 0 subblocks are enumerated (default: False).
+
+        Examples
+        --------
+        >>> # Enumerate all layer0 subblocks in channel 0, Z-slice 5
+        >>> def print_bounds(index, info):
+        ...     rect = info.logicalRect
+        ...     print(f"Subblock {index}: ({rect.x}, {rect.y}, {rect.w}, {rect.h})")
+        ...     return True
+        >>> czi_doc.enumerate_subblocks_subset(
+        ...     print_bounds,
+        ...     plane={"C": 0, "Z": 5},
+        ...     only_layer0=True
+        ... )
+
+        >>> # Enumerate using coordinate string
+        >>> czi_doc.enumerate_subblocks_subset(
+        ...     print_bounds,
+        ...     plane="C0Z5T0"
+        ... )
+        """
+        plane_coord = None
+        if plane is not None:
+            if isinstance(plane, str):
+                plane_coord = _pylibCZIrw.DimCoordinate(plane)
+            elif isinstance(plane, dict):
+                plane_coord = _pylibCZIrw.DimCoordinate(plane)
+
+        roi_rect = None
+        if roi is not None:
+            if not isinstance(roi, Rectangle):
+                roi = Rectangle(*roi)
+            roi_rect = self._format_roi(roi)
+
+        self._czi_reader.EnumerateSubset(plane_coord, roi_rect, only_layer0, func)
+
     def read(
         self,
         roi: Optional[Union[Tuple[int, int, int, int], Rectangle]] = None,
@@ -1211,7 +1307,9 @@ class CziWriter:
         return True
 
     @staticmethod
-    def _create_customvalue(value: Union[int, float, bool, str]) -> _pylibCZIrw.CustomValueVariant:
+    def _create_customvalue(
+        value: Union[int, float, bool, str],
+    ) -> _pylibCZIrw.CustomValueVariant:
         """Convert the custom attribute value into a CustomValueVariant object
 
         Parameters
@@ -1560,7 +1658,10 @@ class CziMetadataBuilder:
         self,
         display_settings: Dict[
             int,
-            Union[ChannelDisplaySettingsDataClass, ChannelDisplaySettingsDataClassWithNameAndDescription],
+            Union[
+                ChannelDisplaySettingsDataClass,
+                ChannelDisplaySettingsDataClassWithNameAndDescription,
+            ],
         ],
     ) -> None:
         """Update per-channel display settings.
@@ -1584,7 +1685,10 @@ class CziMetadataBuilder:
         )
 
         def to_pod(
-            ds_py: Union[ChannelDisplaySettingsDataClass, ChannelDisplaySettingsDataClassWithNameAndDescription]
+            ds_py: Union[
+                ChannelDisplaySettingsDataClass,
+                ChannelDisplaySettingsDataClassWithNameAndDescription,
+            ],
         ) -> ChannelDisplaySettingsStructWithNameAndDescription:
             pod = ChannelDisplaySettingsStructWithNameAndDescription()
             pod.Clear()
@@ -1692,7 +1796,9 @@ class CziEditor:
             scale_z=native.get("scale_z"),
         )
 
-    def read_display_settings(self) -> Dict[int, ChannelDisplaySettingsDataClassWithNameAndDescription]:
+    def read_display_settings(
+        self,
+    ) -> Dict[int, ChannelDisplaySettingsDataClassWithNameAndDescription]:
         """Return per-channel display settings as DTOs.
 
         Returns
@@ -1723,7 +1829,7 @@ class CziEditor:
                 black_point=float(getattr(pod, "blackPoint", 0.0)),
                 white_point=float(getattr(pod, "whitePoint", 1.0)),
                 name=getattr(pod, "name", None) if hasattr(pod, "name") else None,
-                description=getattr(pod, "description", None) if hasattr(pod, "description") else None,
+                description=(getattr(pod, "description", None) if hasattr(pod, "description") else None),
             )
 
         return {idx: to_dto(p) for idx, p in native_map.items()}
@@ -1811,7 +1917,12 @@ def open_czi(
      : czi
         CziReader document as a czi object
     """
-    reader = CziReader(filepath, file_input_type, cache_options=cache_options, reader_options=reader_options)
+    reader = CziReader(
+        filepath,
+        file_input_type,
+        cache_options=cache_options,
+        reader_options=reader_options,
+    )
     try:
         yield reader
     finally:

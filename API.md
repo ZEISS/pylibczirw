@@ -18,6 +18,9 @@
       - [zoom](#zoom)
       - [pixel\_type](#pixel_type)
       - [background\_pixel](#background_pixel)
+    - [Enumerating subblocks](#enumerating-subblocks)
+      - [`enumerate_subblocks(func)`](#enumerate_subblocksfunc)
+      - [`enumerate_subblocks_subset(func, **kwargs)`](#enumerate_subblocks_subsetfunc-kwargs)
   - [Creating a CZI](#creating-a-czi)
   - [Writing a CZI](#writing-a-czi)
     - [Writing pixel data](#writing-pixel-data)
@@ -269,6 +272,158 @@ This parameter naturally needs to be consistent with the returned pixel type:
 *Errors:* An exception will be raised if the wrong type is provided.
 
 **Note:** In the future we hope to support masks to univocally identify invalid data.
+
+### Enumerating subblocks
+
+Subblock enumeration provides direct access to subblock header information without loading pixel data. This is useful for analyzing CZI structure, querying subblock metadata, and understanding how data is organized within the file.
+
+#### `enumerate_subblocks(func)`
+
+Enumerates all subblocks in the CZI document, calling the provided function for each subblock.
+
+**Parameters:**
+- `func`: A callable that takes two arguments: `index` (int) and `info` (SubBlockInfo). The function should return `True` to continue enumeration or `False` to stop.
+
+**SubBlockInfo attributes:**
+- `logicalRect`: Rectangle defining the subblock's position in logical coordinate space (x, y, width, height)
+- `physicalSize`: Actual bitmap dimensions (width, height) - may differ from logical size for pyramid layers
+- `pixelType`: Pixel type enumeration (e.g., Gray8, Gray16, Bgr24)
+- `coordinate`: DimCoordinate object containing the subblock's dimensional coordinates (C, Z, T, etc.)
+- `mIndex`: M-index for mosaic/scene organization (if available)
+- `get_compression_mode()`: Returns the compression mode (UnCompressed, JpgXr, Zstd0, etc.)
+- `get_zoom()`: Calculates zoom factor from physical and logical sizes
+- `is_mindex_valid()`: Checks if M-index is valid
+
+**Example:**
+```python
+with czi.open_czi(file_path) as czi_doc:
+    def print_subblock_info(index, info):
+        rect = info.logicalRect
+        print(f"Subblock {index}:")
+        print(f"  Position: ({rect.x}, {rect.y})")
+        print(f"  Size: {rect.w} x {rect.h}")
+        print(f"  Pixel type: {info.pixelType.name}")
+        print(f"  Compression: {info.get_compression_mode().name}")
+        print(f"  Coordinates: {info.coordinate.to_dict()}")
+        return True  # Continue enumeration
+
+    czi_doc.enumerate_subblocks(print_subblock_info)
+```
+
+#### `enumerate_subblocks_subset(func, **kwargs)`
+
+Enumerates a filtered subset of subblocks based on optional criteria.
+
+**Parameters:**
+- `func`: Callback function (same as `enumerate_subblocks`)
+- `plane` (optional): Coordinate filter specifying which dimensional plane to enumerate
+  - Can be a string (e.g., `"C0Z5T2"`)
+  - Can be a dictionary (e.g., `{"C": 0, "Z": 5, "T": 2}`)
+  - Default: `None` (no coordinate filtering)
+- `roi` (optional): Region of interest filter as tuple `(x, y, width, height)` or Rectangle
+  - Only subblocks intersecting this ROI are enumerated
+  - Default: `None` (no ROI filtering)
+- `only_layer0` (optional): If `True`, enumerate only pyramid layer 0 subblocks
+  - Layer 0 subblocks have `physicalSize == logicalRect size`
+  - Default: `False`
+
+**Examples:**
+
+Enumerate layer 0 subblocks only:
+```python
+with czi.open_czi(file_path) as czi_doc:
+    def process_layer0(index, info):
+        # Process full-resolution subblocks
+        return True
+
+    czi_doc.enumerate_subblocks_subset(
+        process_layer0,
+        only_layer0=True
+    )
+```
+
+Filter by coordinate using string notation:
+```python
+with czi.open_czi(file_path) as czi_doc:
+    def process_specific_plane(index, info):
+        # Process only subblocks at C=0, Z=5
+        return True
+
+    csi_doc.enumerate_subblocks_subset(
+        process_specific_plane,
+        plane="C0Z5",
+        only_layer0=True
+    )
+```
+
+Filter by coordinate using dictionary notation:
+```python
+with czi.open_czi(file_path) as czi_doc:
+    subblock_bounds = []
+
+    def collect_bounds(index, info):
+        rect = info.logicalRect
+        subblock_bounds.append({
+            'x': rect.x,
+            'y': rect.y,
+            'width': rect.w,
+            'height': rect.h
+        })
+        return True
+
+    czi_doc.enumerate_subblocks_subset(
+        collect_bounds,
+        plane={"C": 0, "Z": 5, "T": 2},
+        only_layer0=True
+    )
+```
+
+Filter by region of interest:
+```python
+with czi.open_czi(file_path) as czi_doc:
+    # Enumerate subblocks intersecting upper-left quadrant
+    roi = (0, 0, 512, 512)
+
+    def process_roi_subblocks(index, info):
+        return True
+
+    czi_doc.enumerate_subblocks_subset(
+        process_roi_subblocks,
+        roi=roi,
+        only_layer0=True
+    )
+```
+
+Combine multiple filters:
+```python
+with czi.open_czi(file_path) as czi_doc:
+    def analyze_subblock(index, info):
+        # Analyze specific subblocks
+        coord = info.coordinate.to_dict()
+        compression = info.get_compression_mode().name
+        print(f"Subblock {index}: {coord}, {compression}")
+        return True
+
+    czi_doc.enumerate_subblocks_subset(
+        analyze_subblock,
+        plane={"C": 0, "Z": 3},
+        roi=(100, 100, 500, 500),
+        only_layer0=True
+    )
+```
+
+**Early termination:**
+```python
+with czi.open_czi(file_path) as czi_doc:
+    # Collect first 10 subblocks
+    collected = []
+
+    def collect_limited(index, info):
+        collected.append(info)
+        return len(collected) < 10  # Stop after 10
+
+    czi_doc.enumerate_subblocks(collect_limited)
+```
 
 ## Creating a CZI
 
@@ -709,7 +864,7 @@ The user can nevertheless access the data normally, but the assumption that the 
 
 **All planes live in a common pixel-coordinate system. And this pixel-coordinate-system gives the spatial position. Everything else is a matter of interpretation.**
 
-The standard way of defining ROIs to cover a plane will lead situations like the one below, where accessing Z=4 starting with a ROI (0,0, w, h) produces a bitmap with invalid data.
+The standard way of defining ROIs to cover a plane will lead to situations like the one below, where accessing Z=4 starting with a ROI (0,0, w, h) produces a bitmap with invalid data.
 
 ![image info](doc/images/fib_stack_roi.png)
 

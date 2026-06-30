@@ -7,6 +7,8 @@
 #include "../api/site.h"
 #include "PbHelper.h"
 
+#include <exception>
+#include <functional>
 #include <optional>
 
 #include <pybind11/chrono.h>
@@ -17,6 +19,26 @@
 #include <pybind11/stl.h>
 
 namespace py = pybind11;
+
+namespace {
+std::function<bool(int, const libCZI::SubBlockInfo &)> StopOnCallbackException(
+    const std::function<bool(int, const libCZI::SubBlockInfo &)> &func,
+    std::exception_ptr &callbackException) {
+  return
+      [&func, &callbackException](int index, const libCZI::SubBlockInfo &info) {
+        if (callbackException) {
+          return false;
+        }
+
+        try {
+          return func(index, info);
+        } catch (...) {
+          callbackException = std::current_exception();
+          return false;
+        }
+      };
+}
+} // namespace
 
 PYBIND11_MODULE(_pylibCZIrw, m) {
   py::class_<CZIreadAPI>(m, "czi_reader", py::module_local())
@@ -67,7 +89,79 @@ PYBIND11_MODULE(_pylibCZIrw, m) {
                  pixeltype, roi, bgColor, zoom, coordinateString, SceneIndexes);
              return result;
            })
-      .def("GetCacheInfo", &CZIreadAPI::GetCacheInfo);
+      .def("GetCacheInfo", &CZIreadAPI::GetCacheInfo)
+      .def(
+          "EnumerateSubBlocks",
+          [](CZIreadAPI &self,
+             const std::function<bool(int, const libCZI::SubBlockInfo &)>
+                 &func) {
+            std::exception_ptr callbackException;
+            auto callback = StopOnCallbackException(func, callbackException);
+            self.EnumerateSubBlocks(callback);
+            if (callbackException) {
+              std::rethrow_exception(callbackException);
+            }
+          },
+          py::arg("func"),
+          "Enumerate all subblocks and call the provided function for each")
+      .def(
+          "EnumerateSubset",
+          [](CZIreadAPI &self, py::object planeCoordinate, py::object roi,
+             bool onlyLayer0,
+             const std::function<bool(int, const libCZI::SubBlockInfo &)>
+                 &func) {
+            const libCZI::IDimCoordinate *pCoord = nullptr;
+            const libCZI::IntRect *pRoi = nullptr;
+
+            std::unique_ptr<libCZI::CDimCoordinate> coordHolder;
+            std::unique_ptr<libCZI::IntRect> roiHolder;
+
+            if (!planeCoordinate.is_none()) {
+              if (py::isinstance<std::string>(planeCoordinate)) {
+                std::string coordStr = py::cast<std::string>(planeCoordinate);
+                coordHolder = std::make_unique<libCZI::CDimCoordinate>(
+                    libCZI::CDimCoordinate::Parse(coordStr.c_str()));
+                pCoord = coordHolder.get();
+              } else if (py::isinstance<py::dict>(planeCoordinate)) {
+                py::dict coordDict = py::cast<py::dict>(planeCoordinate);
+                coordHolder = std::make_unique<libCZI::CDimCoordinate>();
+                for (auto item : coordDict) {
+                  std::string dim_str = py::str(item.first);
+                  if (dim_str.length() == 1) {
+                    libCZI::DimensionIndex dim =
+                        libCZI::Utils::CharToDimension(dim_str[0]);
+                    if (dim != libCZI::DimensionIndex::invalid) {
+                      int value = py::cast<int>(item.second);
+                      coordHolder->Set(dim, value);
+                    }
+                  }
+                }
+                pCoord = coordHolder.get();
+              } else if (py::isinstance<libCZI::CDimCoordinate>(
+                             planeCoordinate)) {
+                pCoord =
+                    &py::cast<const libCZI::CDimCoordinate &>(planeCoordinate);
+              }
+            }
+
+            if (!roi.is_none()) {
+              roiHolder = std::make_unique<libCZI::IntRect>(
+                  py::cast<libCZI::IntRect>(roi));
+              pRoi = roiHolder.get();
+            }
+
+            std::exception_ptr callbackException;
+            auto callback = StopOnCallbackException(func, callbackException);
+            self.EnumerateSubset(pCoord, pRoi, onlyLayer0, callback);
+            if (callbackException) {
+              std::rethrow_exception(callbackException);
+            }
+          },
+          py::arg("plane_coordinate") = py::none(), py::arg("roi") = py::none(),
+          py::arg("only_layer0") = false, py::arg("func"),
+          "Enumerate a filtered subset of subblocks. Plane coordinate can be a "
+          "string (e.g., 'C0Z5'), "
+          "a dict (e.g., {'C': 0, 'Z': 5}), or a DimCoordinate object.");
 
   py::class_<CZIwriteAPI>(m, "czi_writer", py::module_local())
       .def(py::init<const std::wstring &, const std::string &>())
@@ -137,6 +231,106 @@ PYBIND11_MODULE(_pylibCZIrw, m) {
       .def_readwrite("y", &libCZI::IntRect::y)
       .def_readwrite("w", &libCZI::IntRect::w)
       .def_readwrite("h", &libCZI::IntRect::h);
+
+  py::class_<libCZI::IntSize>(m, "IntSize", py::module_local())
+      .def(py::init<>())
+      .def_readwrite("w", &libCZI::IntSize::w)
+      .def_readwrite("h", &libCZI::IntSize::h);
+
+  py::class_<libCZI::CDimCoordinate>(m, "DimCoordinate", py::module_local())
+      .def(py::init<>())
+      .def(py::init([](const std::string &coordinate_string) {
+             return libCZI::CDimCoordinate::Parse(coordinate_string.c_str());
+           }),
+           py::arg("coordinate_string"),
+           "Create a DimCoordinate from a coordinate string (e.g., 'C0Z5T2')")
+      .def(py::init([](const py::dict &coord_dict) {
+             libCZI::CDimCoordinate coord;
+             for (auto item : coord_dict) {
+               std::string dim_str = py::str(item.first);
+               if (dim_str.length() == 1) {
+                 libCZI::DimensionIndex dim =
+                     libCZI::Utils::CharToDimension(dim_str[0]);
+                 if (dim != libCZI::DimensionIndex::invalid) {
+                   int value = py::cast<int>(item.second);
+                   coord.Set(dim, value);
+                 }
+               }
+             }
+             return coord;
+           }),
+           py::arg("coordinate_dict"),
+           "Create a DimCoordinate from a dictionary (e.g., {'C': 0, 'Z': 5, "
+           "'T': 2})")
+      .def("set", &libCZI::CDimCoordinate::Set, py::arg("dimension"),
+           py::arg("value"), "Set the value for a specific dimension")
+      .def("clear",
+           py::overload_cast<libCZI::DimensionIndex>(
+               &libCZI::CDimCoordinate::Clear),
+           py::arg("dimension"), "Clear a specific dimension")
+      .def("clear_all", py::overload_cast<>(&libCZI::CDimCoordinate::Clear),
+           "Clear all dimensions")
+      .def(
+          "try_get_position",
+          [](const libCZI::CDimCoordinate &self,
+             libCZI::DimensionIndex dim) -> py::object {
+            int value;
+            if (self.TryGetPosition(dim, &value)) {
+              return py::cast(value);
+            }
+            return py::none();
+          },
+          py::arg("dimension"),
+          "Try to get the position for a dimension. Returns the value or None "
+          "if not set.")
+      .def(
+          "to_dict",
+          [](const libCZI::CDimCoordinate &self) -> py::dict {
+            py::dict result;
+            for (auto i = static_cast<
+                     std::underlying_type<libCZI::DimensionIndex>::type>(
+                     libCZI::DimensionIndex::MinDim);
+                 i <= static_cast<
+                          std::underlying_type<libCZI::DimensionIndex>::type>(
+                          libCZI::DimensionIndex::MaxDim);
+                 ++i) {
+              int value;
+              libCZI::DimensionIndex dim =
+                  static_cast<libCZI::DimensionIndex>(i);
+              if (self.TryGetPosition(dim, &value)) {
+                char dim_char = libCZI::Utils::DimensionToChar(dim);
+                std::string key(1, dim_char);
+                result[py::str(key)] = value;
+              }
+            }
+            return result;
+          },
+          "Convert coordinate to a Python dictionary");
+
+  py::enum_<libCZI::CompressionMode>(m, "CompressionMode", py::module_local())
+      .value("Invalid", libCZI::CompressionMode::Invalid)
+      .value("UnCompressed", libCZI::CompressionMode::UnCompressed)
+      .value("Jpg", libCZI::CompressionMode::Jpg)
+      .value("JpgXr", libCZI::CompressionMode::JpgXr)
+      .value("Zstd0", libCZI::CompressionMode::Zstd0)
+      .value("Zstd1", libCZI::CompressionMode::Zstd1)
+      .export_values();
+
+  py::class_<libCZI::SubBlockInfo>(m, "SubBlockInfo", py::module_local())
+      .def(py::init<>())
+      .def_readonly("compressionModeRaw",
+                    &libCZI::SubBlockInfo::compressionModeRaw)
+      .def_readonly("pixelType", &libCZI::SubBlockInfo::pixelType)
+      .def_readonly("coordinate", &libCZI::SubBlockInfo::coordinate)
+      .def_readonly("logicalRect", &libCZI::SubBlockInfo::logicalRect)
+      .def_readonly("physicalSize", &libCZI::SubBlockInfo::physicalSize)
+      .def_readonly("mIndex", &libCZI::SubBlockInfo::mIndex)
+      .def("get_compression_mode", &libCZI::SubBlockInfo::GetCompressionMode,
+           "Get the compression mode as an enum")
+      .def("get_zoom", &libCZI::SubBlockInfo::GetZoom,
+           "Calculate zoom factor from physical and logical size")
+      .def("is_mindex_valid", &libCZI::SubBlockInfo::IsMindexValid,
+           "Check if M-index is valid");
 
   py::enum_<libCZI::DimensionIndex>(m, "DimensionIndex", py::module_local())
       .value("Z", libCZI::DimensionIndex::Z)

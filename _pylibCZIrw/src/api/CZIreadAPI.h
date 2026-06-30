@@ -139,4 +139,29 @@ public:
   /// <returns>A SubBlockCacheInfo struct containing the cache
   /// information.</returns>
   SubBlockCacheInfo GetCacheInfo();
+
+  /// Enumerate subblocks and call the provided function for each subblock.
+  /// This allows Python code to iterate over all subblocks and access their
+  /// header information.
+  /// \param func A function/lambda that takes an index and
+  /// SubBlockInfo and returns bool.
+  /// \returns true to continue enumeration, false to stop.
+  void EnumerateSubBlocks(
+      const std::function<bool(int index, const libCZI::SubBlockInfo &info)>
+          &func);
+
+  /// Enumerate a filtered subset of subblocks.
+  /// \param planeCoordinate Optional coordinate filter (e.g., only subblocks
+  /// matching C=0, Z=5).
+  ///                        If nullptr, no coordinate filtering is applied.
+  /// \param roi             Optional region of interest filter. Only subblocks
+  /// intersecting this ROI are enumerated.
+  ///                        If nullptr, no ROI filtering is applied.
+  /// \param onlyLayer0 True to enumerate only pyramid layer 0 subblocks.
+  /// \param func Function to call for each matching subblock.
+  void EnumerateSubset(
+      const libCZI::IDimCoordinate *planeCoordinate, const libCZI::IntRect *roi,
+      bool onlyLayer0,
+      const std::function<bool(int index, const libCZI::SubBlockInfo &info)>
+          &func);
 };
