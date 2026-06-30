@@ -157,8 +157,8 @@ public:
   /// \param roi             Optional region of interest filter. Only subblocks
   /// intersecting this ROI are enumerated.
   ///                        If nullptr, no ROI filtering is applied.
-  /// \param onlyLayer0      If true, only pyramid layer 0 subblocks are enumerated.
-  /// \param func            Function to call for each matching subblock.
+  /// \param onlyLayer0 True to enumerate only pyramid layer 0 subblocks.
+  /// \param func Function to call for each matching subblock.
   void EnumerateSubset(
       const libCZI::IDimCoordinate *planeCoordinate, const libCZI::IntRect *roi,
       bool onlyLayer0,

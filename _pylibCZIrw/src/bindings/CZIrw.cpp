@@ -24,19 +24,19 @@ namespace {
 std::function<bool(int, const libCZI::SubBlockInfo &)> StopOnCallbackException(
     const std::function<bool(int, const libCZI::SubBlockInfo &)> &func,
     std::exception_ptr &callbackException) {
-  return [&func, &callbackException](int index,
-                                     const libCZI::SubBlockInfo &info) {
-    if (callbackException) {
-      return false;
-    }
+  return
+      [&func, &callbackException](int index, const libCZI::SubBlockInfo &info) {
+        if (callbackException) {
+          return false;
+        }
 
-    try {
-      return func(index, info);
-    } catch (...) {
-      callbackException = std::current_exception();
-      return false;
-    }
-  };
+        try {
+          return func(index, info);
+        } catch (...) {
+          callbackException = std::current_exception();
+          return false;
+        }
+      };
 }
 } // namespace
 
