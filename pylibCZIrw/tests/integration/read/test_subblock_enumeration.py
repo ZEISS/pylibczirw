@@ -4,6 +4,8 @@
 
 import os
 
+import pytest
+
 from pylibCZIrw.czi import open_czi
 
 working_dir = os.path.dirname(os.path.abspath(__file__))
@@ -296,6 +298,42 @@ class TestEnumerationControl:
             czi_doc.enumerate_subblocks(limited_callback)
 
             assert count["total"] == max_count
+
+    def test_enumerate_subblocks_rethrows_callback_exception(self) -> None:
+        """Test that exceptions raised by the callback are re-thrown."""
+
+        class CallbackError(RuntimeError):
+            """Raised by the test callback."""
+
+        with open_czi(CZI_SIMPLE) as czi_doc:
+            calls = {"total": 0}
+
+            def failing_callback(_index, _info):  # type: ignore
+                calls["total"] += 1
+                raise CallbackError("callback failed")
+
+            with pytest.raises(CallbackError, match="callback failed"):
+                czi_doc.enumerate_subblocks(failing_callback)
+
+            assert calls["total"] == 1
+
+    def test_enumerate_subblocks_subset_rethrows_callback_exception(self) -> None:
+        """Test that subset enumeration re-throws callback exceptions."""
+
+        class CallbackError(RuntimeError):
+            """Raised by the test callback."""
+
+        with open_czi(CZI_SIMPLE) as czi_doc:
+            calls = {"total": 0}
+
+            def failing_callback(_index, _info):  # type: ignore
+                calls["total"] += 1
+                raise CallbackError("callback failed")
+
+            with pytest.raises(CallbackError, match="callback failed"):
+                czi_doc.enumerate_subblocks_subset(failing_callback, only_layer0=True)
+
+            assert calls["total"] == 1
 
     def test_collect_specific_subblocks(self) -> None:
         """Test collecting specific subblocks based on criteria."""

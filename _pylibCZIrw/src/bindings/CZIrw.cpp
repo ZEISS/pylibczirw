@@ -7,6 +7,8 @@
 #include "../api/site.h"
 #include "PbHelper.h"
 
+#include <exception>
+#include <functional>
 #include <optional>
 
 #include <pybind11/chrono.h>
@@ -17,6 +19,26 @@
 #include <pybind11/stl.h>
 
 namespace py = pybind11;
+
+namespace {
+std::function<bool(int, const libCZI::SubBlockInfo &)> StopOnCallbackException(
+    const std::function<bool(int, const libCZI::SubBlockInfo &)> &func,
+    std::exception_ptr &callbackException) {
+  return [&func, &callbackException](int index,
+                                     const libCZI::SubBlockInfo &info) {
+    if (callbackException) {
+      return false;
+    }
+
+    try {
+      return func(index, info);
+    } catch (...) {
+      callbackException = std::current_exception();
+      return false;
+    }
+  };
+}
+} // namespace
 
 PYBIND11_MODULE(_pylibCZIrw, m) {
   py::class_<CZIreadAPI>(m, "czi_reader", py::module_local())
@@ -72,7 +94,14 @@ PYBIND11_MODULE(_pylibCZIrw, m) {
           "EnumerateSubBlocks",
           [](CZIreadAPI &self,
              const std::function<bool(int, const libCZI::SubBlockInfo &)>
-                 &func) { self.EnumerateSubBlocks(func); },
+                 &func) {
+            std::exception_ptr callbackException;
+            auto callback = StopOnCallbackException(func, callbackException);
+            self.EnumerateSubBlocks(callback);
+            if (callbackException) {
+              std::rethrow_exception(callbackException);
+            }
+          },
           py::arg("func"),
           "Enumerate all subblocks and call the provided function for each")
       .def(
@@ -121,7 +150,12 @@ PYBIND11_MODULE(_pylibCZIrw, m) {
               pRoi = roiHolder.get();
             }
 
-            self.EnumerateSubset(pCoord, pRoi, onlyLayer0, func);
+            std::exception_ptr callbackException;
+            auto callback = StopOnCallbackException(func, callbackException);
+            self.EnumerateSubset(pCoord, pRoi, onlyLayer0, callback);
+            if (callbackException) {
+              std::rethrow_exception(callbackException);
+            }
           },
           py::arg("plane_coordinate") = py::none(), py::arg("roi") = py::none(),
           py::arg("only_layer0") = false, py::arg("func"),
