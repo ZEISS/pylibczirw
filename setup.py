@@ -175,6 +175,8 @@ class CMakeBuild(build_ext):
             ]  # instruct to use the static version of libssl and libcrypto
             cmake_args += ["-DOPENSSL_ROOT_DIR=/tmp/openssl"]
             cmake_args += ["-DZLIB_USE_STATIC_LIBS=TRUE"]
+            # Use the Eigen package installed by CIBW_BEFORE_ALL instead of cloning it once per Python wheel build.
+            cmake_args += ["-DLIBCZI_BUILD_PREFER_EXTERNALPACKAGE_EIGEN3=ON"]
 
         # Test install curl using vcpkg on linux
         print("env root is: " + os.environ.get("VCPKG_INSTALLATION_ROOT", ""))
