@@ -4,8 +4,8 @@ set -euo pipefail
 yum install -y glibc-static perl-IPC-Cmd curl ca-certificates
 
 if yum list available eigen3-devel >/dev/null 2>&1; then
-  yum install -y eigen3-devel
-  exit 0
+	yum install -y eigen3-devel
+	exit 0
 fi
 
 echo "eigen3-devel is unavailable; installing pinned Eigen headers."
@@ -21,19 +21,19 @@ mkdir -p "${eigen_workdir}" "${eigen_prefix}/include/eigen3" "${eigen_prefix}/sh
 
 downloaded_eigen=0
 for eigen_url in \
-  "https://github.com/eigen-mirror/eigen/archive/refs/tags/${eigen_version}.tar.gz" \
-  "https://gitlab.com/libeigen/eigen/-/archive/${eigen_commit}/eigen-${eigen_commit}.tar.gz"; do
-  rm -f "${eigen_archive}"
-  if curl --fail --location --retry 5 --retry-delay 5 --connect-timeout 30 \
-    "${eigen_url}" --output "${eigen_archive}"; then
-    downloaded_eigen=1
-    break
-  fi
+	"https://github.com/eigen-mirror/eigen/archive/refs/tags/${eigen_version}.tar.gz" \
+	"https://gitlab.com/libeigen/eigen/-/archive/${eigen_commit}/eigen-${eigen_commit}.tar.gz"; do
+	rm -f "${eigen_archive}"
+	if curl --fail --location --retry 5 --retry-delay 5 --connect-timeout 30 \
+		"${eigen_url}" --output "${eigen_archive}"; then
+		downloaded_eigen=1
+		break
+	fi
 done
 
 if [[ "${downloaded_eigen}" != "1" || ! -s "${eigen_archive}" ]]; then
-  echo "Failed to download Eigen ${eigen_version}." >&2
-  exit 1
+	echo "Failed to download Eigen ${eigen_version}." >&2
+	exit 1
 fi
 
 tar -xzf "${eigen_archive}" -C "${eigen_workdir}" --strip-components=1
