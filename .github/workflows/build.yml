@@ -19,6 +19,7 @@ jobs:
       # Relative to github.workspace
       PkgName: pylibCZIrw
       CIBWBEFOREALLLINUX: bash /project/.github/scripts/install_manylinux_deps.sh
+      CIBWBEFOREALLMACOS: brew install eigen
       # Minimum MacOS version the wheels will support
       CIBW_ENVIRONMENT_MACOS: "MACOSX_DEPLOYMENT_TARGET=10.15"
     secrets:

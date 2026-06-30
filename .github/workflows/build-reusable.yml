@@ -142,7 +142,7 @@ jobs:
           - {
             PoolImage: windows-2022,
             OS: Windows,
-            CIBWBEFOREALL: "${{inputs.CIBWBEFOREALLWindows}}",
+            CIBWBEFOREALL: "${{inputs.CIBWBEFOREALLWINDOWS}}",
             CIBW_ENVIRONMENT: "",
           }
           - {
@@ -270,6 +270,10 @@ jobs:
         with:
           PyVersionLatest: "${{inputs.PyVersionLatest}}"
           PkgRootFolder: "${{ github.workspace }}/${{inputs.PkgRootFolder}}"
+      - name: Install Ubuntu source build dependencies
+        if: matrix.config.OS == 'ubuntu-latest'
+        run: sudo apt-get update && sudo apt-get install -y libeigen3-dev
+        shell: bash
       - uses: "./.github/actions/steps_download"
         name: Download Sdist
         with:
