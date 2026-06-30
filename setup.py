@@ -177,6 +177,7 @@ class CMakeBuild(build_ext):
             cmake_args += ["-DZLIB_USE_STATIC_LIBS=TRUE"]
             # Use the Eigen package installed by CIBW_BEFORE_ALL instead of cloning it once per Python wheel build.
             cmake_args += ["-DLIBCZI_BUILD_PREFER_EXTERNALPACKAGE_EIGEN3=ON"]
+            cmake_args += ["-DCMAKE_PREFIX_PATH=/opt/eigen3"]
 
         # Test install curl using vcpkg on linux
         print("env root is: " + os.environ.get("VCPKG_INSTALLATION_ROOT", ""))
