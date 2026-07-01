@@ -38,6 +38,12 @@ class CMakeExtension(Extension):
 class CMakeBuild(build_ext):
     """Manages CMake build specifics of this module."""
 
+    @staticmethod
+    def _prefer_external_eigen3(cmake_args, prefix: str = ""):  # type: ignore[no-untyped-def]
+        cmake_args += ["-DLIBCZI_BUILD_PREFER_EXTERNALPACKAGE_EIGEN3=ON"]
+        if prefix:
+            cmake_args += [f"-DCMAKE_PREFIX_PATH={prefix}"]
+
     def run(self) -> None:
         """Runs CMake build."""
         try:
@@ -127,6 +133,7 @@ class CMakeBuild(build_ext):
                     f"-DOPENSSL_INCLUDE_DIR={os.path.join(openssl_prefix, 'include')}",
                 ]
             cmake_args += ["-DLIBCZI_BUILD_PREFER_EXTERNALPACKAGE_LIBCURL=ON"]
+            CMakeBuild._prefer_external_eigen3(cmake_args, brew_prefix)
         else:
             print("Homebrew not found, attempting to build dependencies locally")
             cmake_args += ["-DLIBCZI_BUILD_PREFER_EXTERNALPACKAGE_LIBCURL=OFF"]
@@ -175,6 +182,8 @@ class CMakeBuild(build_ext):
             ]  # instruct to use the static version of libssl and libcrypto
             cmake_args += ["-DOPENSSL_ROOT_DIR=/tmp/openssl"]
             cmake_args += ["-DZLIB_USE_STATIC_LIBS=TRUE"]
+            # Use the Eigen package installed by CIBW_BEFORE_ALL instead of cloning it once per Python wheel build.
+            CMakeBuild._prefer_external_eigen3(cmake_args, "/opt/eigen3")
 
         # Test install curl using vcpkg on linux
         print("env root is: " + os.environ.get("VCPKG_INSTALLATION_ROOT", ""))
@@ -184,7 +193,7 @@ class CMakeBuild(build_ext):
         print(f"path exists is: {test} ")
         if os.path.exists(vcpkg_installation_root):
             check_and_install_packages(
-                packages=["curl[ssl]"],
+                packages=["curl[ssl]", "eigen3"],
                 triplet="x64-linux",
                 vcpkg_root=vcpkg_installation_root,
             )
@@ -200,11 +209,19 @@ class CMakeBuild(build_ext):
             cmake_args += [
                 "-DLIBCZI_BUILD_PREFER_EXTERNALPACKAGE_LIBCURL=ON"
             ]  # if curl is available via vcpkg, then instruct to use the package-manager provided libcurl
+            CMakeBuild._prefer_external_eigen3(
+                cmake_args
+            )  # if eigen3 is available via vcpkg, then instruct to use the package-manager provided eigen3
         else:
             print("Pacakge manager missing, attempting to build libcurl dependency locally.")
             cmake_args += [
                 "-DLIBCZI_BUILD_PREFER_EXTERNALPACKAGE_LIBCURL=OFF"
             ]  # otherwise, we try to build libcurl ourselves (note: probably requires libssl-dev to be installed)
+            for eigen_prefix in ("/usr", "/usr/local"):
+                eigen_config = os.path.join(eigen_prefix, "share", "eigen3", "cmake", "Eigen3Config.cmake")
+                if os.path.exists(eigen_config):
+                    CMakeBuild._prefer_external_eigen3(cmake_args, eigen_prefix)
+                    break
 
         cmake_args += ["-DCMAKE_BUILD_TYPE=" + cfg]
         build_args = ["--", "-j2"]
