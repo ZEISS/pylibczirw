@@ -39,7 +39,7 @@ runs:
         CIBW_SKIP: pp* *-musllinux_*
         CIBW_BEFORE_ALL: "${{inputs.CIBWBEFOREALL}}"
         CIBW_ENVIRONMENT: "${{inputs.CIBW_ENVIRONMENT}}"
-        CIBW_TEST_REQUIRES: "-r requirements_test.txt"
+        CIBW_TEST_REQUIRES: "pytest defusedxml"
         CIBW_TEST_COMMAND: tox -c {project}/tox_cibuildwheel.ini -e base --skip-pkg-install --current-env -vv
       run: cibuildwheel --output-dir wheelhouse .
       shell: bash

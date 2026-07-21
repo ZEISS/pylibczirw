@@ -30,7 +30,7 @@ runs:
       with:
         python-version: "${{inputs.PyVersionLatest}}"
     - name: Environment Setup
-      run: python -m pip install --upgrade --requirement requirements_test.txt
+      run: python -m pip install --upgrade ".[test]"
       working-directory: "${{inputs.PkgRootFolder}}"
       shell: bash
     - name: Unit and Integration Tests
