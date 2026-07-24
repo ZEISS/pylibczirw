@@ -21,13 +21,19 @@ from pylibCZIrw.czi import (
 working_dir = dirname(abspath(__file__))
 
 CZI_DOCUMENT_TEST_WRITE1 = join(working_dir, "../test_data", "c1_bgr24.czi")
-EXPECTED_PLANE_TEST1 = np.load(join(working_dir, "../test_data", "c1_bgr24_plane.npz"))["arr"]
+EXPECTED_PLANE_TEST1 = np.load(join(working_dir, "../test_data", "c1_bgr24_plane.npz"))[
+    "arr"
+]
 
 CZI_DOCUMENT_TEST_WRITE2 = join(working_dir, "../test_data", "c1_bgr48.czi")
-EXPECTED_PLANE_TEST2 = np.load(join(working_dir, "../test_data", "c1_bgr48_plane.npz"))["arr"]
+EXPECTED_PLANE_TEST2 = np.load(join(working_dir, "../test_data", "c1_bgr48_plane.npz"))[
+    "arr"
+]
 
 CZI_DOCUMENT_TEST_WRITE3 = join(working_dir, "../test_data", "c1_gray8.czi")
-EXPECTED_PLANE_TEST3 = np.load(join(working_dir, "../test_data", "c1_gray8_plane.npz"))["arr"]
+EXPECTED_PLANE_TEST3 = np.load(join(working_dir, "../test_data", "c1_gray8_plane.npz"))[
+    "arr"
+]
 
 
 def get_plane(path: str, roi: Optional[Tuple[int, int, int, int]]) -> np.ndarray:
@@ -150,16 +156,16 @@ def test_write_succeeds_if_file_does_not_exist(exist_ok: bool, path: str) -> Non
 
 
 def test_write_metadata_application_version_matches_package_version() -> None:
-    """Tests that Metadata/Information/Application/Version matches the package version as specified in setup.py"""
+    """Tests that Metadata/Information/Application/Version matches the package version."""
     # Arrange
-    # retrieve version as generated through setup.py (locally) or env set through python-semantic-release in pipeline
+    # retrieve version from env (set by python-semantic-release in pipeline) or pyproject.toml (locally)
     setup_version = os.getenv("PYTHON_SEMANTIC_RELEASE_VERSION")
     if setup_version is None:
         root = join(abspath(dirname(dirname(dirname(dirname(dirname(__file__)))))))
-        with open(join(root, "setup.py"), encoding="utf-8") as f:
-            readme = f.readlines()
-            for line in readme:
-                if "VERSION" in line:
+        pyproject_path = join(root, "pyproject.toml")
+        with open(pyproject_path, encoding="utf-8") as f:
+            for line in f:
+                if line.strip().startswith("version"):
                     setup_version = line.split('"')[1]
                     break
 
@@ -174,7 +180,12 @@ def test_write_metadata_application_version_matches_package_version() -> None:
         # Assert
         with open_czi(join(td, "test.czi")) as czi_document:
             actual_metadata = czi_document.metadata
-        assert actual_metadata["ImageDocument"]["Metadata"]["Information"]["Application"]["Version"] == setup_version
+        assert (
+            actual_metadata["ImageDocument"]["Metadata"]["Information"]["Application"][
+                "Version"
+            ]
+            == setup_version
+        )
 
 
 @pytest.mark.parametrize(
@@ -229,7 +240,9 @@ def test_write_sample_metadata_and_compare(
 ) -> None:
     """Tests that Metadata matches the given metatadata"""
 
-    def __flatten(setting: Union[List[OrderedDict], OrderedDict]) -> Iterator[OrderedDict]:
+    def __flatten(
+        setting: Union[List[OrderedDict], OrderedDict],
+    ) -> Iterator[OrderedDict]:
         """Flattens the list of display settings independent of whether
         there are multiple settings present for the same key.
         """
@@ -258,13 +271,19 @@ def test_write_sample_metadata_and_compare(
         # Assert
         with open_czi(join(td, "test.czi")) as czi_document:
             actual_metadata = czi_document.metadata
-        actual_display_settings = actual_metadata["ImageDocument"]["Metadata"].get("DisplaySetting", None)
-
-        channels_parsed = (
-            list(__flatten(list(actual_display_settings["Channels"].values()))) if actual_display_settings else None
+        actual_display_settings = actual_metadata["ImageDocument"]["Metadata"].get(
+            "DisplaySetting", None
         )
 
-        assert channels_parsed == expected  # Do not rely on name of channels but rather the order
+        channels_parsed = (
+            list(__flatten(list(actual_display_settings["Channels"].values())))
+            if actual_display_settings
+            else None
+        )
+
+        assert (
+            channels_parsed == expected
+        )  # Do not rely on name of channels but rather the order
 
 
 @pytest.mark.parametrize(
@@ -279,7 +298,9 @@ def test_write_sample_metadata_and_compare(
     ],
 )
 @patch("_pylibCZIrw.czi_writer.AddTile")
-def test_different_image_shapes(_divide_image_patch: MagicMock, shape: Tuple[int, int, int]) -> None:
+def test_different_image_shapes(
+    _divide_image_patch: MagicMock, shape: Tuple[int, int, int]
+) -> None:
     """Tests that image data is divided correctly based on its size.
 
     Parameters
@@ -316,7 +337,9 @@ def test_different_image_shapes(_divide_image_patch: MagicMock, shape: Tuple[int
 def test_write_incontiguous() -> None:
     """Tests that incontiguous image data is written correctly to czi."""
     # Arrange
-    input_path = join(dirname(working_dir), "test_data", "rgb-image.npy")  # Color channels first
+    input_path = join(
+        dirname(working_dir), "test_data", "rgb-image.npy"
+    )  # Color channels first
     expected_path = join(dirname(working_dir), "test_data", "rgb-image.czi")
     data = np.load(input_path)
     data = np.moveaxis(data, 0, -1)

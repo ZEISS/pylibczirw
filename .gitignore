@@ -114,3 +114,5 @@ bin/
 
 # MegaLinter
 megalinter-reports/
+
+wheelhouse/

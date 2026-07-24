@@ -1,10 +1,10 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-yum install -y glibc-static perl-IPC-Cmd curl ca-certificates
+dnf install -y perl-IPC-Cmd curl ca-certificates openssl-devel zlib-devel
 
-if yum list available eigen3-devel >/dev/null 2>&1; then
-	yum install -y eigen3-devel
+if dnf list available eigen3-devel &>/dev/null; then
+	dnf install -y eigen3-devel
 	exit 0
 fi
 
