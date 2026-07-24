@@ -48,6 +48,11 @@ _**pylibCZIrw**_ is a python library using bindings from:
   - No need to "learn" and code in an intermediate language (Cython).
   - Already used internally at Zeiss and very good feedbacks.
 
+To build
+`python -m build`
+`cibuildwheel --output-dir wheelhouse .` 
+`cibuildwheel --platform linux --output-dir wheelhouse .`
+
 To contribute to the development (C++ or python side), you will have to compile the C++ bindings.  
 This documentation provides a step-by-step guide to help you to do so.
 

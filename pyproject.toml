@@ -30,21 +30,15 @@ classifiers = [
 Homepage = "https://github.com/ZEISS/pylibczirw"
 
 [project.optional-dependencies]
-test = [
-    "mypy",
-    "check-python-versions",
-    "tox>=4",
-    "tox-current-env",
-    "pytest",
-    "defusedxml",
-]
-deploy = ["build", "pip"]
+test = ["mypy", "pytest", "defusedxml"]
+deploy = ["build"]
 
 [tool.scikit-build]
 ninja.version = ">=1.11"
 cmake.version = ">=3.15"
 cmake.build-type = "Release"
 build.targets = ["_pylibCZIrw"]
+install.components = ["PythonModule"]
 build-dir = "build/{wheel_tag}"
 wheel.packages = ["pylibCZIrw"]
 sdist.include = [
@@ -77,6 +71,25 @@ LIBCZI_BUILD_PREFER_EXTERNALPACKAGE_EIGEN3 = "ON"
 [[tool.scikit-build.overrides]]
 if.platform-system = "win32"
 cmake.define.VCPKG_TARGET_TRIPLET = "x64-windows-static"
+
+[tool.cibuildwheel]
+build-frontend = "build[uv]"
+build = "cp311-* cp312-* cp313-*"
+archs = "auto64"
+skip = "pp* *-musllinux_*"
+test-requires = ["pytest", "defusedxml"]
+test-command = "pytest {project}/pylibCZIrw/tests"
+
+[tool.cibuildwheel.linux]
+manylinux-x86_64-image = "manylinux_2_28"
+manylinux-aarch64-image = "manylinux_2_28"
+before-all = "bash /project/.github/scripts/install_manylinux_deps.sh"
+
+[tool.cibuildwheel.linux.environment]
+CMAKE_ARGS = "-DLIBCZI_BUILD_PREFER_EXTERNALPACKAGE_LIBCURL=OFF -DLIBCZI_BUILD_PREFER_EXTERNALPACKAGE_EIGEN3=ON -DCMAKE_PREFIX_PATH=/opt/eigen3"
+
+[tool.cibuildwheel.macos.environment]
+MACOSX_DEPLOYMENT_TARGET = "11.0"
 
 [tool.pytest.ini_options]
 testpaths = ["pylibCZIrw/tests"]

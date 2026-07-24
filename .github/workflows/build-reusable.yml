@@ -22,22 +22,6 @@ on:
         required: false
         type: string
         default: ""
-      CIBWBEFOREALLLINUX:
-        required: false
-        default: ""
-        type: string
-      CIBWBEFOREALLWINDOWS:
-        required: false
-        default: ""
-        type: string
-      CIBWBEFOREALLMACOS:
-        required: false
-        default: ""
-        type: string
-      CIBW_ENVIRONMENT_MACOS:
-        required: false
-        default: ""
-        type: string
     outputs:
       pypi_released:
         value: ${{ jobs.CodeQualityAnalysis-Test.outputs.pypi_released }}
@@ -78,9 +62,6 @@ jobs:
       - name: Environment Setup
         run: python -m pip install --upgrade ".[test]"
         working-directory: "${{ github.workspace }}/${{inputs.PkgRootFolder}}"
-      - name: Check Python Versions Consistency
-        # Only specify tox.ini and setup.py since .yml uses cibuildwheel
-        run: check-python-versions ${{ github.workspace }}\${{inputs.PkgRootFolder}} --only tox.ini,setup.py
       - name: Set TEMP to ${{ runner.temp }}
         if: success() || failure()
         run: echo "TEMP=${{ runner.temp }}" >> "$GITHUB_ENV"
@@ -95,11 +76,8 @@ jobs:
         shell: bash
       - name: Unit and Integration Tests
         if: success() || failure()
-        run: tox -vv -r -s false
+        run: pytest pylibCZIrw/tests --junitxml=${{ runner.temp }}/results/results.xml --cov=. --cov-report=xml:${{ runner.temp }}/cov_results/cov.xml --cov-branch
         working-directory: "${{ github.workspace }}/${{inputs.PkgRootFolder}}"
-        env:
-          CovResultsPath: "${{ runner.temp }}\\cov_results\\cov.xml"
-          TestResultsPath: "${{ runner.temp }}\\results"
       # Note: Need to move coverage file due to ongoing bugs with finding coverage files names differently than
       # tool defaults and put under folders away from working directory in codecov v4
       # code based on https://devblogs.microsoft.com/powershell-community/determine-if-a-folder-exists/
@@ -127,37 +105,15 @@ jobs:
     strategy:
       matrix:
         config:
-          - {
-            PoolImage: ubuntu-latest,
-            OS: Linux-x86_64,
-            CIBWBEFOREALL: "${{inputs.CIBWBEFOREALLLINUX}}",
-            CIBW_ENVIRONMENT: "",
-          }
-          - {
-            PoolImage: ubuntu-24.04-arm,
-            OS: Linux-arm64,
-            CIBWBEFOREALL: "${{inputs.CIBWBEFOREALLLINUX}}",
-            CIBW_ENVIRONMENT: "",
-          }
-          - {
-            PoolImage: windows-2022,
-            OS: Windows,
-            CIBWBEFOREALL: "${{inputs.CIBWBEFOREALLWINDOWS}}",
-            CIBW_ENVIRONMENT: "",
-          }
-          - {
-            # macos-14 is arm64
-            PoolImage: macos-14,
-            OS: macOS-arm64,
-            CIBWBEFOREALL: "${{inputs.CIBWBEFOREALLMACOS}}",
-            CIBW_ENVIRONMENT: "MACOSX_DEPLOYMENT_TARGET=11.0 CMAKE_OSX_ARCHITECTURES=arm64",
-          }
+          - { PoolImage: ubuntu-latest, OS: Linux-x86_64 }
+          - { PoolImage: ubuntu-24.04-arm, OS: Linux-arm64 }
+          - { PoolImage: windows-2022, OS: Windows }
+          - { PoolImage: macos-14, OS: macOS-arm64 }
     steps:
       - uses: actions/checkout@v5
         with:
           lfs: true
           submodules: recursive
-          # Python Semantic Release needs access to the full history to determine whether a release should be made.
           fetch-depth: 0
       - uses: "./.github/actions/steps_package"
         name: Package
@@ -165,8 +121,6 @@ jobs:
           PyVersionLatest: "${{inputs.PyVersionLatest}}"
           PkgRootFolder: "${{ github.workspace }}/${{inputs.PkgRootFolder}}"
           OS: "${{matrix.config.OS}}"
-          CIBWBEFOREALL: "${{matrix.config.CIBWBEFOREALL}}"
-          CIBW_ENVIRONMENT: "${{matrix.config.CIBW_ENVIRONMENT}}"
     if: inputs.Pure == false
   PackageWheelsPure:
     name: Package Pure Wheels

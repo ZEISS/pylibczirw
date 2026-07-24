@@ -41,13 +41,14 @@ set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 add_subdirectory(libs/libCZIrw)
 
 # bring in pybind11
-if(DEFINED SKBUILD)
-  # scikit-build-core provides pybind11 via build requirements
-  find_package(pybind11 CONFIG REQUIRED)
-else()
-  # Fallback for standalone CMake builds (e.g., development)
-  add_subdirectory(libs/pybind11)
-endif()
+find_package(Python REQUIRED COMPONENTS Interpreter Development.Module)
+execute_process(
+  COMMAND "${Python_EXECUTABLE}" -m pybind11 --cmakedir
+  OUTPUT_VARIABLE pybind11_DIR
+  OUTPUT_STRIP_TRAILING_WHITESPACE
+  COMMAND_ERROR_IS_FATAL ANY
+)
+find_package(pybind11 CONFIG REQUIRED)
 
 # static library containing the C-API
 add_subdirectory(_pylibCZIrw/src/api)
@@ -56,7 +57,7 @@ add_subdirectory(_pylibCZIrw/src/api)
 add_subdirectory(_pylibCZIrw/src/bindings)
 
 # Install the extension module into the wheel root (imported as `import _pylibCZIrw`)
-install(TARGETS _pylibCZIrw LIBRARY DESTINATION .)
+install(TARGETS _pylibCZIrw LIBRARY DESTINATION . COMPONENT PythonModule)
 
 # tests (only when not building via scikit-build)
 if(NOT DEFINED SKBUILD)

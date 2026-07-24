@@ -5,13 +5,6 @@ inputs:
   PyVersionLatest:
     description: Latest supported Python version
     required: true
-  CIBWBEFOREALL:
-    description: arguments to cibuildwheel
-    required: true
-  CIBW_ENVIRONMENT:
-    description: environment variables to set for cibuildwheel
-    required: false
-    default: ""
   PkgRootFolder:
     description: root folder of Python package
     required: true
@@ -30,17 +23,9 @@ runs:
       run: |-
         set -o errexit
         python -m pip install --upgrade pip
-        pip install cibuildwheel~=2.3 uv
+        pip install cibuildwheel uv
       shell: bash
     - name: Build wheels
-      env:
-        CIBW_BUILD_FRONTEND: build[uv]
-        CIBW_ARCHS: auto64
-        CIBW_SKIP: pp* *-musllinux_*
-        CIBW_BEFORE_ALL: "${{inputs.CIBWBEFOREALL}}"
-        CIBW_ENVIRONMENT: "${{inputs.CIBW_ENVIRONMENT}}"
-        CIBW_TEST_REQUIRES: "pytest defusedxml"
-        CIBW_TEST_COMMAND: tox -c {project}/tox_cibuildwheel.ini -e base --skip-pkg-install --current-env -vv
       run: cibuildwheel --output-dir wheelhouse .
       shell: bash
       working-directory: "${{inputs.PkgRootFolder}}"
