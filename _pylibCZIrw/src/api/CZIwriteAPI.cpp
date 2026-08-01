@@ -1,5 +1,6 @@
 #include "CZIwriteAPI.h"
 #include "../pylibCZIrw_Config.h"
+#include <algorithm>
 #include <optional>
 
 using namespace libCZI;
@@ -58,8 +59,14 @@ bool CZIwriteAPI::AddTileEx(const std::string &coordinateString,
   }
 
   libCZI::CDimCoordinate coords;
-  bool conversion_to_cdim =
-      Utils::StringToDimCoordinate(coordinateString.c_str(), &coords);
+  (void)Utils::StringToDimCoordinate(coordinateString.c_str(), &coords);
+
+  // Get per-channel pixel type
+  int cIndex = 0;
+  if (coords.TryGetPosition(libCZI::DimensionIndex::C, &cIndex)) {
+    channelPixelTypes_[cIndex] = plane->get_pixelType();
+  }
+
   auto sbmetadata = CZIwriteAPI::CreateSubBlockMetadataXml(retiling_id);
   CZIwriteAPI::AddSubBlock(coords, plane, actualCompressionOptions,
                            this->spWriter_.get(), x, y, m, sbmetadata);
@@ -164,6 +171,66 @@ void CZIwriteAPI::WriteMetadata(
     const auto &key = it.first;
     const auto &value = it.second;
     MetadataUtils::SetOrAddCustomKeyValuePair(mdBldr.get(), key, value);
+  }
+
+  
+  // Infer ComponentBitCount
+  int imageBits = 0;
+  if (!channelPixelTypes_.empty()) {
+    bool allEqual = true;
+    int firstBits = BitsPerComponent(channelPixelTypes_.begin()->second);
+    int maxBits = firstBits;
+    for (const auto& kv : channelPixelTypes_) {
+      const int b = BitsPerComponent(kv.second);
+      if (b != firstBits) allEqual = false;
+      if (b > maxBits)  maxBits = b;
+    }
+    imageBits = allEqual ? firstBits : maxBits;
+  }
+  if (imageBits > 0) {
+    const bool integerPixels =
+      (imageBits == 8 || imageBits == 16 || imageBits == 32) &&
+      // treat float32 types specially:
+      (std::none_of(channelPixelTypes_.begin(), channelPixelTypes_.end(),
+        [](auto& kv){ return kv.second == libCZI::PixelType::Gray32Float 
+            || kv.second == libCZI::PixelType::Bgr96Float; }));
+    mdBldr->GetRootNode()
+      ->GetOrCreateChildNode("Metadata/Information/Image/ComponentBitCount")
+      ->SetValue(imageBits);
+    if (integerPixels) {
+      const auto highVal = (imageBits >= 31) ? 0x7FFFFFFFu : ((1u << imageBits) - 1u);
+      mdBldr->GetRootNode()
+        ->GetOrCreateChildNode("Metadata/Information/Image/ComponentHighValue")
+        ->SetValue(highVal);
+    }
+  }
+
+  // Per-channel bitcount
+  auto channelsNode = mdBldr->GetRootNode()
+    ->GetOrCreateChildNode("Metadata/Information/Image/Dimensions/Channels");
+    
+  for (const auto& kv : channelPixelTypes_) {
+    const int c    = kv.first;
+    const int bits = BitsPerComponent(kv.second);
+    if (bits <= 0) continue;
+
+    // Find existing <Channel Id="Channel:c"> or create a new one
+    std::shared_ptr<libCZI::IMetadataNode> channelNode;
+    for (int i = 0;; ++i) {
+      auto child = channelsNode->GetChildNode("Channel", i);
+      if (!child) break;
+      auto idAttr = child->GetAttribute("Id");
+      if (idAttr.has_value() && idAttr.value() == ("Channel:" + std::to_string(c))) {
+        channelNode = child;
+          break;
+        }
+    }
+    if (!channelNode) {
+        channelNode = channelsNode->CreateChildNode("Channel");
+        channelNode->SetAttribute("Id", ("Channel:" + std::to_string(c)).c_str());
+    }
+
+    channelNode->GetOrCreateChildNode("ComponentBitCount")->SetValue(bits);
   }
 
   mdBldr->GetRootNode()

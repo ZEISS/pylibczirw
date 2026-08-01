@@ -3,6 +3,7 @@
 #include "PImage.h"
 #include "inc_libCzi.h"
 #include <iostream>
+#include <map>
 #include <optional>
 
 /// This enum specifies the "tinting-mode" - how the channel is false-colored.
@@ -62,7 +63,26 @@ private:
       spWriter_; ///< The pointer to the spWriter.
   libCZI::Utils::CompressionOption defaultCompressionOptions_;
 
-public:
+  // Tracks the last-seen pixel type per C channel index during AddTile/AddTileEx
+  std::map<int, libCZI::PixelType> channelPixelTypes_;
+
+  static inline int BitsPerComponent(libCZI::PixelType pt) {
+    switch (pt) {
+      case libCZI::PixelType::Gray8:
+      case libCZI::PixelType::Bgr24:      
+        return 8;
+      case libCZI::PixelType::Gray16:
+      case libCZI::PixelType::Bgr48:      
+        return 16;
+      case libCZI::PixelType::Gray32Float:
+      case libCZI::PixelType::Bgr96Float: 
+        return 32;
+      default:
+        return 0;
+    }
+  }
+
+  public:
   /// Constructor which constructs a CZIwriteAPI object from the given wstring.
   /// Creates a spWriter for the czi document pointed by the given filepath.
   /// This constructor will use default options for compression, which is "no
