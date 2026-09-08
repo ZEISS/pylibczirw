@@ -44,8 +44,13 @@
         "test",
         "deps"
       ],
-      "minor_tags": ["feat"],
-      "patch_tags": ["fix", "perf"],
+      "minor_tags": [
+        "feat"
+      ],
+      "patch_tags": [
+        "fix",
+        "perf"
+      ],
       "default_bump_level": 0
     },
     "logging_use_named_masks": false,
@@ -60,9 +65,13 @@
     "no_git_verify": false,
     "tag_format": "v{version}",
     "publish": {
-      "dist_glob_patterns": ["dist/*"],
+      "dist_glob_patterns": [
+        "dist/*"
+      ],
       "upload_to_vcs_release": false
     },
-    "version_variables": ["setup.py:VERSION"]
+    "version_variables": [
+      "pyproject.toml:version"
+    ]
   }
 }

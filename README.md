@@ -21,7 +21,7 @@ You should ideally have [PyCharm Professional](https://www.jetbrains.com/pycharm
    Note: Alternatively, when opening the project the first time, in the prompt to create a venv, select the python location from one of the existing conda venvs.
 2. Navigate to the repository from inside the environment.
 3. Install necessary packages for building from the activated environment via `pip install .`
-4. Install necessary packages for code quality analysis and testing from the activated environment via `pip install -r requirements_test.txt`  
+4. Install necessary packages for code quality analysis and testing from the activated environment via `pip install ".[test]"`  
 
 You may then [configure all relevant 3rd party tools](https://www.jetbrains.com/help/pycharm/configuring-third-party-tools.html#), e.g. pytest, mypy, flake8 or bandit. You may want to check with the corresponding pipeline (template) for which analysis tools are run and their command line.
 
@@ -47,6 +47,11 @@ _**pylibCZIrw**_ is a python library using bindings from:
   - Bindings are done in a very few lines of code, interface with numpy array is easy.
   - No need to "learn" and code in an intermediate language (Cython).
   - Already used internally at Zeiss and very good feedbacks.
+
+To build
+`python -m build`
+`cibuildwheel --output-dir wheelhouse .` 
+`cibuildwheel --platform linux --output-dir wheelhouse .`
 
 To contribute to the development (C++ or python side), you will have to compile the C++ bindings.  
 This documentation provides a step-by-step guide to help you to do so.

@@ -18,10 +18,6 @@ jobs:
       PyVersionLatest: "3.13"
       # Relative to github.workspace
       PkgName: pylibCZIrw
-      CIBWBEFOREALLLINUX: bash /project/.github/scripts/install_manylinux_deps.sh
-      CIBWBEFOREALLMACOS: brew install eigen
-      # Minimum MacOS version the wheels will support
-      CIBW_ENVIRONMENT_MACOS: "MACOSX_DEPLOYMENT_TARGET=10.15"
     secrets:
       CODECOV_TOKEN: ${{secrets.CODECOV_TOKEN}}
   # Note: This job needs to stay outside a reusable workflow due to https://github.com/ZEISS/pylibczirw/issues/70

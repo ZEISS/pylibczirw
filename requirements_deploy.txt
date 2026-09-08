@@ -1,3 +1,0 @@
-# Used for installation/building/packaging/uploading
-wheel
-pip
