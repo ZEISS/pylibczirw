@@ -65,7 +65,7 @@ jobs:
 
       # Install Python 3.9; other versions are already available on the runner
       - name: Set up Python 3.9
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v7
         with:
           python-version: '3.9'
 
