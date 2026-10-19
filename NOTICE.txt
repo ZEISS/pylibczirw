@@ -3,3 +3,20 @@ Copyright 2022 Carl Zeiss Microscopy GmbH
 
 This product includes software developed at
 Carl Zeiss Microscopy GmbH – (https://www.zeiss.com/microscopy/int/home.html)
+
+Native third-party components
+
+This package incorporates libCZI, whose use is covered by the GNU Lesser
+General Public License version 3 or later. libCZI contains modified pugixml
+and JPEG XR components. Their notices and the notices for other native
+dependencies are retained in LICENSES/native, within the installed
+distribution's license directory. See LICENSES/native/README.txt for the
+platform-specific component index. These third-party terms do not replace
+the package's license or grant additional rights to third-party software.
+
+For Linux wheels containing the legacy OpenSSL/SSLeay components:
+This product includes software developed by the OpenSSL Project
+for use in the OpenSSL Toolkit (http://www.openssl.org/).
+This product includes cryptographic software written by Eric Young
+(eay@cryptsoft.com). The complete applicable terms are retained in
+LICENSES/native/Linux-openssl-libs-LICENSE.txt.
