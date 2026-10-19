@@ -1,0 +1,2 @@
+cibuildwheel==4.3.1
+python-semantic-release==10.7.0

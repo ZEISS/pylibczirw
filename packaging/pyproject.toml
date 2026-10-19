@@ -1,0 +1,105 @@
+[build-system]
+requires = ["scikit-build-core==1.1.1", "cmake==4.4.4", "ninja==1.13.2", "hatch-fancy-pypi-readme==25.1.0"]
+build-backend = "scikit_build_core.build"
+
+[project]
+name = "pylibCZIrw"
+version = "0.0.0"
+description = "A python wrapper around the libCZI C++ library with reading and writing functionality."
+dynamic = ["readme"]
+requires-python = ">=3.12,<3.16"
+license = { file = "COPYING.LESSER" }
+authors = [{ name = "Sebastian Soyer", email = "sebastian.soyer@zeiss.com" }]
+dependencies = [
+  "numpy>=2.4.2; python_version < '3.15'",
+  "numpy>=2.5.4; python_version >= '3.15'",
+  "cmake>=4.4.4", "xmltodict>=1.0.4", "validators>=0.35.0", "packaging>=26.0",
+]
+classifiers = [
+  "Topic :: Scientific/Engineering :: Image Processing",
+  "Programming Language :: Python :: 3.12",
+  "Programming Language :: Python :: 3.13",
+  "Programming Language :: Python :: 3.14",
+  "Programming Language :: Python :: 3.15",
+  "Operating System :: Microsoft :: Windows",
+  "Operating System :: Unix",
+  "Operating System :: MacOS",
+]
+
+[project.optional-dependencies]
+test = ["pytest", "pytest-cov", "pytest-timeout", "defusedxml", "czifile", "imagecodecs"]
+
+[[tool.dynamic-metadata]]
+provider = "scikit_build_core.metadata.fancy_pypi_readme"
+
+[tool.hatch.metadata.hooks.fancy-pypi-readme]
+content-type = "text/markdown"
+fragments = [{ path = "INFO.md" }, { text = "\n" }, { path = "CHANGELOG.md" }]
+
+[tool.scikit-build]
+minimum-version = "1.1"
+cmake.source-dir = "packaging"
+cmake.build-type = "Release"
+build.targets = ["_pylibCZIrw"]
+install.components = ["python"]
+wheel.packages = ["pylibCZIrw"]
+wheel.exclude = ["pylibCZIrw/tests/**", "**/__pycache__/**", "**/*.pyc"]
+wheel.license-files = ["COPYING", "COPYING.LESSER", "NOTICE.txt", "LICENSES/**/*"]
+sdist.inclusion-mode = "manual"
+sdist.include = [
+  "pyproject.toml", "CMakeLists.txt", "_pylibCZIrw/**", "libs/**",
+  "pylibCZIrw/__init__.py", "pylibCZIrw/czi.py", "packaging/**",
+  "INFO.md", "CHANGELOG.md", "COPYING", "COPYING.LESSER", "NOTICE.txt", "LICENSES/**",
+]
+sdist.exclude = [
+  "**/.git", "**/.git/**", "**/__pycache__/**", "**/*.pyc", "**/build/**",
+  "**/*.pyd", "**/*.dll", "_pylibCZIrw/src/pylibCZIrw_Config.h",
+]
+
+[tool.scikit-build.cmake.define]
+PYBIND11_FINDPYTHON = "NEW"
+LIBCZI_BUILD_DYNLIB = false
+LIBCZI_BUILD_UNITTESTS = false
+LIBCZI_BUILD_CURL_BASED_STREAM = true
+LIBCZI_BUILD_PREFER_EXTERNALPACKAGE_LIBCURL = true
+LIBCZI_BUILD_PREFER_EXTERNALPACKAGE_EIGEN3 = true
+
+[[tool.scikit-build.overrides]]
+if.platform-system = "^linux$"
+inherit.cmake.define = "append"
+cmake.define.LIBCZI_BUILD_PREFER_EXTERNALPACKAGE_LIBCURL = false
+
+[tool.cibuildwheel]
+build = ["cp312-*", "cp313-*", "cp314-*", "cp315-*"]
+skip = ["*-musllinux_*", "*-win32", "*-win_arm64", "*-macosx_x86_64", "*-macosx_universal2"]
+
+[tool.cibuildwheel.windows]
+archs = ["AMD64"]
+
+[tool.cibuildwheel.linux]
+archs = ["x86_64", "aarch64"]
+
+[tool.cibuildwheel.macos]
+archs = ["arm64"]
+environment = { MACOSX_DEPLOYMENT_TARGET = "14.0" }
+
+[tool.semantic_release]
+version_toml = ["pyproject.toml:project.version"]
+commit_parser = "angular"
+tag_format = "v{version}"
+allow_zero_version = true
+major_on_zero = true
+
+[tool.semantic_release.branches.main]
+match = "(main|master)"
+prerelease_token = "rc"
+prerelease = false
+
+[tool.semantic_release.commit_parser_options]
+allowed_tags = ["chore", "docs", "feat", "fix", "perf", "refactor", "test", "deps"]
+minor_tags = ["feat"]
+patch_tags = ["fix", "perf"]
+default_bump_level = 0
+
+[tool.semantic_release.publish]
+upload_to_vcs_release = false
