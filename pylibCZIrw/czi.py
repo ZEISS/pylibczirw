@@ -6,16 +6,23 @@ This czi document can be used to read and write czi.
 
 import contextlib
 import uuid
+from collections.abc import Mapping
 from dataclasses import dataclass
 from enum import Enum
-from os import makedirs
+from fractions import Fraction
+from functools import wraps
+from operator import index as integer_index
+from os import PathLike, fspath, makedirs
 from os.path import abspath, dirname, isfile
+from types import MappingProxyType, TracebackType
+from urllib.parse import urlsplit
 from typing import (
     Any,
     Callable,
     Dict,
     Generator,
     Iterator,
+    Literal,
     NamedTuple,
     Optional,
     Tuple,
@@ -31,6 +38,135 @@ import _pylibCZIrw
 Rectangle = NamedTuple("Rectangle", [("x", int), ("y", int), ("w", int), ("h", int)])
 Location = NamedTuple("Location", [("x", int), ("y", int)])
 Color = NamedTuple("Color", [("b", float), ("g", float), ("r", float)])
+
+
+@dataclass(frozen=True)
+class SubblockInfo:
+    """Owned directory snapshot; index, native M and level token are distinct."""
+
+    index: int
+    coordinates: Mapping[str, int]
+    m_index: Optional[int]
+    logical_rect: Tuple[int, int, int, int]
+    stored_shape: Tuple[int, int]
+    pixel_type: int
+    compression_mode: int
+    level_id: Optional[int]
+
+    def __post_init__(self) -> None:
+        object.__setattr__(self, "coordinates", MappingProxyType(dict(self.coordinates)))
+        object.__setattr__(self, "logical_rect", tuple(self.logical_rect))
+        object.__setattr__(self, "stored_shape", tuple(self.stored_shape))
+
+
+@dataclass(frozen=True)
+class AttachmentInfo:
+    """Owned attachment identity; payload size is unknown without loading data."""
+
+    index: int
+    name: str
+    content_file_type: str
+    content_guid: uuid.UUID
+    size_bytes: Optional[int] = None
+
+
+@dataclass(frozen=True)
+class StoredLevelInfo:
+    """Owned directory-only description of one native scene/plane at a stored level."""
+
+    level_id: int
+    coordinates: Mapping[str, int]
+    logical_rect: Tuple[int, int, int, int]
+    subblocks: tuple[SubblockInfo, ...]
+    downsample: Optional[Tuple[Fraction, Fraction]]
+    output_shape: Optional[Tuple[int, int]]
+
+    def __post_init__(self) -> None:
+        object.__setattr__(self, "coordinates", MappingProxyType(dict(self.coordinates)))
+        object.__setattr__(self, "logical_rect", tuple(self.logical_rect))
+        object.__setattr__(self, "subblocks", tuple(self.subblocks))
+        if self.downsample is not None:
+            object.__setattr__(self, "downsample", tuple(self.downsample))
+        if self.output_shape is not None:
+            object.__setattr__(self, "output_shape", tuple(self.output_shape))
+
+
+def _stored_level_factor(downsample: Optional[Tuple[Fraction, Fraction]]) -> Optional[int]:
+    if downsample is None:
+        return None
+    vertical, horizontal = downsample
+    if vertical != horizontal or vertical.denominator != 1 or not 1 <= vertical <= 2**31 - 1:
+        return None
+    return vertical.numerator
+
+
+def _subblock_integer(value: Any, name: str, *, native_range: bool = True) -> int:
+    if isinstance(value, (bool, np.bool_)):
+        raise TypeError(f"{name} must be an integer, not bool.")
+    try:
+        result = integer_index(value)
+    except TypeError as error:
+        raise TypeError(f"{name} must be an integer.") from error
+    if native_range and not -(2**31) <= result < 2**31:
+        raise OverflowError(f"{name} is outside the native signed integer range.")
+    return result
+
+
+class _SubblockCatalog:
+    def __init__(self, directory) -> None:
+        levels = {}
+        snapshots = []
+        for index, info in sorted(directory, key=lambda entry: entry[0]):
+            rect = info.logicalRect
+            shape = (info.physicalSize.h, info.physicalSize.w)
+            level_id = None
+            if min(rect.w, rect.h, *shape) > 0:
+                ratios = (Fraction(rect.h, shape[0]), Fraction(rect.w, shape[1]))
+                level_id = levels.setdefault(ratios, len(levels))
+            snapshots.append(
+                SubblockInfo(
+                    index=index,
+                    coordinates=info.coordinate.to_dict(),
+                    m_index=info.mIndex if info.is_mindex_valid() else None,
+                    logical_rect=(rect.x, rect.y, rect.w, rect.h),
+                    stored_shape=shape,
+                    pixel_type=int(info.pixelType),
+                    compression_mode=info.compressionModeRaw,
+                    level_id=level_id,
+                )
+            )
+        self.entries = tuple(snapshots)
+
+    @staticmethod
+    def filters(plane, scene, m_index, level):
+        if plane is not None and not isinstance(plane, Mapping):
+            raise TypeError("plane must be a mapping or None.")
+        coordinates = {}
+        for dimension, value in (plane.items() if plane is not None else ()):
+            if not isinstance(dimension, str) or dimension not in {"T", "C", "Z", "R", "I", "H", "V", "B"}:
+                raise ValueError(f"Invalid subblock plane dimension: {dimension!r}.")
+            coordinates[dimension] = _subblock_integer(value, f"plane[{dimension!r}]")
+        if scene is not None:
+            scene = _subblock_integer(scene, "scene")
+        if m_index is not None:
+            m_index = _subblock_integer(m_index, "m_index")
+            if m_index in {-(2**31), 2**31 - 1}:
+                raise ValueError("m_index must not be a native absent-M sentinel.")
+        if level is not None:
+            level = _subblock_integer(level, "level", native_range=False)
+            if level < 0:
+                raise ValueError("level must be a nonnegative catalog token.")
+        return coordinates, scene, m_index, level
+
+    def select(self, coordinates, scene, m_index, level) -> list[SubblockInfo]:
+        return [
+            info
+            for info in self.entries
+            if all(info.coordinates.get(dimension) == value for dimension, value in coordinates.items())
+            and (scene is None or info.coordinates.get("S") == scene)
+            and (m_index is None or info.m_index == m_index)
+            and (level is None or info.level_id == level)
+        ]
 
 
 class TintingMode(Enum):
@@ -223,7 +359,16 @@ class CziReader:
                 libczi_cache_options,
                 libczi_reader_options,
             )
-        self._stats = self._czi_reader.GetSubBlockStats()
+        try:
+            self._stats = self._czi_reader.GetSubBlockStats()
+        except BaseException as acquisition_error:
+            try:
+                self._czi_reader.close()
+            except BaseException as cleanup_error:
+                raise acquisition_error from cleanup_error
+            raise
+        self._subblock_catalog: Optional[_SubblockCatalog] = None
+        self._subblock_closed = False
 
     @classmethod
     def _create_default_cache_options(cls, cache_options: Optional[CacheOptions]) -> _pylibCZIrw.SubBlockCacheOptions:
@@ -247,6 +392,7 @@ class CziReader:
     def close(self) -> None:
         """Close the document and finalize the reading"""
         self._czi_reader.close()
+        self._subblock_closed = True
 
     @staticmethod
     def _create_reader_options(
@@ -820,6 +966,322 @@ class CziReader:
             A SubBlockCacheInfo object representing the cache information
         """
         return self._czi_reader.GetCacheInfo()
+
+    def list_subblocks(
+        self,
+        *,
+        plane: Optional[Mapping[str, int]] = None,
+        scene: Optional[int] = None,
+        m_index: Optional[int] = None,
+        level: Optional[int] = None,
+    ) -> list[SubblockInfo]:
+        """List immutable directory snapshots without reading subblock payloads.
+
+        Filters intersect stored coordinates; omitted dimensions are unconstrained.
+        Level tokens come from exact geometry, not resolution order or zoom.
+        Returned snapshots remain usable after close; new calls do not.
+        """
+        if self._subblock_closed:
+            raise RuntimeError("The CZI reader is closed.")
+        filters = _SubblockCatalog.filters(plane, scene, m_index, level)
+        if self._subblock_catalog is None:
+            self._subblock_catalog = _SubblockCatalog(self._czi_reader.GetSubBlockDirectory())
+        return self._subblock_catalog.select(*filters)
+
+    def count_subblocks(
+        self,
+        *,
+        plane: Optional[Mapping[str, int]] = None,
+        scene: Optional[int] = None,
+        m_index: Optional[int] = None,
+        level: Optional[int] = None,
+    ) -> int:
+        """Count matching stored subblocks without reading payloads.
+
+        Filters and errors are identical to list_subblocks(). Each directory
+        entry counts once, not each unique M value or spatial tile position.
+        Omitted filters include all scenes, planes and stored levels.
+        No matches returns zero.
+        """
+        return len(self.list_subblocks(plane=plane, scene=scene, m_index=m_index, level=level))
+
+    def count_subblocks_by_scene(
+        self,
+        *,
+        plane: Optional[Mapping[str, int]] = None,
+        scene: Optional[int] = None,
+        m_index: Optional[int] = None,
+        level: Optional[int] = None,
+    ) -> dict[Optional[int], int]:
+        """Count matching stored subblocks grouped by their native S coordinate.
+
+        Filters and errors are identical to list_subblocks(). Preserve sparse
+        scene IDs; entries without S use the None key, not scene zero.
+        Only matching scenes are included; no matches returns an empty dict.
+        Repeated M values and stored levels count as separate directory entries.
+        No pixel, XML or mask payloads are read.
+        """
+        counts: dict[Optional[int], int] = {}
+        for info in self.list_subblocks(plane=plane, scene=scene, m_index=m_index, level=level):
+            scene_id = info.coordinates.get("S")
+            counts[scene_id] = counts.get(scene_id, 0) + 1
+        return counts
+
+    def list_attachments(self) -> list[AttachmentInfo]:
+        """List immutable attachment descriptors without fetching payloads.
+
+        Duplicate names retain their separate file-local indices. Native directory
+        sizes are unavailable, so size_bytes is None rather than fabricated zero.
+        """
+        if self._subblock_closed:
+            raise RuntimeError("The CZI reader is closed.")
+        return [
+            AttachmentInfo(index, name, kind, uuid.UUID(fields=tuple(guid)))
+            for index, name, kind, guid in sorted(self._czi_reader.GetAttachmentDirectory())
+        ]
+
+    def read_attachment(self, index: int) -> bytes:
+        """Materialize one attachment's raw bytes, regardless of its format.
+
+        This is not a streaming read. Returned bytes remain usable after close.
+        """
+        if self._subblock_closed:
+            raise RuntimeError("The CZI reader is closed.")
+        return self._czi_reader.ReadAttachment(_subblock_integer(index, "index", native_range=False))
+
+    def read_attachment_image(self, index: int) -> np.ndarray:
+        """Decode one supported embedded-CZI attachment as YX or native-BGR YXA.
+
+        Requires one full-resolution image plane with a supported native pixel
+        layout. Unknown formats remain available through read_attachment().
+        The selected payload and decoded image are materialized in memory.
+        """
+        if self._subblock_closed:
+            raise RuntimeError("The CZI reader is closed.")
+        index = _subblock_integer(index, "index", native_range=False)
+        pixels = np.asarray(self._czi_reader.ReadAttachmentImage(index))
+        return pixels[..., 0] if pixels.shape[2] == 1 else pixels
+
+    def _read_named_attachment_image(self, name: str, index: Optional[int]) -> Optional[np.ndarray]:
+        if self._subblock_closed:
+            raise RuntimeError("The CZI reader is closed.")
+        if index is None:
+            matches = [info for info in self.list_attachments() if info.name == name]
+            if not matches:
+                return None
+            if len(matches) != 1:
+                raise ValueError(f"Attachment name {name!r} matched {len(matches)} entries; specify index.")
+            index = matches[0].index
+        return self.read_attachment_image(index)
+
+    def read_label(self, *, index: Optional[int] = None) -> Optional[np.ndarray]:
+        """Read the Label image; return None only for absence, not decoding errors."""
+        return self._read_named_attachment_image("Label", index)
+
+    def read_preview(self, *, index: Optional[int] = None) -> Optional[np.ndarray]:
+        """Read the SlidePreview image; duplicate names require an explicit index."""
+        return self._read_named_attachment_image("SlidePreview", index)
+
+    def list_stored_levels(
+        self,
+        *,
+        plane: Optional[Mapping[str, int]] = None,
+        scene: Optional[int] = None,
+    ) -> list[StoredLevelInfo]:
+        """Discover exact stored levels per native scene/plane without payload reads.
+
+        Unsupported composition geometry remains discoverable with output_shape
+        set to None. Tokens are shared with list_subblocks(), not zoom ordinals.
+        """
+        groups = {}
+        for info in self.list_subblocks(plane=plane, scene=scene):
+            if info.level_id is not None:
+                key = (info.level_id, tuple(sorted(info.coordinates.items())))
+                groups.setdefault(key, []).append(info)
+        result = []
+        for (level_id, coordinates), members in sorted(groups.items()):
+            left = min(info.logical_rect[0] for info in members)
+            top = min(info.logical_rect[1] for info in members)
+            right = max(info.logical_rect[0] + info.logical_rect[2] for info in members)
+            bottom = max(info.logical_rect[1] + info.logical_rect[3] for info in members)
+            first = members[0]
+            downsample = (
+                Fraction(first.logical_rect[3], first.stored_shape[0]),
+                Fraction(first.logical_rect[2], first.stored_shape[1]),
+            )
+            factor = _stored_level_factor(downsample)
+            output_shape = None
+            if factor is not None and (bottom - top) // factor > 0 and (right - left) // factor > 0:
+                output_shape = ((bottom - top) // factor, (right - left) // factor)
+            result.append(
+                StoredLevelInfo(
+                    level_id,
+                    dict(coordinates),
+                    (left, top, right - left, bottom - top),
+                    tuple(members),
+                    downsample,
+                    output_shape,
+                )
+            )
+        return result
+
+    def read_stored_level(
+        self,
+        level: int,
+        *,
+        plane: Optional[Mapping[str, int]] = None,
+        scene: Optional[int] = None,
+        roi: Optional[Union[Tuple[int, int, int, int], Rectangle]] = None,
+    ) -> np.ndarray:
+        """Compose exact stored-level members without resampling or level fallback.
+
+        Select exactly one scene/plane. ROI is raw level-0 XYWH; uncovered output
+        is black. The reader's existing mask-awareness option is honored.
+        """
+        if self._subblock_closed:
+            raise RuntimeError("The CZI reader is closed.")
+        level = _subblock_integer(level, "level", native_range=False)
+        context = f"Stored level {level}, plane={plane!r}, scene={scene!r}"
+        if level < 0:
+            raise ValueError(f"{context}: level must be a nonnegative catalog token.")
+        matches = [info for info in self.list_stored_levels(plane=plane, scene=scene) if info.level_id == level]
+        if len(matches) != 1:
+            raise ValueError(f"{context}: matched {len(matches)} scene/plane groups; expected exactly one.")
+        selected = matches[0]
+        factor = _stored_level_factor(selected.downsample)
+        if factor is None or selected.output_shape is None:
+            raise ValueError(
+                f"{context}: unsupported stored geometry; a positive isotropic integer factor is required."
+            )
+        if roi is None:
+            roi = selected.logical_rect
+        if not isinstance(roi, tuple):
+            raise TypeError("roi must be an XYWH tuple or Rectangle.")
+        if len(roi) != 4:
+            raise ValueError("roi must contain exactly four XYWH integers.")
+        left, top, width, height = tuple(_subblock_integer(value, "roi") for value in roi)
+        if width <= 0 or height <= 0 or width // factor == 0 or height // factor == 0:
+            raise ValueError(f"{context}: ROI must have positive dimensions and nonzero stored output.")
+        _subblock_integer(left + width, "roi right edge")
+        _subblock_integer(top + height, "roi bottom edge")
+        rectangle = _pylibCZIrw.IntRect()
+        rectangle.x, rectangle.y, rectangle.w, rectangle.h = left, top, width, height
+        try:
+            pixels = np.asarray(
+                self._czi_reader.ReadStoredLevel([info.index for info in selected.subblocks], rectangle, factor)
+            )
+        except ValueError as error:
+            raise ValueError(f"{context}: {error}") from error
+        return pixels[..., 0] if pixels.shape[2] == 1 else pixels
+
+    def read_subblock(self, index: int) -> np.ndarray:
+        """Decode exactly one file-local directory entry, without composition.
+
+        Parameters
+        ----------
+        index : int
+            Stored directory index, not M or a position in a filtered listing.
+
+        Returns
+        -------
+        np.ndarray
+            Stored YX grayscale or YXA color pixels with native dtype/component
+            order. The array owns its bitmap lifetime independently of the reader.
+
+        Raises
+        ------
+        TypeError
+            If index is not an integer, including Boolean inputs.
+        IndexError
+            If index is negative or does not identify a directory entry.
+        RuntimeError
+            If the reader is closed.
+        ValueError
+            If the pixel layout/codec is unsupported or the payload is corrupt.
+        OSError
+            If reading the selected payload fails.
+        OverflowError
+            If the decoded bitmap size cannot be represented.
+        """
+        if self._subblock_closed:
+            raise RuntimeError("The CZI reader is closed.")
+        index = _subblock_integer(index, "index", native_range=False)
+        pixels = np.asarray(self._czi_reader.ReadSubBlock(index))
+        return pixels[..., 0] if pixels.shape[2] == 1 else pixels
+
+    def read_subblock_metadata_xml(self, index: int) -> Optional[str]:
+        """Return original UTF-8 subblock XML, or None when absent.
+
+        Only the selected stored payload is fetched; pixels are not decoded.
+        Invalid UTF-8 raises rather than returning replacement text or None.
+        """
+        if self._subblock_closed:
+            raise RuntimeError("The CZI reader is closed.")
+        index = _subblock_integer(index, "index", native_range=False)
+        data = self._czi_reader.ReadSubBlockMetadata(index)
+        return data.decode("utf-8") if data else None
+
+    def read_subblock_mask(self, index: int) -> Optional[np.ndarray]:
+        """Return the stored YX Boolean validity mask, or None when absent.
+
+        Corrupt or unsupported masks raise; zero image intensity is not a mask.
+        Returned masks remain usable after reader close. Pixels are not decoded.
+        """
+        if self._subblock_closed:
+            raise RuntimeError("The CZI reader is closed.")
+        index = _subblock_integer(index, "index", native_range=False)
+        mask = self._czi_reader.ReadSubBlockMask(index)
+        if mask is None:
+            return None
+        height, width, bits = mask
+        packed = np.frombuffer(bits, dtype=np.uint8).reshape(height, (width + 7) // 8)
+        return np.unpackbits(packed, axis=1)[:, :width].astype(np.bool_)
+
+    def read_subblock_by_m(
+        self,
+        m_index: int,
+        *,
+        plane: Optional[Mapping[str, int]] = None,
+        scene: Optional[int] = None,
+        level: Optional[int] = None,
+    ) -> np.ndarray:
+        """Read pixels only when the directory selectors identify one subblock.
+
+        Parameters
+        ----------
+        m_index : int
+            Actual native M value, not a packed position or directory index.
+        plane : Optional[Mapping[str, int]]
+            Native plane coordinates, with the same rules as list_subblocks().
+        scene : Optional[int]
+            Native S coordinate; None leaves scenes unconstrained.
+        level : Optional[int]
+            Catalog token; None checks uniqueness across all stored levels.
+
+        Returns
+        -------
+        np.ndarray
+            The selected stored bitmap, as returned by read_subblock().
+
+        Raises
+        ------
+        ValueError
+            If zero or multiple entries match. No payload is read in either case.
+
+        Other selector/read errors follow list_subblocks() and read_subblock().
+        No level fallback, resampling, stacking or stitching is performed.
+        """
+        if self._subblock_closed:
+            raise RuntimeError("The CZI reader is closed.")
+        m_index = _subblock_integer(m_index, "m_index")
+        matches = self.list_subblocks(plane=plane, scene=scene, m_index=m_index, level=level)
+        if len(matches) != 1:
+            raise ValueError(
+                f"Subblock selectors m_index={m_index!r}, plane={plane!r}, "
+                f"scene={scene!r}, level={level!r} matched {len(matches)} subblocks; "
+                "expected exactly one."
+            )
+        return self.read_subblock(matches[0].index)
 
     def enumerate_subblocks(self, func: Callable[[int, _pylibCZIrw.SubBlockInfo], bool]) -> None:
         """Enumerate all subblocks in the CZI document.
@@ -1989,3 +2451,269 @@ def edit_czi(filepath: str) -> Generator[CziEditor, None, None]:
         yield editor
     finally:
         editor.close()
+
+
+def _guard_document_session(
+    method: Callable[["CziDocument"], contextlib.AbstractContextManager[CziMetadataBuilder]],
+) -> Callable[["CziDocument"], contextlib.AbstractContextManager[CziMetadataBuilder]]:
+    @wraps(method)
+    def guarded(document: "CziDocument") -> contextlib.AbstractContextManager[CziMetadataBuilder]:
+        document._require_mode("edit_session", "edit")
+        return method(document)
+
+    return guarded
+
+
+class CziDocument:
+    """Own one existing reader, writer or metadata editor through explicit factories."""
+
+    def __init__(self) -> None:
+        raise TypeError("Use CziDocument.open(), create() or edit().")
+
+    @staticmethod
+    def _path(filepath: str | PathLike[str], *, local: bool = True) -> str:
+        path = fspath(filepath)
+        if not isinstance(path, str):
+            raise TypeError("filepath must be a string or a PathLike returning a string.")
+        if local and urlsplit(path).scheme and "://" in path:
+            raise ValueError("A local path is required; URL reads require explicit Curl input.")
+        return path
+
+    @classmethod
+    def _acquire(cls, owner: contextlib.AbstractContextManager, mode: Literal["r", "w", "edit"]) -> "CziDocument":
+        document = object.__new__(cls)
+        document._owner = owner
+        document._backend = owner.__enter__()
+        document._mode = mode
+        document._closed = False
+        document._entered = False
+        return document
+
+    @classmethod
+    def open(
+        cls,
+        filepath: str | PathLike[str],
+        *,
+        file_input_type: ReaderFileInputTypes = ReaderFileInputTypes.Standard,
+        cache_options: CacheOptions | None = None,
+        reader_options: ReaderOptions | None = None,
+    ) -> "CziDocument":
+        """Acquire one reader immediately, retaining its stream and cache."""
+        if not isinstance(file_input_type, ReaderFileInputTypes):
+            raise TypeError("file_input_type must be a ReaderFileInputTypes value.")
+        if cache_options is not None and not isinstance(cache_options, CacheOptions):
+            raise TypeError("cache_options must be CacheOptions or None.")
+        if reader_options is not None and not isinstance(reader_options, ReaderOptions):
+            raise TypeError("reader_options must be ReaderOptions or None.")
+        path = cls._path(filepath, local=file_input_type is ReaderFileInputTypes.Standard)
+        if file_input_type is ReaderFileInputTypes.Curl and (not isinstance(filepath, str) or not validators.url(path)):
+            raise ValueError("Curl input requires a URL string.")
+        return cls._acquire(
+            open_czi(
+                path,
+                file_input_type=file_input_type,
+                cache_options=cache_options,
+                reader_options=reader_options,
+            ),
+            "r",
+        )
+
+    @classmethod
+    def create(
+        cls,
+        filepath: str | PathLike[str],
+        *,
+        exist_ok: bool = False,
+        compression_options: str | None = None,
+    ) -> "CziDocument":
+        """Acquire one new-file writer using the existing safe-create behavior."""
+        if not isinstance(exist_ok, bool):
+            raise TypeError("exist_ok must be a bool.")
+        if compression_options is not None and not isinstance(compression_options, str):
+            raise TypeError("compression_options must be a string or None.")
+        return cls._acquire(
+            create_czi(cls._path(filepath), exist_ok=exist_ok, compression_options=compression_options), "w"
+        )
+
+    @classmethod
+    def edit(cls, filepath: str | PathLike[str]) -> "CziDocument":
+        """Acquire one existing-file metadata editor, not a general read/write handle."""
+        return cls._acquire(edit_czi(cls._path(filepath)), "edit")
+
+    @property
+    def mode(self) -> Literal["r", "w", "edit"]:
+        """Return the immutable acquisition mode."""
+        return self._mode
+
+    @property
+    def closed(self) -> bool:
+        """Return whether the document is terminal, including failed finalization."""
+        return self._closed
+
+    def close(self) -> None:
+        """Finalize and close the owned backend at most once."""
+        if not self._closed:
+            try:
+                self._owner.__exit__(None, None, None)
+            finally:
+                self._closed = True
+                self._backend = None
+                self._owner = None
+
+    def __enter__(self) -> "CziDocument":
+        if self._closed:
+            raise RuntimeError("The CZI document is closed.")
+        if self._entered:
+            raise RuntimeError("The CZI document is already entered.")
+        self._entered = True
+        return self
+
+    def __exit__(
+        self,
+        exc_type: type[BaseException] | None,
+        exc_value: BaseException | None,
+        traceback: TracebackType | None,
+    ) -> Literal[False]:
+        try:
+            self.close()
+        except BaseException as cleanup_error:
+            if exc_value is not None:
+                raise exc_value.with_traceback(traceback) from cleanup_error
+            raise
+        return False
+
+    def _require_mode(self, operation: str, required: Literal["r", "w", "edit"]) -> Any:
+        if self._closed:
+            raise RuntimeError("The CZI document is closed.")
+        if self._mode != required:
+            raise ValueError(f"{operation} is not available in mode {self._mode!r}; requires mode {required!r}.")
+        return self._backend
+
+    def read(
+        self,
+        roi: Optional[Union[Tuple[int, int, int, int], Rectangle]] = None,
+        plane: Optional[Dict[str, int]] = None,
+        scene: Optional[int] = None,
+        zoom: Optional[float] = None,
+        pixel_type: Optional[str] = None,
+        background_pixel: Union[Tuple[float, float, float], Color] = CziReader.BLACK_COLOR,
+    ) -> np.ndarray:
+        """Delegate the unchanged legacy accessor read, including its YXA shape."""
+        return self._require_mode("read", "r").read(roi, plane, scene, zoom, pixel_type, background_pixel)
+
+    def list_subblocks(
+        self,
+        *,
+        plane: Optional[Mapping[str, int]] = None,
+        scene: Optional[int] = None,
+        m_index: Optional[int] = None,
+        level: Optional[int] = None,
+    ) -> list[SubblockInfo]:
+        """Delegate directory-only selection to the owned reader."""
+        return self._require_mode("list_subblocks", "r").list_subblocks(
+            plane=plane, scene=scene, m_index=m_index, level=level
+        )
+
+    def read_subblock(self, index: int) -> np.ndarray:
+        """Delegate one native stored bitmap read without stitching."""
+        return self._require_mode("read_subblock", "r").read_subblock(index)
+
+    def read_subblock_by_m(
+        self,
+        m_index: int,
+        *,
+        plane: Optional[Mapping[str, int]] = None,
+        scene: Optional[int] = None,
+        level: Optional[int] = None,
+    ) -> np.ndarray:
+        """Delegate an exactly-one M selection without adding selector defaults."""
+        return self._require_mode("read_subblock_by_m", "r").read_subblock_by_m(
+            m_index, plane=plane, scene=scene, level=level
+        )
+
+    def read_subblock_metadata_xml(self, index: int) -> Optional[str]:
+        """Delegate retrieval of the selected raw UTF-8 XML."""
+        return self._require_mode("read_subblock_metadata_xml", "r").read_subblock_metadata_xml(index)
+
+    def read_subblock_mask(self, index: int) -> Optional[np.ndarray]:
+        """Delegate retrieval of the selected owned validity mask."""
+        return self._require_mode("read_subblock_mask", "r").read_subblock_mask(index)
+
+    def list_stored_levels(
+        self,
+        *,
+        plane: Optional[Mapping[str, int]] = None,
+        scene: Optional[int] = None,
+    ) -> list[StoredLevelInfo]:
+        """Delegate directory-only discovery of exact stored-level groups."""
+        return self._require_mode("list_stored_levels", "r").list_stored_levels(plane=plane, scene=scene)
+
+    def read_stored_level(
+        self,
+        level: int,
+        *,
+        plane: Optional[Mapping[str, int]] = None,
+        scene: Optional[int] = None,
+        roi: Optional[Union[Tuple[int, int, int, int], Rectangle]] = None,
+    ) -> np.ndarray:
+        """Delegate exact stored-level composition without a resampling fallback."""
+        return self._require_mode("read_stored_level", "r").read_stored_level(level, plane=plane, scene=scene, roi=roi)
+
+    def list_attachments(self) -> list[AttachmentInfo]:
+        """Delegate attachment identity discovery without payload reads."""
+        return self._require_mode("list_attachments", "r").list_attachments()
+
+    def read_attachment(self, index: int) -> bytes:
+        """Delegate retrieval of an owned raw attachment payload."""
+        return self._require_mode("read_attachment", "r").read_attachment(index)
+
+    def read_attachment_image(self, index: int) -> np.ndarray:
+        """Delegate decoding of one supported embedded-CZI image."""
+        return self._require_mode("read_attachment_image", "r").read_attachment_image(index)
+
+    def read_label(self, *, index: Optional[int] = None) -> Optional[np.ndarray]:
+        """Delegate label image selection and its existing absence/error rules."""
+        return self._require_mode("read_label", "r").read_label(index=index)
+
+    def read_preview(self, *, index: Optional[int] = None) -> Optional[np.ndarray]:
+        """Delegate slide-preview selection, preserving explicit disambiguation."""
+        return self._require_mode("read_preview", "r").read_preview(index=index)
+
+    def write(
+        self,
+        data: np.ndarray,
+        location: Tuple[int, int] = (0, 0),
+        plane: Optional[Dict[str, int]] = None,
+        compression_options: Optional[str] = None,
+        scene: int = 0,
+    ) -> bool:
+        """Delegate existing writing, including automatic splitting and M assignment."""
+        return self._require_mode("write", "w").write(data, location, plane, compression_options, scene)
+
+    def write_metadata(
+        self,
+        document_name: Optional[str] = "CZI",
+        channel_names: Optional[Dict[int, str]] = None,
+        scale_x: Optional[float] = 0.0,
+        scale_y: Optional[float] = 0.0,
+        scale_z: Optional[float] = 0.0,
+        custom_attributes: Optional[Dict[str, Union[int, float, bool, str]]] = None,
+        display_settings: Optional[Dict[int, ChannelDisplaySettingsDataClass]] = None,
+    ) -> None:
+        """Delegate the existing writer's metadata generation and finalization state."""
+        return self._require_mode("write_metadata", "w").write_metadata(
+            document_name, channel_names, scale_x, scale_y, scale_z, custom_attributes, display_settings
+        )
+
+    def read_metadata_xml(self) -> str:
+        """Delegate XML access to the owned metadata editor."""
+        return self._require_mode("read_metadata_xml", "edit").read_metadata_xml()
+
+    @_guard_document_session
+    @contextlib.contextmanager
+    def edit_session(self) -> Iterator["CziMetadataBuilder"]:
+        """Borrow the existing builder and refuse automatic commit after document close."""
+        editor = self._require_mode("edit_session", "edit")
+        with editor.edit_session() as builder:
+            yield builder
+            self._require_mode("edit_session", "edit")

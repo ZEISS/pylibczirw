@@ -5,3 +5,5 @@ tox==3.27.1
 tox-current-env
 pytest
 defusedxml
+czifile
+imagecodecs

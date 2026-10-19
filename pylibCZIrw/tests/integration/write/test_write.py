@@ -3,6 +3,7 @@
 import os
 import tempfile
 from collections import OrderedDict
+from importlib.metadata import version
 from os.path import abspath, dirname, join
 from typing import Dict, Iterator, List, Optional, Tuple, Union
 from unittest.mock import MagicMock, patch
@@ -150,20 +151,8 @@ def test_write_succeeds_if_file_does_not_exist(exist_ok: bool, path: str) -> Non
 
 
 def test_write_metadata_application_version_matches_package_version() -> None:
-    """Tests that Metadata/Information/Application/Version matches the package version as specified in setup.py"""
-    # Arrange
-    # retrieve version as generated through setup.py (locally) or env set through python-semantic-release in pipeline
-    setup_version = os.getenv("PYTHON_SEMANTIC_RELEASE_VERSION")
-    if setup_version is None:
-        root = join(abspath(dirname(dirname(dirname(dirname(dirname(__file__)))))))
-        with open(join(root, "setup.py"), encoding="utf-8") as f:
-            readme = f.readlines()
-            for line in readme:
-                if "VERSION" in line:
-                    setup_version = line.split('"')[1]
-                    break
-
-    assert setup_version is not None
+    """Tests that written application metadata matches the installed package version."""
+    expected_version = version("pylibczirw")
 
     original_plane = get_plane(CZI_DOCUMENT_TEST_WRITE1, None)
     with tempfile.TemporaryDirectory() as td:
@@ -174,7 +163,7 @@ def test_write_metadata_application_version_matches_package_version() -> None:
         # Assert
         with open_czi(join(td, "test.czi")) as czi_document:
             actual_metadata = czi_document.metadata
-        assert actual_metadata["ImageDocument"]["Metadata"]["Information"]["Application"]["Version"] == setup_version
+        assert actual_metadata["ImageDocument"]["Metadata"]["Information"]["Application"]["Version"] == expected_version
 
 
 @pytest.mark.parametrize(
