@@ -19,7 +19,7 @@ Files: _pylibCZIrw/*
 Copyright: 2017-2022 Carl Zeiss Microscopy GmbH
 License: LGPL-3.0-or-later
 
-Files: doc/*
+Files: doc/* demo_scripts/* packaging/*
 Copyright: 2017-2022 Carl Zeiss Microscopy GmbH
 License: LGPL-3.0-or-later
 

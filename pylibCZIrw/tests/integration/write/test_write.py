@@ -1,6 +1,5 @@
 """Module implementing integration tests for the write function of the CziWriter class"""
 
-import os
 import tempfile
 from collections import OrderedDict
 from importlib.metadata import version
@@ -11,13 +10,7 @@ from unittest.mock import MagicMock, patch
 import numpy as np
 import pytest
 
-from pylibCZIrw.czi import (
-    ChannelDisplaySettingsDataClass,
-    Rgb8Color,
-    TintingMode,
-    create_czi,
-    open_czi,
-)
+from pylibCZIrw.czi import ChannelDisplaySettingsDataClass, Rgb8Color, TintingMode, create_czi, open_czi
 
 working_dir = dirname(abspath(__file__))
 

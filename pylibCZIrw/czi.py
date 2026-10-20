@@ -15,19 +15,8 @@ from operator import index as integer_index
 from os import PathLike, fspath, makedirs
 from os.path import abspath, dirname, isfile
 from types import MappingProxyType, TracebackType
+from typing import Any, Callable, Dict, Generator, Iterator, Literal, NamedTuple, Optional, Tuple, Union
 from urllib.parse import urlsplit
-from typing import (
-    Any,
-    Callable,
-    Dict,
-    Generator,
-    Iterator,
-    Literal,
-    NamedTuple,
-    Optional,
-    Tuple,
-    Union,
-)
 
 import numpy as np
 import validators
@@ -142,7 +131,7 @@ class _SubblockCatalog:
         if plane is not None and not isinstance(plane, Mapping):
             raise TypeError("plane must be a mapping or None.")
         coordinates = {}
-        for dimension, value in (plane.items() if plane is not None else ()):
+        for dimension, value in plane.items() if plane is not None else ():
             if not isinstance(dimension, str) or dimension not in {"T", "C", "Z", "R", "I", "H", "V", "B"}:
                 raise ValueError(f"Invalid subblock plane dimension: {dimension!r}.")
             coordinates[dimension] = _subblock_integer(value, f"plane[{dimension!r}]")
@@ -2141,10 +2130,7 @@ class CziMetadataBuilder:
         - `is_enabled` updates selection for channels.
         """
         # pylint: disable=import-outside-toplevel,no-name-in-module
-        from _pylibCZIrw import (
-            ChannelDisplaySettingsStructWithNameAndDescription,
-            TintingModeEnum,
-        )
+        from _pylibCZIrw import ChannelDisplaySettingsStructWithNameAndDescription, TintingModeEnum
 
         def to_pod(
             ds_py: Union[
@@ -2471,7 +2457,7 @@ class CziDocument:
         raise TypeError("Use CziDocument.open(), create() or edit().")
 
     @staticmethod
-    def _path(filepath: str | PathLike[str], *, local: bool = True) -> str:
+    def _path(filepath: Union[str, PathLike[str]], *, local: bool = True) -> str:
         path = fspath(filepath)
         if not isinstance(path, str):
             raise TypeError("filepath must be a string or a PathLike returning a string.")
@@ -2492,11 +2478,11 @@ class CziDocument:
     @classmethod
     def open(
         cls,
-        filepath: str | PathLike[str],
+        filepath: Union[str, PathLike[str]],
         *,
         file_input_type: ReaderFileInputTypes = ReaderFileInputTypes.Standard,
-        cache_options: CacheOptions | None = None,
-        reader_options: ReaderOptions | None = None,
+        cache_options: Optional[CacheOptions] = None,
+        reader_options: Optional[ReaderOptions] = None,
     ) -> "CziDocument":
         """Acquire one reader immediately, retaining its stream and cache."""
         if not isinstance(file_input_type, ReaderFileInputTypes):
@@ -2521,10 +2507,10 @@ class CziDocument:
     @classmethod
     def create(
         cls,
-        filepath: str | PathLike[str],
+        filepath: Union[str, PathLike[str]],
         *,
         exist_ok: bool = False,
-        compression_options: str | None = None,
+        compression_options: Optional[str] = None,
     ) -> "CziDocument":
         """Acquire one new-file writer using the existing safe-create behavior."""
         if not isinstance(exist_ok, bool):
@@ -2536,7 +2522,7 @@ class CziDocument:
         )
 
     @classmethod
-    def edit(cls, filepath: str | PathLike[str]) -> "CziDocument":
+    def edit(cls, filepath: Union[str, PathLike[str]]) -> "CziDocument":
         """Acquire one existing-file metadata editor, not a general read/write handle."""
         return cls._acquire(edit_czi(cls._path(filepath)), "edit")
 
@@ -2570,9 +2556,9 @@ class CziDocument:
 
     def __exit__(
         self,
-        exc_type: type[BaseException] | None,
-        exc_value: BaseException | None,
-        traceback: TracebackType | None,
+        exc_type: Optional[type[BaseException]],
+        exc_value: Optional[BaseException],
+        traceback: Optional[TracebackType],
     ) -> Literal[False]:
         try:
             self.close()

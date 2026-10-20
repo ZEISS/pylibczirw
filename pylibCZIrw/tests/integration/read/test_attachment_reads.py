@@ -1,14 +1,14 @@
 """Attachment descriptors, raw bytes and explicit embedded-CZI image reads."""
 
-from pathlib import Path
-from dataclasses import FrozenInstanceError, fields
 import struct
+from dataclasses import FrozenInstanceError, fields
+from pathlib import Path
 from uuid import UUID
 
 import numpy as np
 import pytest
-import _pylibCZIrw as native
 
+import _pylibCZIrw as native
 from pylibCZIrw.czi import AttachmentInfo, CziReader, create_czi, open_czi
 
 DATA = Path(__file__).resolve().parent.parent / "test_data"

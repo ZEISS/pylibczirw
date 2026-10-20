@@ -9,8 +9,8 @@ from types import SimpleNamespace
 
 import numpy as np
 import pytest
-import _pylibCZIrw as native
 
+import _pylibCZIrw as native
 from pylibCZIrw.czi import CziReader, ReaderOptions, StoredLevelInfo, SubblockInfo, create_czi, open_czi
 
 working_dir = os.path.dirname(os.path.abspath(__file__))

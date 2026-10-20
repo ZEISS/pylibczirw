@@ -1,7 +1,7 @@
 """Contract and integration tests for the single-owner document facade."""
 
-from contextlib import contextmanager
 import inspect
+from contextlib import contextmanager
 from pathlib import Path
 from unittest.mock import Mock
 

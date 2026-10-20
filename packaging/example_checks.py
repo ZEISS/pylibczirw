@@ -6,12 +6,12 @@ import importlib.metadata as metadata
 import inspect
 import json
 import os
-from pathlib import Path
 import runpy
 import shutil
 import subprocess
 import sys
 import sysconfig
+from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 PORTABLE = ("01", "03", "04", "05", "06", "07", "08", "10")
@@ -194,7 +194,10 @@ def run(work: Path, source: Path, include_local: bool, only: str | None) -> None
                 "09_extract_attachment_image.py (local acquisition file)",
             ]
         ),
-        "plot_validation": "Agg rasterization, nonblank canvas, exact displayed-array comparison; interactive GUI behavior is not certified.",
+        "plot_validation": (
+            "Agg rasterization, nonblank canvas, exact displayed-array comparison; "
+            "interactive GUI behavior is not certified."
+        ),
     }
     (work / "examples-record.json").write_text(json.dumps(record, indent=2), encoding="utf8")
 

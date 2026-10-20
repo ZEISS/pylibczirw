@@ -2,8 +2,8 @@
 
 import hashlib
 import json
-from pathlib import Path
 import re
+from pathlib import Path
 
 import pytest
 

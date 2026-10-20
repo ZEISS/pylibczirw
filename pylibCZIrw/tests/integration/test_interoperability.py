@@ -1,24 +1,25 @@
 """Independent-reader, selected-I/O and released-resource evidence for T02."""
 
-from contextlib import contextmanager
 import ctypes
 import gc
 import hashlib
-from io import BytesIO
 import json
 import os
-from pathlib import Path
 import subprocess
 import sys
 import tracemalloc
 import weakref
+from contextlib import contextmanager
+from io import BytesIO
+from pathlib import Path
 
-import czifile
 import numpy as np
 import pytest
-import _pylibCZIrw as native
 
+import _pylibCZIrw as native
 from pylibCZIrw import czi
+
+czifile = pytest.importorskip("czifile", minversion="2026.8.16")
 
 DATA = Path(__file__).resolve().parent / "test_data"
 SYNTHETIC = DATA / "synthetic"

@@ -3,12 +3,12 @@
 import argparse
 import hashlib
 import json
-from pathlib import Path, PurePosixPath
 import re
 import shutil
 import urllib.parse
 import urllib.request
 import zipfile
+from pathlib import Path, PurePosixPath
 
 ROOT = Path(__file__).resolve().parents[1]
 

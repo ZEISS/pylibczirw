@@ -5,7 +5,6 @@ import hashlib
 import importlib.metadata
 import json
 import os
-from pathlib import Path
 import platform
 import shutil
 import ssl
@@ -13,6 +12,7 @@ import subprocess
 import sys
 import sysconfig
 import traceback
+from pathlib import Path
 
 
 def execute(label: str, command: list[str], work_dir: Path, environment: dict[str, str]) -> dict:
@@ -31,6 +31,7 @@ def serve(cert: Path, key: Path) -> None:
 
     server = HTTPServer(("127.0.0.1", 0), BaseHTTPRequestHandler)
     context = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
+    context.minimum_version = ssl.TLSVersion.TLSv1_2
     context.load_cert_chain(cert, key)
     server.socket = context.wrap_socket(server.socket, server_side=True)
     print(server.server_port, flush=True)
@@ -38,8 +39,9 @@ def serve(cert: Path, key: Path) -> None:
 
 
 def tls(work_dir: Path) -> None:
-    import _pylibCZIrw as native
     import numpy as np
+
+    import _pylibCZIrw as native
     from pylibCZIrw import czi
 
     site_packages = Path(sysconfig.get_path("platlib"))
@@ -148,7 +150,9 @@ def main(arguments: argparse.Namespace) -> None:
     assert arguments.restore_wheel.is_file()
     build = work_dir / "native-build"
     environment["PATH"] = (
-        f"{Path(sys.executable).parent};{Path(sys.executable).parent / 'Scripts'};{os.environ['SystemRoot']}/System32/WindowsPowerShell/v1.0;{os.environ['SystemRoot']}/System32;{environment['PATH']}"
+        f"{Path(sys.executable).parent};{Path(sys.executable).parent / 'Scripts'};"
+        f"{os.environ['SystemRoot']}/System32/WindowsPowerShell/v1.0;"
+        f"{os.environ['SystemRoot']}/System32;{environment['PATH']}"
     )
     environment["CMAKE_GENERATOR"] = "Visual Studio 17 2022"
     execute(

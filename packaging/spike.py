@@ -2,12 +2,9 @@
 
 import argparse
 import contextlib
-from email.parser import BytesParser
 import hashlib
-from importlib.metadata import distribution, distributions, version
 import json
 import os
-from pathlib import Path
 import runpy
 import shutil
 import subprocess
@@ -17,6 +14,9 @@ import tarfile
 import tomllib
 import xml.etree.ElementTree as ET
 import zipfile
+from email.parser import BytesParser
+from importlib.metadata import distribution, distributions, version
+from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -125,9 +125,10 @@ def audit_wheel(wheel: Path, source: Path) -> dict:
 
 
 def isolated_sdist(source: Path, work_dir: Path, environment: dict[str, str]) -> Path:
+    from pyproject_hooks import BuildBackendHookCaller
+
     from packaging.requirements import Requirement
     from packaging.utils import canonicalize_name
-    from pyproject_hooks import BuildBackendHookCaller
 
     project = tomllib.loads((source / "pyproject.toml").read_text(encoding="utf8"))
     dependencies = project["build-system"]["requires"]
@@ -213,7 +214,9 @@ def isolated_sdist(source: Path, work_dir: Path, environment: dict[str, str]) ->
                 "build_dependencies": dependencies,
                 "hook_build_requirements": extra,
                 "hook_python": sys.executable,
-                "isolation": "Conda interpreter with -I -S, explicit isolated dependency overlay, no ambient site-packages.",
+                "isolation": (
+                    "Conda interpreter with -I -S, explicit isolated dependency overlay, " "no ambient site-packages."
+                ),
                 "unpacked_source": str(result),
                 "git_metadata_present": False,
             },
@@ -242,8 +245,9 @@ class LocalOnly:
 
 
 def regressions(source: Path, work_dir: Path) -> None:
-    import _pylibCZIrw as native
     import pytest
+
+    import _pylibCZIrw as native
     from pylibCZIrw import czi
 
     site_packages = Path(sysconfig.get_path("platlib"))
@@ -466,7 +470,10 @@ def main() -> None:
         },
         "log": {"path": str(log_path), **fingerprint(log_path)},
         "wheels": [{"path": str(path), **fingerprint(path)} for path in (work_dir / "wheels").glob("*.whl")],
-        "scope": "Opt-in isolated candidate only; production backend and release pipeline unchanged; not support certification.",
+        "scope": (
+            "Opt-in isolated candidate only; production backend and release pipeline unchanged; "
+            "not support certification."
+        ),
     }
     (work_dir / "isolated-wheel-record.json").write_text(json.dumps(record, indent=2), encoding="utf8")
     print(log_path.read_text(encoding="utf8")[-9000:])
