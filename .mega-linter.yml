@@ -4,6 +4,17 @@
 
 APPLY_FIXES: none
 FORMATTERS_DISABLE_ERRORS: false # Treat formatter errors as errors instead of warnings
+PRE_COMMANDS:
+  - command: pip install --requirement requirements_lint.txt
+    cwd: workspace
+    venv: mypy
+    secured_env: true
+    continue_if_failed: false
+  - command: pip install --requirement requirements_lint.txt
+    cwd: workspace
+    venv: pylint
+    secured_env: true
+    continue_if_failed: false
 DISABLE:
   - COPYPASTE # Comment to enable checks of excessive copy-pastes
   - SPELL # Comment to enable checks of spelling mistakes

@@ -6,6 +6,7 @@ from pylibCZIrw import czi
 
 
 def main() -> None:
+    """Count stored subblocks overall, per scene and within a selected plane/level."""
     filepath = (
         Path(__file__).resolve().parents[1]
         / "pylibCZIrw/tests/integration/test_data/synthetic/stored_sparse_coordinates.czi"

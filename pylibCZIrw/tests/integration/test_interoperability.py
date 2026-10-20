@@ -9,9 +9,10 @@ import subprocess
 import sys
 import tracemalloc
 import weakref
-from contextlib import contextmanager
+from contextlib import closing, contextmanager
 from io import BytesIO
 from pathlib import Path
+from typing import Iterator, Optional
 
 import numpy as np
 import pytest
@@ -75,14 +76,16 @@ class _ProcessMemory(ctypes.Structure):
     ]
 
 
-def literal_pixels(reduced=False):
+def literal_pixels(reduced: bool = False) -> np.ndarray:
+    """Return the independently specified full or reduced uint16 pixels."""
     if reduced:
         return (40000 + 101 * np.arange(16)[:, None] + 7 * np.arange(24)[None, :]).astype(np.uint16)
     return (257 * np.arange(32)[:, None] + 11 * np.arange(48)[None, :]).astype(np.uint16)
 
 
 @pytest.mark.parametrize("filename", POSITIVE_FIXTURES)
-def test_independent_pixels_xml_geometry_and_strict_native_validation(filename):
+def test_independent_pixels_xml_geometry_and_strict_native_validation(filename: str) -> None:
+    """Verify independent pixels xml geometry and strict native validation."""
     filepath = DATA / filename
     options = czi.ReaderOptions(lax_subblock_coordinate_checks=False, ignore_sizem_for_pyramid_subblocks=True)
     with czifile.CziFile(filepath) as reference, czi.CziDocument.open(filepath, reader_options=options) as document:
@@ -106,7 +109,8 @@ def test_independent_pixels_xml_geometry_and_strict_native_validation(filename):
             assert document.read_subblock_metadata_xml(info.index) == (block.metadata(fixesc=False) or None)
 
 
-def test_sparse_selection_and_reduced_pixels_are_literal_after_close():
+def test_sparse_selection_and_reduced_pixels_are_literal_after_close() -> None:
+    """Verify sparse selection and reduced pixels are literal after close."""
     filepath = SYNTHETIC / "stored_sparse_coordinates.czi"
     with czi.CziDocument.open(filepath) as document:
         infos = document.list_subblocks(m_index=37)
@@ -121,7 +125,8 @@ def test_sparse_selection_and_reduced_pixels_are_literal_after_close():
     assert level.output_shape == (16, 24)
 
 
-def test_masks_and_composed_reads_keep_distinct_contracts():
+def test_masks_and_composed_reads_keep_distinct_contracts() -> None:
+    """Verify masks and composed reads keep distinct contracts."""
     filepath = SYNTHETIC / "literal_valid_mask_v2.czi"
     rows, columns = np.indices((32, 48))
     expected_mask = (rows + columns) % 3 != 0
@@ -139,7 +144,8 @@ def test_masks_and_composed_reads_keep_distinct_contracts():
     np.testing.assert_array_equal(stored, expected)
 
 
-def test_attachments_match_independent_raw_and_embedded_images():
+def test_attachments_match_independent_raw_and_embedded_images() -> None:
+    """Verify attachments match independent raw and embedded images."""
     filepath = SYNTHETIC / "literal_slidepreview_cases.czi"
     with czifile.CziFile(filepath) as reference, czi.CziDocument.open(filepath) as document:
         infos = document.list_attachments()
@@ -160,7 +166,10 @@ def test_attachments_match_independent_raw_and_embedded_images():
 
 
 @pytest.mark.parametrize("compression", [None, "zstd0:ExplicitLevel=1", "zstd1:ExplicitLevel=1"])
-def test_facade_writer_splitting_and_compression_match_independent_reader(tmp_path, compression):
+def test_facade_writer_splitting_and_compression_match_independent_reader(
+    tmp_path: Path, compression: Optional[str]
+) -> None:
+    """Verify facade writer splitting and compression match independent reader."""
     filepath = tmp_path / "split.czi"
     expected = np.arange(1700 * 3200, dtype=np.uint16).reshape(1700, 3200)
     with czi.CziDocument.create(filepath, compression_options=compression) as document:
@@ -175,26 +184,29 @@ def test_facade_writer_splitting_and_compression_match_independent_reader(tmp_pa
 
 
 @contextmanager
-def instrumented_document(monkeypatch, filepath):
+def instrumented_document(
+    monkeypatch: pytest.MonkeyPatch, filepath: Path
+) -> Iterator[tuple[czi.CziDocument, list[tuple[int, int]], list[czi.CziReader]]]:
+    """Yield one owned document and its observed stream reads/backends."""
     content = filepath.read_bytes()
     reads = []
     owners = []
 
-    def read_at(offset, size):
+    def read_at(offset: int, size: int) -> bytes:
+        """Read the selected fixture range and record its I/O bounds."""
         reads.append((offset, size))
         return content[offset : offset + size]
 
     @contextmanager
-    def factory(*args, **kwargs):
+    def factory(*_args: object, **_kwargs: object) -> Iterator[czi.CziReader]:
+        """Provide one instrumented native stream to the document factory."""
         reader = czi.CziReader.__new__(czi.CziReader)
         reader._czi_reader = native.czi_reader._from_stream(read_at)
         reader._subblock_closed = False
         reader._subblock_catalog = None
         owners.append(reader)
-        try:
+        with closing(reader):
             yield reader
-        finally:
-            reader.close()
 
     monkeypatch.setattr(czi, "open_czi", factory)
     with czi.CziDocument.open(filepath) as document:
@@ -204,7 +216,8 @@ def instrumented_document(monkeypatch, filepath):
     assert owners[0]._subblock_closed
 
 
-def test_facade_listings_and_ambiguous_selections_read_no_payloads(monkeypatch):
+def test_facade_listings_and_ambiguous_selections_read_no_payloads(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Verify facade listings and ambiguous selections read no payloads."""
     with instrumented_document(monkeypatch, SYNTHETIC / "stored_levels_same_m37.czi") as (document, reads, _):
         assert document.list_subblocks()
         assert document.list_stored_levels()
@@ -217,7 +230,8 @@ def test_facade_listings_and_ambiguous_selections_read_no_payloads(monkeypatch):
 
 
 @pytest.mark.parametrize("operation", ["tile", "xml", "level", "attachment_raw", "attachment_image"])
-def test_facade_reads_only_selected_native_segment(monkeypatch, operation):
+def test_facade_reads_only_selected_native_segment(monkeypatch: pytest.MonkeyPatch, operation: str) -> None:
+    """Verify facade reads only selected native segment."""
     filepath = SYNTHETIC / (
         "literal_slidepreview_cases.czi" if operation.startswith("attachment") else "stored_levels_same_m37.czi"
     )
@@ -233,7 +247,7 @@ def test_facade_reads_only_selected_native_segment(monkeypatch, operation):
             end = start + 32 + block.segment.allocated_size
     with instrumented_document(monkeypatch, filepath) as (document, reads, _):
         if operation == "tile":
-            result = document.read_subblock(1)
+            result: object = document.read_subblock(1)
         elif operation == "xml":
             result = document.read_subblock_metadata_xml(1)
         elif operation == "level":
@@ -248,7 +262,8 @@ def test_facade_reads_only_selected_native_segment(monkeypatch, operation):
         assert all(start <= offset and offset + size <= end for offset, size in reads)
 
 
-def test_closed_document_releases_its_backend():
+def test_closed_document_releases_its_backend() -> None:
+    """Verify closed document releases its backend."""
     document = czi.CziDocument.open(SYNTHETIC / "literal_gray16_raw.czi")
     backend = weakref.ref(document._backend)
     pixels = document.read_subblock(0)
@@ -258,7 +273,8 @@ def test_closed_document_releases_its_backend():
     np.testing.assert_array_equal(pixels, literal_pixels())
 
 
-def process_memory():
+def process_memory() -> dict[str, int]:
+    """Read private/working-set counters and handles from the current process."""
     from ctypes import wintypes
 
     values = _ProcessMemory()
@@ -280,11 +296,12 @@ def process_memory():
     }
 
 
-def resource_worker(case):
+def resource_worker(case: str) -> dict[str, object]:
+    """Measure released payload lifetimes and return serializable evidence."""
     filepath = SYNTHETIC / RESOURCE_CASES[case]
     with czifile.CziFile(filepath) as reference:
         if case == "listing":
-            selected_storage = None
+            selected_storage: Optional[dict[str, object]] = None
         elif case.startswith("attachment"):
             attachment = next(reference.attachments())
             selected_storage = {"encoded_attachment_bytes": len(attachment.data(raw=True))}
@@ -299,10 +316,11 @@ def resource_worker(case):
                 "compression_mode": int(entry.compression),
             }
 
-    def cycle():
+    def cycle() -> object:
+        """Return the selected payload for measurement and type-based hashing."""
         with czi.CziDocument.open(filepath, cache_options=None) as document:
             if case == "tile":
-                result = document.read_subblock(0)
+                result: object = document.read_subblock(0)
             elif case.startswith("xml"):
                 result = document.read_subblock_metadata_xml(0)
             elif case == "mask":
@@ -328,6 +346,7 @@ def resource_worker(case):
     peaks = [0] * 100
     baseline = process_memory()
     tracemalloc.start()
+    output_info: Optional[dict[str, object]] = None
     for iteration in range(100):
         before = tracemalloc.get_traced_memory()[0]
         tracemalloc.reset_peak()
@@ -350,6 +369,8 @@ def resource_worker(case):
         gc.collect()
         samples[iteration] = process_memory()
     tracemalloc.stop()
+    if output_info is None:
+        raise RuntimeError("No resource measurement was produced.")
     assert samples[-1]["handles"] <= baseline["handles"]
     first = sum(item["private"] for item in samples[:20]) / 20
     last = sum(item["private"] for item in samples[-20:]) / 20
@@ -378,7 +399,8 @@ def resource_worker(case):
 
 @pytest.mark.skipif(os.name != "nt", reason="Windows private/peak-memory evidence; other OS certification is separate")
 @pytest.mark.parametrize("case", RESOURCE_CASES)
-def test_repeated_read_close_resource_protocol(case, tmp_path):
+def test_repeated_read_close_resource_protocol(case: str, tmp_path: Path) -> None:
+    """Verify repeated read close resource protocol."""
     environment = os.environ.copy()
     environment["PYTHONPATH"] = str(Path(czi.__file__).resolve().parent.parent)
     result = subprocess.run(

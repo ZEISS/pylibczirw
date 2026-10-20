@@ -8,6 +8,7 @@ from pylibCZIrw import czi
 
 
 def main() -> None:
+    """Resolve repeated M values with scene and plane filters before reading pixels."""
     filepath = (
         Path(__file__).resolve().parents[1]
         / "pylibCZIrw/tests/integration/test_data/synthetic/stored_sparse_coordinates.czi"

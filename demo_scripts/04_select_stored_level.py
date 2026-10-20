@@ -8,6 +8,7 @@ from pylibCZIrw import czi
 
 
 def main() -> None:
+    """Read a stored lower-resolution subblock without composing or resampling."""
     filepath = (
         Path(__file__).resolve().parents[1]
         / "pylibCZIrw/tests/integration/test_data/synthetic/stored_levels_same_m37.czi"

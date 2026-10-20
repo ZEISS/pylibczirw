@@ -81,7 +81,8 @@ static int test_channel_info(const std::wstring &srcPath) {
   builder->SetDisplaySettings({{0, expected}});
   builder->Commit();
   auto displaySettings = editor.ReadDisplaySettings();
-  if (displaySettings.size() != 1 || displaySettings.at(0).name != expected.name ||
+  if (displaySettings.size() != 1 ||
+      displaySettings.at(0).name != expected.name ||
       displaySettings.at(0).description != expected.description) {
     std::cerr << "Display settings did not round trip\n";
     return 20;
@@ -128,8 +129,8 @@ int main(int argc, char *argv[]) {
     std::cerr << "[ RUN ] " << name << std::endl;
     try {
       const int result = test(path);
-      std::cerr << (result == 0 ? "[ OK ] " : "[ FAILED ] ") << name
-                << " (" << result << ")" << std::endl;
+      std::cerr << (result == 0 ? "[ OK ] " : "[ FAILED ] ") << name << " ("
+                << result << ")" << std::endl;
       return result;
     } catch (const std::exception &error) {
       std::cerr << "[ EXCEPTION ] " << name << ": " << error.what()

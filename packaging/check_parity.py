@@ -16,9 +16,12 @@ from pathlib import Path
 
 
 def execute(label: str, command: list[str], work_dir: Path, environment: dict[str, str]) -> dict:
+    """Run a validation command and retain its exclusive log and exit status."""
     log = work_dir / f"{label}.log"
     with log.open("x", encoding="utf8") as stream:
-        result = subprocess.run(command, cwd=work_dir, env=environment, stdout=stream, stderr=subprocess.STDOUT)
+        result = subprocess.run(
+            command, cwd=work_dir, env=environment, stdout=stream, stderr=subprocess.STDOUT, check=False
+        )
     record = {"command": command, "exit_code": result.returncode, "cwd": str(work_dir), "log": str(log)}
     (work_dir / f"{label}-record.json").write_text(json.dumps(record, indent=2), encoding="utf8")
     print(log.read_text(encoding="utf8")[-2000:])
@@ -27,6 +30,7 @@ def execute(label: str, command: list[str], work_dir: Path, environment: dict[st
 
 
 def serve(cert: Path, key: Path) -> None:
+    """Run the ephemeral local TLS endpoint used by certificate checks."""
     from http.server import BaseHTTPRequestHandler, HTTPServer
 
     server = HTTPServer(("127.0.0.1", 0), BaseHTTPRequestHandler)
@@ -39,14 +43,17 @@ def serve(cert: Path, key: Path) -> None:
 
 
 def tls(work_dir: Path) -> None:
+    """Verify exact trusted HTTPS pixels and rejection of an untrusted certificate."""
     import numpy as np
 
     import _pylibCZIrw as native
     from pylibCZIrw import czi
 
     site_packages = Path(sysconfig.get_path("platlib"))
-    assert Path(czi.__file__).is_relative_to(site_packages)
-    assert Path(native.__file__).is_relative_to(site_packages)
+    if not Path(czi.__file__).is_relative_to(site_packages):
+        raise AssertionError()
+    if not Path(native.__file__).is_relative_to(site_packages):
+        raise AssertionError()
     url = "https://cadevelop.blob.core.windows.net/public/pylibCZIrwTestFiles/c1_bgr24.czi"
     fixture = work_dir / "source/pylibCZIrw/tests/integration/test_data/c1_bgr24.czi"
     with czi.open_czi(str(fixture)) as local, czi.open_czi(
@@ -58,7 +65,8 @@ def tls(work_dir: Path) -> None:
     with czi.CziDocument.open(url, file_input_type=czi.ReaderFileInputTypes.Curl) as remote:
         np.testing.assert_array_equal(remote.read(plane={"T": 0, "C": 0, "Z": 0}), expected)
     openssl = shutil.which("openssl")
-    assert openssl, "OpenSSL executable is needed only to generate an untrusted local test certificate."
+    if not openssl:
+        raise AssertionError("OpenSSL executable is needed only to generate an untrusted local test certificate.")
     cert, key = work_dir / "untrusted-test-cert.pem", work_dir / "untrusted-test-key.pem"
     execute(
         "create-untrusted-certificate",
@@ -101,6 +109,8 @@ def tls(work_dir: Path) -> None:
         with (work_dir / "tls-server.log").open("x", encoding="utf8") as errors:
             server = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=errors, text=True, cwd=work_dir)
             try:
+                if server.stdout is None:
+                    raise RuntimeError("The TLS test server did not provide its port output stream.")
                 port = int(server.stdout.readline().strip())
                 try:
                     with czi.open_czi(
@@ -109,7 +119,8 @@ def tls(work_dir: Path) -> None:
                         raise AssertionError("An untrusted certificate was accepted.")
                 except RuntimeError as error:
                     rejection = "".join(traceback.format_exception(error))
-                    assert "error code 60" in rejection, rejection
+                    if "error code 60" not in rejection:
+                        raise AssertionError(rejection) from error
             finally:
                 server.terminate()
                 server.wait(timeout=10)
@@ -134,6 +145,7 @@ def tls(work_dir: Path) -> None:
 
 
 def main(arguments: argparse.Namespace) -> None:
+    """Check installed B01 native, HTTPS and provenance behavior in the Conda environment."""
     work_dir = arguments.work_dir.resolve()
     if arguments.serve:
         serve(arguments.cert, arguments.key)
@@ -147,7 +159,8 @@ def main(arguments: argparse.Namespace) -> None:
         return
     source = work_dir / "source"
     wheel = next((work_dir / "sdist-wheels").glob("*.whl"))
-    assert arguments.restore_wheel.is_file()
+    if not arguments.restore_wheel.is_file():
+        raise AssertionError()
     build = work_dir / "native-build"
     environment["PATH"] = (
         f"{Path(sys.executable).parent};{Path(sys.executable).parent / 'Scripts'};"

@@ -9,6 +9,7 @@ from pylibCZIrw import czi
 
 
 def main() -> None:
+    """Read raw XML and an explicit validity mask without changing direct pixels."""
     filepath = (
         Path(__file__).resolve().parents[1]
         / "pylibCZIrw/tests/integration/test_data/synthetic/literal_valid_mask_v2.czi"
@@ -20,6 +21,8 @@ def main() -> None:
         pixels = reader.read_subblock(block.index)
 
     print("Raw subblock XML:", xml)
+    if mask is None:
+        raise ValueError("This example requires a stored validity mask.")
     print("Stored mask:", mask.shape, mask.dtype, "valid pixels:", np.count_nonzero(mask))
     # Applying a mask here is an explicit choice; read_subblock returns raw pixels.
     masked = np.where(mask, pixels, 0)

@@ -9,6 +9,7 @@ from pylibCZIrw import czi
 
 
 def main() -> None:
+    """Extract and display the SlidePreview attachment from the well-plate CZI."""
     basedir = Path(__file__).resolve().parents[1]
     filepath = basedir / "test_data/well96-A4-6_B16-18_CH=2.czi"
     parser = ArgumentParser(description=__doc__)

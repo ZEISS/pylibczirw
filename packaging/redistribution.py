@@ -8,24 +8,55 @@ import shutil
 import urllib.parse
 import urllib.request
 import zipfile
+from http.client import HTTPMessage
 from pathlib import Path, PurePosixPath
+from typing import IO
 
 ROOT = Path(__file__).resolve().parents[1]
 
 
+def digest_stream(stream: IO[bytes]) -> str:
+    """Hash binary input incrementally without materializing an archive member."""
+    digest = hashlib.sha256()
+    for chunk in iter(lambda: stream.read(1024 * 1024), b""):
+        digest.update(chunk)
+    return digest.hexdigest()
+
+
+def validate_https(source: str) -> None:
+    """Reject non-HTTPS and credential-bearing source URLs before requesting them."""
+    url = urllib.parse.urlsplit(source)
+    if url.scheme != "https" or url.username is not None or url.password is not None:
+        raise ValueError("Downloads require credential-free HTTPS URLs.")
+
+
+class _HttpsRedirectHandler(urllib.request.HTTPRedirectHandler):
+    """Reject transport downgrade or credential redirects before following them."""
+
+    def redirect_request(
+        self, req: urllib.request.Request, fp: IO[bytes], code: int, msg: str, headers: HTTPMessage, newurl: str
+    ) -> urllib.request.Request | None:
+        """Validate a redirect destination before constructing its request."""
+        validate_https(newurl)
+        return super().redirect_request(req, fp, code, msg, headers, newurl)
+
+
 def fingerprint(path: Path) -> dict:
+    """Return the file size and SHA256 used by evidence records."""
     with path.open("rb") as stream:
-        digest = hashlib.file_digest(stream, "sha256").hexdigest()
+        digest = digest_stream(stream)
     return {"size_bytes": path.stat().st_size, "sha256": digest}
 
 
 def safe_name(name: str) -> None:
+    """Reject absolute, traversing or ambiguous archive member paths."""
     path = PurePosixPath(name)
     if not name or "\\" in name or path.is_absolute() or ".." in path.parts or ":" in name:
         raise ValueError(f"Unsafe archive path: {name!r}")
 
 
 def verify(archive_path: Path) -> dict:
+    """Verify archive members, hashes and explicitly unapproved release boundaries."""
     with zipfile.ZipFile(archive_path) as archive:
         names = archive.namelist()
         if len(names) != len(set(name.casefold() for name in names)):
@@ -40,7 +71,7 @@ def verify(archive_path: Path) -> dict:
             raise ValueError("Archive members differ from the manifest.")
         for name, record in expected.items():
             with archive.open(name) as stream:
-                digest = hashlib.file_digest(stream, "sha256").hexdigest()
+                digest = digest_stream(stream)
             if digest != record["sha256"] or archive.getinfo(name).file_size != record["size_bytes"]:
                 raise ValueError(f"Archive bytes differ: {name}")
     print(f"Verified {len(expected)} files; redistribution and G1 remain unapproved.")
@@ -48,6 +79,7 @@ def verify(archive_path: Path) -> dict:
 
 
 def prepare(specification: Path, destination: Path) -> Path:
+    """Collect sources into a verified internal archive without granting approval."""
     destination = destination.resolve()
     if destination.is_relative_to(ROOT):
         raise ValueError("Source handoff evidence must live outside the checkout.")
@@ -66,14 +98,14 @@ def prepare(specification: Path, destination: Path) -> Path:
         target = payload / item["id"]
         target.mkdir()
         if item["kind"] == "https":
+            validate_https(item["source"])
             url = urllib.parse.urlsplit(item["source"])
-            if url.scheme != "https" or url.username or url.password:
-                raise ValueError("Downloads require credential-free HTTPS URLs.")
             filename = item.get("filename", PurePosixPath(url.path).name)
             if not filename or filename != Path(filename).name:
                 raise ValueError("Download filenames must be simple path components.")
             downloaded = target / filename
-            with urllib.request.urlopen(item["source"], timeout=90) as response:
+            opener = urllib.request.build_opener(_HttpsRedirectHandler())
+            with opener.open(item["source"], timeout=90) as response:
                 if urllib.parse.urlsplit(response.url).scheme != "https":
                     raise ValueError("HTTPS download redirected to an insecure transport.")
                 record["resolved_url"] = response.url

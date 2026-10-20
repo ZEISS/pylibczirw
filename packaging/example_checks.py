@@ -29,19 +29,24 @@ PLOT_VALUES = {
 
 
 def fingerprint(path: Path) -> dict:
+    """Return the file size and SHA256 used by evidence records."""
     return {"size_bytes": path.stat().st_size, "sha256": hashlib.sha256(path.read_bytes()).hexdigest()}
 
 
 def installed() -> dict:
+    """Verify non-editable installed module origins and record artifact provenance."""
     import _pylibCZIrw as native
     from pylibCZIrw import czi
 
     site = Path(sysconfig.get_path("platlib")).resolve()
-    assert Path(czi.__file__).resolve().is_relative_to(site), czi.__file__
-    assert Path(native.__file__).resolve().is_relative_to(site), native.__file__
+    if not Path(czi.__file__).resolve().is_relative_to(site):
+        raise AssertionError(czi.__file__)
+    if not Path(native.__file__).resolve().is_relative_to(site):
+        raise AssertionError(native.__file__)
     distribution = metadata.distribution("pylibczirw")
     direct_url = json.loads(distribution.read_text("direct_url.json") or "{}")
-    assert not direct_url.get("dir_info", {}).get("editable", False)
+    if not not direct_url.get("dir_info", {}).get("editable", False):
+        raise AssertionError()
     return {
         "python": sys.executable,
         "version": distribution.version,
@@ -52,25 +57,34 @@ def installed() -> dict:
 
 
 def child(work: Path, case: str) -> None:
+    """Execute one installed example and verify its displayed arrays and rendering."""
     import matplotlib
 
     matplotlib.use("Agg", force=True)
     import matplotlib.pyplot as plt
     import numpy as np
+    from matplotlib.backends.backend_agg import FigureCanvasAgg
 
     provenance = installed()
     staged = work / "example-source"
     figures = []
     number = case[:2]
 
-    def save(*args, **kwargs) -> None:
-        values = inspect.currentframe().f_back.f_locals
+    def save(*_args: object, **_kwargs: object) -> None:
+        """Check displayed arrays and retain a nonblank Agg-rendered figure."""
+        frame = inspect.currentframe()
+        if frame is None or frame.f_back is None:
+            raise RuntimeError("Figure validation requires the calling Python frame.")
+        values = frame.f_back.f_locals
+        del frame
         opened = [plt.figure(identifier) for identifier in plt.get_fignums()]
-        assert len(opened) == 1, case
+        if not len(opened) == 1:
+            raise AssertionError(case)
         (figure,) = opened
         images = [image for axis in figure.axes for image in axis.get_images()]
         expected = PLOT_VALUES[number]
-        assert len(images) == len(expected), (case, len(images))
+        if not len(images) == len(expected):
+            raise AssertionError((case, len(images)))
         arrays = []
         for image, name in zip(images, expected):
             actual = np.asarray(image.get_array())
@@ -88,10 +102,15 @@ def child(work: Path, case: str) -> None:
         elif number == "06":
             np.testing.assert_array_equal(values["masked"], np.where(values["mask"], values["pixels"], 0))
         elif number == "09":
-            assert values["output_path"].read_bytes() == values["raw"]
-        figure.canvas.draw()
-        canvas = np.asarray(figure.canvas.buffer_rgba())
-        assert canvas.shape[0] > 0 and canvas.shape[1] > 0 and canvas[..., :3].std() > 0
+            if not values["output_path"].read_bytes() == values["raw"]:
+                raise AssertionError()
+        renderer = figure.canvas
+        if not isinstance(renderer, FigureCanvasAgg):
+            raise RuntimeError("Figure validation requires the Agg canvas backend.")
+        renderer.draw()
+        canvas = np.asarray(renderer.buffer_rgba())
+        if not (canvas.shape[0] > 0 and canvas.shape[1] > 0 and canvas[..., :3].std() > 0):
+            raise AssertionError()
         image_path = work / "plots" / f"{Path(case).stem}.png"
         image_path.parent.mkdir(exist_ok=True)
         figure.savefig(image_path, dpi=120)
@@ -107,32 +126,40 @@ def child(work: Path, case: str) -> None:
             for token in MarkdownIt().parse((staged / "INFO.md").read_text(encoding="utf8"))
             if token.type == "fence" and token.info.strip() == "python"
         ]
-        assert len(blocks) == 1
+        if not len(blocks) == 1:
+            raise AssertionError()
         os.chdir(staged)
-        namespace = {"__name__": "__documentation_example__"}
-        exec(compile(blocks[0], "INFO.md:python", "exec"), namespace)
-        assert namespace["image2d"].shape == (100, 50, 1)
-        assert namespace["total_bounding_box"] and namespace["scenes_bounding_rectangle"]
+        extracted = work / "INFO-python-example.py"
+        extracted.write_text(blocks[0], encoding="utf8")
+        namespace = runpy.run_path(str(extracted), run_name="__documentation_example__")
+        if not namespace["image2d"].shape == (100, 50, 1):
+            raise AssertionError()
+        if not (namespace["total_bounding_box"] and namespace["scenes_bounding_rectangle"]):
+            raise AssertionError()
     else:
         script = staged / "demo_scripts" / case
         sys.argv = [str(script)]
         if number == "09":
             sys.argv.extend(["--output-dir", str(work / "extracted")])
         runpy.run_path(str(script), run_name="__main__")
-        assert bool(figures) == (number in PLOT_VALUES), case
+        if not bool(figures) == (number in PLOT_VALUES):
+            raise AssertionError(case)
     record = {"case": case, "status": "passed", "installed": provenance, "figures": figures}
     (work / f"{Path(case).stem}-record.json").write_text(json.dumps(record, indent=2), encoding="utf8")
 
 
 def run(work: Path, source: Path, include_local: bool, only: str | None) -> None:
-    assert not work.is_relative_to(source), "Example evidence must live outside the source checkout."
+    """Stage admitted inputs and execute the selected installed examples."""
+    if not not work.is_relative_to(source):
+        raise AssertionError("Example evidence must live outside the source checkout.")
     work.mkdir(parents=True, exist_ok=False)
     provenance = installed()
     staged = work / "example-source"
     (staged / "demo_scripts").mkdir(parents=True)
     cases = PORTABLE + LOCAL if include_local else PORTABLE
     if only:
-        assert only in cases, only
+        if only not in cases:
+            raise AssertionError(only)
         cases = (only,)
     scripts = []
     inputs = []
@@ -173,9 +200,12 @@ def run(work: Path, source: Path, include_local: bool, only: str | None) -> None
         log = work / f"{Path(case).stem}.log"
         command = [sys.executable, "-I", str(Path(__file__).resolve()), str(work), "--case", case]
         with log.open("x", encoding="utf8") as stream:
-            result = subprocess.run(command, cwd=work, env=environment, stdout=stream, stderr=subprocess.STDOUT)
+            result = subprocess.run(
+                command, cwd=work, env=environment, stdout=stream, stderr=subprocess.STDOUT, check=False
+            )
         print(case, "exit", result.returncode, flush=True)
-        assert result.returncode == 0, log.read_text(encoding="utf8")[-4000:]
+        if not result.returncode == 0:
+            raise AssertionError(log.read_text(encoding="utf8")[-4000:])
         record = json.loads((work / f"{Path(case).stem}-record.json").read_text(encoding="utf8"))
         record["command"] = command
         record["log"] = {"path": str(log), **fingerprint(log)}

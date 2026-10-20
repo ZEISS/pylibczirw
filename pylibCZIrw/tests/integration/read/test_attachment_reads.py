@@ -1,6 +1,7 @@
 """Attachment descriptors, raw bytes and explicit embedded-CZI image reads."""
 
 import struct
+from contextlib import closing
 from dataclasses import FrozenInstanceError, fields
 from pathlib import Path
 from uuid import UUID
@@ -15,7 +16,8 @@ DATA = Path(__file__).resolve().parent.parent / "test_data"
 ATTACHMENTS = DATA / "synthetic/literal_slidepreview_cases.czi"
 
 
-def test_attachment_directory_and_selected_raw_bytes():
+def test_attachment_directory_and_selected_raw_bytes() -> None:
+    """Verify attachment directory and selected raw bytes."""
     with open_czi(str(ATTACHMENTS)) as reader:
         infos = reader.list_attachments()
         assert infos
@@ -25,14 +27,16 @@ def test_attachment_directory_and_selected_raw_bytes():
     assert infos[0].name
 
 
-def test_optional_images_are_none_only_when_absent():
+def test_optional_images_are_none_only_when_absent() -> None:
+    """Verify optional images are none only when absent."""
     with open_czi(str(DATA / "synthetic/literal_gray16_raw.czi")) as reader:
         assert reader.list_attachments() == []
         assert reader.read_label() is None
         assert reader.read_preview() is None
 
 
-def test_owned_descriptor_fields_guid_byte_order_and_defaults():
+def test_owned_descriptor_fields_guid_byte_order_and_defaults() -> None:
+    """Verify owned descriptor fields guid byte order and defaults."""
     with open_czi(str(ATTACHMENTS)) as reader:
         infos = reader.list_attachments()
     assert [info.name for info in infos] == ["Label", "SlidePreview", "SlidePreview", "Unknown", "Corrupt"]
@@ -49,14 +53,13 @@ def test_owned_descriptor_fields_guid_byte_order_and_defaults():
     ]
     assert AttachmentInfo(0, "Unknown", "OTHER", infos[0].content_guid).size_bytes is None
     assert AttachmentInfo(0, "Unknown", "OTHER", infos[0].content_guid, 0).size_bytes == 0
-    with pytest.raises(TypeError):
-        AttachmentInfo()
-    with pytest.raises(FrozenInstanceError):
-        infos[0].name = "Changed"
+    pytest.raises(TypeError, AttachmentInfo)
+    pytest.raises(FrozenInstanceError, setattr, infos[0], "name", "Changed")
 
 
 @pytest.mark.parametrize("index", [0, 1, 2])
-def test_embedded_image_pixels_and_lifetime(index):
+def test_embedded_image_pixels_and_lifetime(index: int) -> None:
+    """Verify embedded image pixels and lifetime."""
     with open_czi(str(ATTACHMENTS)) as reader:
         pixels = reader.read_attachment_image(index=np.int64(index))
         raw = reader.read_attachment(index)
@@ -66,7 +69,8 @@ def test_embedded_image_pixels_and_lifetime(index):
     assert raw == (DATA / "synthetic/literal_gray16_raw.czi").read_bytes()
 
 
-def test_helpers_disambiguate_without_fallback():
+def test_helpers_disambiguate_without_fallback() -> None:
+    """Verify helpers disambiguate without fallback."""
     with open_czi(str(ATTACHMENTS)) as reader:
         np.testing.assert_array_equal(reader.read_label(), reader.read_attachment_image(0))
         np.testing.assert_array_equal(reader.read_label(index=None), reader.read_attachment_image(0))
@@ -82,10 +86,8 @@ def test_helpers_disambiguate_without_fallback():
                 reader.read_attachment_image(index)
             with pytest.raises(ValueError):
                 reader.read_preview(index=index)
-        with pytest.raises(TypeError):
-            reader.read_label(0)
-        with pytest.raises(TypeError):
-            reader.read_preview(1)
+        pytest.raises(TypeError, reader.read_label, 0)
+        pytest.raises(TypeError, reader.read_preview, 1)
 
 
 @pytest.mark.parametrize("method", ["read_attachment", "read_attachment_image", "read_label", "read_preview"])
@@ -101,7 +103,8 @@ def test_helpers_disambiguate_without_fallback():
         (99, IndexError),
     ],
 )
-def test_indices_are_checked_for_every_read(method, index, error):
+def test_indices_are_checked_for_every_read(method: str, index: object, error: type[Exception]) -> None:
+    """Verify indices are checked for every read."""
     with open_czi(str(ATTACHMENTS)) as reader:
         with pytest.raises(error):
             getattr(reader, method)(index=index)
@@ -110,20 +113,23 @@ def test_indices_are_checked_for_every_read(method, index, error):
 @pytest.mark.parametrize(
     "method", ["list_attachments", "read_attachment", "read_attachment_image", "read_label", "read_preview"]
 )
-def test_closed_reader_rejects_new_access(method):
+def test_closed_reader_rejects_new_access(method: str) -> None:
+    """Verify closed reader rejects new access."""
     with open_czi(str(ATTACHMENTS)) as reader:
         pass
     with pytest.raises(RuntimeError, match="closed"):
         getattr(reader, method)(**({"index": 0} if method != "list_attachments" else {}))
 
 
-def test_listing_does_not_fetch_payloads_and_io_failures_keep_cause():
+def test_listing_does_not_fetch_payloads_and_io_failures_keep_cause() -> None:
+    """Verify directory-only reads and the original injected I/O cause."""
     data = ATTACHMENTS.read_bytes()
     reads = []
     injected = OSError("injected attachment read failure")
     state = {"fail": False}
 
-    def read_at(offset, size):
+    def read_at(offset: int, size: int) -> bytes:
+        """Read selected fixture bytes or raise the injected stream failure."""
         reads.append((offset, size))
         if state["fail"]:
             raise injected
@@ -133,7 +139,7 @@ def test_listing_does_not_fetch_payloads_and_io_failures_keep_cause():
     reader._czi_reader = native.czi_reader._from_stream(read_at)
     reader._subblock_closed = False
     reader._subblock_catalog = None
-    try:
+    with closing(reader):
         reads.clear()
         assert len(reader.list_attachments()) == 5
         assert reads == []
@@ -143,14 +149,13 @@ def test_listing_does_not_fetch_payloads_and_io_failures_keep_cause():
         with pytest.raises(OSError) as caught:
             reader.read_attachment(1)
         assert caught.value.__cause__ is injected
-    finally:
-        reader.close()
 
 
 @pytest.mark.parametrize(
     "dtype,components", [("uint8", 1), ("uint16", 1), ("float32", 1), ("uint8", 3), ("uint16", 3), ("float32", 3)]
 )
-def test_embedded_native_layouts_with_literal_pixels(tmp_path, dtype, components):
+def test_embedded_native_layouts_with_literal_pixels(tmp_path: Path, dtype: str, components: int) -> None:
+    """Verify embedded native layouts with literal pixels."""
     expected = np.arange(5 * 7 * components).reshape(5, 7, components).astype(dtype)
     if dtype == "float32":
         expected /= 8
@@ -168,32 +173,33 @@ def test_embedded_native_layouts_with_literal_pixels(tmp_path, dtype, components
     reader._czi_reader = native.czi_reader._from_stream(lambda offset, size: bytes(data[offset : offset + size]))
     reader._subblock_closed = False
     reader._subblock_catalog = None
-    try:
+    with closing(reader):
         pixels = reader.read_label()
-    finally:
-        reader.close()
+    assert pixels is not None
     assert pixels.dtype == expected.dtype
     np.testing.assert_array_equal(pixels, expected[..., 0] if components == 1 else expected)
 
 
-def test_duplicate_label_names_are_not_collapsed():
+def test_duplicate_label_names_are_not_collapsed() -> None:
+    """Verify duplicate label names are not collapsed."""
     data = ATTACHMENTS.read_bytes().replace(b"SlidePreview\0", b"Label\0" + b"\0" * 7)
     reader = CziReader.__new__(CziReader)
     reader._czi_reader = native.czi_reader._from_stream(lambda offset, size: data[offset : offset + size])
     reader._subblock_closed = False
     reader._subblock_catalog = None
-    try:
+    with closing(reader):
         with pytest.raises(ValueError, match="matched 3"):
             reader.read_label()
         assert reader.read_preview() is None
-        assert reader.read_label(index=2).shape == (32, 48)
-    finally:
-        reader.close()
+        selected = reader.read_label(index=2)
+        assert selected is not None
+        assert selected.shape == (32, 48)
 
 
 @pytest.mark.parametrize("size", [-1, -(2**63)])
 @pytest.mark.parametrize("method", ["read_attachment", "read_attachment_image"])
-def test_unrepresentable_attachment_lengths_do_not_allocate_huge_buffers(size, method):
+def test_unrepresentable_attachment_lengths_do_not_allocate_huge_buffers(size: int, method: str) -> None:
+    """Verify unrepresentable attachment lengths do not allocate huge buffers."""
     data = bytearray(ATTACHMENTS.read_bytes())
     start = data.index(b"ZISRAWATTACH")
     struct.pack_into("<q", data, start + 32, size)
@@ -201,8 +207,6 @@ def test_unrepresentable_attachment_lengths_do_not_allocate_huge_buffers(size, m
     reader._czi_reader = native.czi_reader._from_stream(lambda offset, count: bytes(data[offset : offset + count]))
     reader._subblock_closed = False
     reader._subblock_catalog = None
-    try:
+    with closing(reader):
         with pytest.raises(OverflowError, match="buffer range"):
             getattr(reader, method)(0)
-    finally:
-        reader.close()

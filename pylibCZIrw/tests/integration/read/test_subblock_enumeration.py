@@ -4,8 +4,13 @@
 
 import os
 import struct
+from contextlib import closing
 from dataclasses import FrozenInstanceError, fields
+from fractions import Fraction
+from operator import setitem
+from pathlib import Path
 from types import SimpleNamespace
+from typing import Iterator, Optional, TypedDict, Union
 
 import numpy as np
 import pytest
@@ -21,10 +26,20 @@ CZI_MULTI_DIM = os.path.join(working_dir, "../test_data", "c2_gray8_t3_z5_s2.czi
 CZI_MULTI_SCENE = os.path.join(working_dir, "../test_data", "c1_gray8_s2_overlapping_bounding_boxes.czi")
 
 
+class _Selection(TypedDict):
+    """Keyword-only selectors shared by listing and counting assertions."""
+
+    plane: dict[str, int]
+    scene: Optional[int]
+    m_index: Optional[int]
+    level: Optional[int]
+
+
 class TestIndexedNativeAccess:
     """Test native indexed access independently of composed-plane reads."""
 
     def test_directory_snapshot_uses_no_stream_reads(self) -> None:
+        """Verify directory snapshot uses no stream reads."""
         with open(os.path.join(working_dir, "../test_data/synthetic/stored_sparse_coordinates.czi"), "rb") as source:
             data = source.read()
         reads = []
@@ -34,23 +49,23 @@ class TestIndexedNativeAccess:
             return data[offset : offset + size]
 
         reader = native.czi_reader._from_stream(read_at)
-        try:
+        with closing(reader):
             reads.clear()
             directory = reader.GetSubBlockDirectory()
             assert [index for index, _info in directory] == [0, 1]
             assert reader.GetSubBlockInfo(1).mIndex == 37
             assert reads == []
-        finally:
-            reader.close()
         assert directory[0][1].coordinate.to_dict() == {"S": 2, "T": 3, "C": 5, "Z": 7}
 
     @staticmethod
-    def stream_data(filename="stored_sparse_coordinates.czi"):
+    def stream_data(filename: str = "stored_sparse_coordinates.czi") -> bytearray:
+        """Load mutable admitted fixture bytes for literal directory mutation checks."""
         with open(os.path.join(working_dir, "../test_data/synthetic", filename), "rb") as source:
             return bytearray(source.read())
 
     @staticmethod
-    def directory_entry(data, index=0):
+    def directory_entry(data: bytearray, index: int = 0) -> int:
+        """Locate a stored directory entry in the synthetic fixture bytes."""
         directory = struct.unpack_from("<q", data, 84)[0]
         assert data[directory : directory + 16].startswith(b"ZISRAWDIRECTORY")
         entry = directory + 32 + 128
@@ -70,18 +85,19 @@ class TestIndexedNativeAccess:
             "literal_gray16_invalid_utf8.czi",
         ],
     )
-    def test_public_snapshot_and_filters_are_stream_free(self, filename):
+    def test_public_snapshot_and_filters_are_stream_free(self, filename: str) -> None:
+        """Verify public snapshot and filters are stream free."""
         data = self.stream_data(filename)
         reads = []
 
-        def read_at(offset, size):
+        def read_at(offset: int, size: int) -> bytes:
             reads.append((offset, size))
             return bytes(data[offset : offset + size])
 
         native_reader = native.czi_reader._from_stream(read_at)
         reader = TestSubblockCatalog.reader([])
         reader._czi_reader = native_reader
-        try:
+        with closing(reader):
             reads.clear()
             infos = reader.list_subblocks()
             assert infos
@@ -89,28 +105,29 @@ class TestIndexedNativeAccess:
             assert sum(reader.count_subblocks_by_scene().values()) == len(infos)
             for info in infos:
                 plane = {key: value for key, value in info.coordinates.items() if key != "S"}
-                filters = dict(plane=plane, scene=info.coordinates.get("S"), m_index=info.m_index, level=info.level_id)
+                filters: _Selection = dict(
+                    plane=plane, scene=info.coordinates.get("S"), m_index=info.m_index, level=info.level_id
+                )
                 selected = reader.list_subblocks(**filters)
                 assert info in selected
                 assert reader.count_subblocks(**filters) == len(selected)
                 assert sum(reader.count_subblocks_by_scene(**filters).values()) == len(selected)
             assert reader.list_subblocks(level=2**100) == []
             assert reads == []
-        finally:
-            reader.close()
         assert infos[0].stored_shape[0] > 0
 
-    def test_selection_reads_only_chosen_stored_segment(self):
+    def test_selection_reads_only_chosen_stored_segment(self) -> None:
+        """Verify selection reads only chosen stored segment."""
         data = self.stream_data()
         reads = []
 
-        def read_at(offset, size):
+        def read_at(offset: int, size: int) -> bytes:
             reads.append((offset, size))
             return bytes(data[offset : offset + size])
 
         reader = TestSubblockCatalog.reader([])
         reader._czi_reader = native.czi_reader._from_stream(read_at)
-        try:
+        with closing(reader):
             reads.clear()
             infos = reader.list_subblocks(m_index=37)
             assert len(infos) == 2
@@ -125,22 +142,21 @@ class TestIndexedNativeAccess:
             assert all(start <= offset and offset + size <= end for offset, size in reads)
             expected = (40000 + 101 * np.arange(16)[:, None] + 7 * np.arange(24)[None, :]).astype(np.uint16)
             np.testing.assert_array_equal(pixels[..., 0], expected)
-        finally:
-            reader.close()
 
     @pytest.mark.parametrize("failure", ["io", "truncated", "codec"])
-    def test_payload_failures_are_typed_and_chained(self, failure):
+    def test_payload_failures_are_typed_and_chained(self, failure: str) -> None:
+        """Verify payload failures are typed and chained."""
         data = self.stream_data("literal_gray16_zstd0.czi")
         injected = OSError("injected stream failure")
         state = {"fail": False}
 
-        def read_at(offset, size):
+        def read_at(offset: int, size: int) -> bytes:
             if state["fail"]:
                 raise injected
             return bytes(data[offset : offset + size])
 
         reader = native.czi_reader._from_stream(read_at)
-        try:
+        with closing(reader):
             if failure == "io":
                 state["fail"] = True
             elif failure == "truncated":
@@ -153,8 +169,6 @@ class TestIndexedNativeAccess:
             assert caught.value.__cause__ is not None
             if failure == "io":
                 assert caught.value.__cause__ is injected
-        finally:
-            reader.close()
 
     @pytest.mark.parametrize(
         "change,error",
@@ -166,7 +180,10 @@ class TestIndexedNativeAccess:
             ("compression", ValueError),
         ],
     )
-    def test_directory_validation_rejects_before_payload_or_allocation(self, change, error):
+    def test_directory_validation_rejects_before_payload_or_allocation(
+        self, change: str, error: type[Exception]
+    ) -> None:
+        """Verify directory validation rejects before payload or allocation."""
         data = self.stream_data("literal_gray16_raw.czi")
         entry = self.directory_entry(data)
         if change == "layout":
@@ -185,37 +202,33 @@ class TestIndexedNativeAccess:
                 struct.pack_into("<i", data, entry + 2, int(native.PixelType.Bgr96Float))
         reads = []
 
-        def read_at(offset, size):
+        def read_at(offset: int, size: int) -> bytes:
             reads.append((offset, size))
             return bytes(data[offset : offset + size])
 
         reader = native.czi_reader._from_stream(read_at)
-        try:
+        with closing(reader):
             reads.clear()
             with pytest.raises(error):
                 reader.ReadSubBlock(0)
             assert reads == []
-        finally:
-            reader.close()
 
     @pytest.fixture
-    def indexed_reader(self):
+    def indexed_reader(self) -> Iterator[native.czi_reader]:
+        """Yield a native indexed reader and always release it after the test."""
         reader = native.czi_reader(os.path.join(working_dir, "../test_data/synthetic/stored_sparse_coordinates.czi"))
-        try:
+        with closing(reader):
             yield reader
-        finally:
-            reader.close()
 
     def test_directory_descriptor_preserves_sparse_coordinates(self) -> None:
+        """Verify directory descriptor preserves sparse coordinates."""
         reader = native.czi_reader(os.path.join(working_dir, "../test_data/synthetic/stored_sparse_coordinates.czi"))
-        try:
+        with closing(reader):
             info = reader.GetSubBlockInfo(0)
             assert info.coordinate.to_dict() == {"S": 2, "T": 3, "C": 5, "Z": 7}
             assert info.mIndex == 37
             assert (info.logicalRect.x, info.logicalRect.y) == (-8, -4)
             assert (info.physicalSize.h, info.physicalSize.w) == (32, 48)
-        finally:
-            reader.close()
         assert info.coordinate.to_dict() == {"S": 2, "T": 3, "C": 5, "Z": 7}
 
     @pytest.mark.parametrize(
@@ -223,11 +236,10 @@ class TestIndexedNativeAccess:
         ["literal_gray16_raw.czi", "literal_gray16_zstd0.czi", "literal_gray16_zstd1.czi", "literal_gray16_jpegxr.czi"],
     )
     def test_indexed_bitmap_owns_literal_pixels_after_close(self, filename: str) -> None:
+        """Verify indexed bitmap owns literal pixels after close."""
         reader = native.czi_reader(os.path.join(working_dir, "../test_data/synthetic", filename))
-        try:
+        with closing(reader):
             pixels = np.asarray(reader.ReadSubBlock(0))
-        finally:
-            reader.close()
         del reader
         expected = (257 * np.arange(32)[:, None] + 11 * np.arange(48)[None, :]).astype(np.uint16)
         assert pixels.dtype == np.dtype("uint16")
@@ -245,7 +257,8 @@ class TestIndexedNativeAccess:
             ("float32", 3),
         ],
     )
-    def test_all_supported_layouts_have_owned_native_dtype(self, tmp_path, dtype, components):
+    def test_all_supported_layouts_have_owned_native_dtype(self, tmp_path: Path, dtype: str, components: int) -> None:
+        """Verify all supported layouts have owned native dtype."""
         expected = np.arange(6 * 8 * components).reshape(6, 8, components).astype(dtype)
         if dtype == "float32":
             expected /= 8
@@ -254,16 +267,15 @@ class TestIndexedNativeAccess:
         with create_czi(filepath) as writer:
             writer.write(data=expected, plane={"C": 0})
         reader = native.czi_reader(filepath)
-        try:
+        with closing(reader):
             pixels = np.asarray(reader.ReadSubBlock(0))
-        finally:
-            reader.close()
         del reader
         assert pixels.dtype == expected.dtype
         assert pixels.shape == expected.shape
         np.testing.assert_array_equal(pixels, expected)
 
-    def test_repeated_m_selects_stored_index_not_m_or_full_resolution(self, indexed_reader) -> None:
+    def test_repeated_m_selects_stored_index_not_m_or_full_resolution(self, indexed_reader: native.czi_reader) -> None:
+        """Verify repeated m selects stored index not m or full resolution."""
         info = indexed_reader.GetSubBlockInfo(index=np.int64(1))
         assert info.mIndex == 37
         assert info.coordinate.to_dict() == {"S": 8, "T": 9, "C": 11, "Z": 13}
@@ -275,42 +287,47 @@ class TestIndexedNativeAccess:
 
     @pytest.mark.parametrize("method", ["GetSubBlockInfo", "ReadSubBlock"])
     @pytest.mark.parametrize("index", [True, False, 1.5, "0", None])
-    def test_rejects_non_integer_indices(self, indexed_reader, method: str, index) -> None:
+    def test_rejects_non_integer_indices(
+        self, indexed_reader: native.czi_reader, method: str, index: Union[None, bool, float, str]
+    ) -> None:
+        """Verify rejects non integer indices."""
         with pytest.raises(TypeError):
             getattr(indexed_reader, method)(index)
 
     @pytest.mark.parametrize("method", ["GetSubBlockInfo", "ReadSubBlock"])
     @pytest.mark.parametrize("index", [-1, 2, 37, 2**31, 2**100, -(2**100)])
-    def test_rejects_missing_indices_without_wrapping(self, indexed_reader, method: str, index: int) -> None:
+    def test_rejects_missing_indices_without_wrapping(
+        self, indexed_reader: native.czi_reader, method: str, index: int
+    ) -> None:
+        """Verify rejects missing indices without wrapping."""
         with pytest.raises(IndexError):
             getattr(indexed_reader, method)(index)
 
     @pytest.mark.parametrize("method", ["GetSubBlockInfo", "ReadSubBlock"])
-    def test_closed_reader_rejects_new_operations(self, indexed_reader, method: str) -> None:
+    def test_closed_reader_rejects_new_operations(self, indexed_reader: native.czi_reader, method: str) -> None:
+        """Verify closed reader rejects new operations."""
         indexed_reader.close()
         with pytest.raises(RuntimeError, match="closed"):
             getattr(indexed_reader, method)(0)
 
     @pytest.mark.parametrize("filename", ["literal_gray16_unsupported42_v2.czi", "literal_gray16_invalid_utf8.czi"])
     def test_descriptor_does_not_decode_pixels_or_xml(self, filename: str) -> None:
+        """Verify descriptor does not decode pixels or xml."""
         reader = native.czi_reader(os.path.join(working_dir, "../test_data/synthetic", filename))
-        try:
+        with closing(reader):
             info = reader.GetSubBlockInfo(0)
             assert (info.physicalSize.h, info.physicalSize.w) == (32, 48)
             if "unsupported42" in filename:
                 assert info.compressionModeRaw == 42
                 with pytest.raises(ValueError, match="compression"):
                     reader.ReadSubBlock(0)
-        finally:
-            reader.close()
 
     @pytest.mark.parametrize("filename", ["c1_bgr24", "c1_bgr48"])
     def test_native_color_order_and_owned_nonempty_buffer(self, filename: str) -> None:
+        """Verify native color order and owned nonempty buffer."""
         reader = native.czi_reader(os.path.join(working_dir, "../test_data", filename + ".czi"))
-        try:
+        with closing(reader):
             pixels = np.asarray(reader.ReadSubBlock(0))
-        finally:
-            reader.close()
         with np.load(
             os.path.join(working_dir, "../test_data", filename + "_plane.npz"), allow_pickle=False
         ) as reference:
@@ -321,24 +338,28 @@ class TestIndexedNativeAccess:
 
 
 class TestPublicSubblockReads:
+    """Verify direct public pixels, selection errors and returned-array lifetimes."""
+
     @pytest.fixture
-    def public_reader(self):
+    def public_reader(self) -> Iterator[tuple[CziReader, list[tuple[int, int]], bytearray]]:
+        """Yield a public reader with recorded I/O and mutable fixture bytes."""
         data = TestIndexedNativeAccess.stream_data()
         reads = []
 
-        def read_at(offset, size):
+        def read_at(offset: int, size: int) -> bytes:
             reads.append((offset, size))
             return bytes(data[offset : offset + size])
 
         reader = TestSubblockCatalog.reader([])
         reader._czi_reader = native.czi_reader._from_stream(read_at)
         reads.clear()
-        try:
+        with closing(reader):
             yield reader, reads, data
-        finally:
-            reader.close()
 
-    def test_indexed_public_pixels_use_stored_yx_geometry(self, public_reader):
+    def test_indexed_public_pixels_use_stored_yx_geometry(
+        self, public_reader: tuple[CziReader, list[tuple[int, int]], bytearray]
+    ) -> None:
+        """Verify indexed public pixels use stored yx geometry."""
         reader, reads, data = public_reader
         pixels = reader.read_subblock(index=np.int64(1))
         expected = (40000 + 101 * np.arange(16)[:, None] + 7 * np.arange(24)[None, :]).astype(np.uint16)
@@ -351,7 +372,10 @@ class TestPublicSubblockReads:
         assert reads
         assert all(start <= offset and offset + size <= end for offset, size in reads)
 
-    def test_unique_m_helper_reads_the_filtered_block(self, public_reader):
+    def test_unique_m_helper_reads_the_filtered_block(
+        self, public_reader: tuple[CziReader, list[tuple[int, int]], bytearray]
+    ) -> None:
+        """Verify unique m helper reads the filtered block."""
         reader, reads, data = public_reader
         assert reader.list_subblocks()[0].logical_rect == (-8, -4, 48, 32)
         reads.clear()
@@ -365,7 +389,10 @@ class TestPublicSubblockReads:
         assert all(start <= offset and offset + size <= end for offset, size in reads)
 
     @pytest.mark.parametrize("m_index,count", [(0, 0), (37, 2)])
-    def test_nonunique_m_helper_fails_without_payload_reads(self, public_reader, m_index, count):
+    def test_nonunique_m_helper_fails_without_payload_reads(
+        self, public_reader: tuple[CziReader, list[tuple[int, int]], bytearray], m_index: int, count: int
+    ) -> None:
+        """Verify nonunique m helper fails without payload reads."""
         reader, reads, _data = public_reader
         with pytest.raises(ValueError) as caught:
             reader.read_subblock_by_m(m_index, plane={}, scene=None, level=None)
@@ -387,7 +414,10 @@ class TestPublicSubblockReads:
             ("float32", 3),
         ],
     )
-    def test_public_layouts_survive_close_and_reader_deletion(self, tmp_path, dtype, components):
+    def test_public_layouts_survive_close_and_reader_deletion(
+        self, tmp_path: Path, dtype: str, components: int
+    ) -> None:
+        """Verify public layouts survive close and reader deletion."""
         expected = np.arange(5 * 7 * components).reshape(5, 7, components).astype(dtype)
         if dtype == "float32":
             expected /= 8
@@ -412,7 +442,8 @@ class TestPublicSubblockReads:
             "literal_gray16_invalid_utf8.czi",
         ],
     )
-    def test_public_compression_pixels_match_literal_reference(self, filename):
+    def test_public_compression_pixels_match_literal_reference(self, filename: str) -> None:
+        """Verify public compression pixels match literal reference."""
         with open_czi(os.path.join(working_dir, "../test_data/synthetic", filename)) as reader:
             pixels = reader.read_subblock(0)
         expected = (257 * np.arange(32)[:, None] + 11 * np.arange(48)[None, :]).astype(np.uint16)
@@ -420,7 +451,8 @@ class TestPublicSubblockReads:
         assert pixels[0, 0] == 0
 
     @pytest.mark.parametrize("filename", ["c1_bgr24", "c1_bgr48"])
-    def test_public_color_order_matches_independent_reference(self, filename):
+    def test_public_color_order_matches_independent_reference(self, filename: str) -> None:
+        """Verify public color order matches independent reference."""
         with open_czi(os.path.join(working_dir, "../test_data", filename + ".czi")) as reader:
             pixels = reader.read_subblock(0)
         with np.load(
@@ -430,7 +462,8 @@ class TestPublicSubblockReads:
 
     @pytest.mark.parametrize("mask_aware", [False, True])
     @pytest.mark.parametrize("filename", ["literal_valid_mask_v2.czi", "literal_corrupt_mask_v2.czi"])
-    def test_direct_pixels_do_not_apply_or_decode_masks(self, filename, mask_aware):
+    def test_direct_pixels_do_not_apply_or_decode_masks(self, filename: str, mask_aware: bool) -> None:
+        """Verify direct pixels do not apply or decode masks."""
         with open_czi(
             os.path.join(working_dir, "../test_data/synthetic", filename),
             reader_options=ReaderOptions(enable_mask_awareness=mask_aware),
@@ -445,17 +478,18 @@ class TestPublicSubblockReads:
                 else:
                     np.testing.assert_array_equal(composed, pixels)
 
-    def test_repeated_m_across_levels_requires_explicit_selection(self):
+    def test_repeated_m_across_levels_requires_explicit_selection(self) -> None:
+        """Verify repeated m across levels requires explicit selection."""
         data = TestIndexedNativeAccess.stream_data("stored_levels_same_m37.czi")
         reads = []
 
-        def read_at(offset, size):
+        def read_at(offset: int, size: int) -> bytes:
             reads.append((offset, size))
             return bytes(data[offset : offset + size])
 
         reader = TestSubblockCatalog.reader([])
         reader._czi_reader = native.czi_reader._from_stream(read_at)
-        try:
+        with closing(reader):
             infos = reader.list_subblocks(m_index=37, plane={"C": 0}, scene=0)
             lower = next(info for info in infos if info.stored_shape == (16, 24))
             reads.clear()
@@ -472,16 +506,16 @@ class TestPublicSubblockReads:
             end = start + 32 + struct.unpack_from("<q", data, start + 16)[0]
             assert reads
             assert all(start <= offset and offset + size <= end for offset, size in reads)
-        finally:
-            reader.close()
 
-    def test_valid_negative_m_and_numpy_selectors(self):
+    def test_valid_negative_m_and_numpy_selectors(self) -> None:
+        """Verify valid negative m and numpy selectors."""
         with open_czi(os.path.join(working_dir, "../test_data/synthetic/stored_levels_negative_m7.czi")) as reader:
             pixels = reader.read_subblock_by_m(np.int64(-7), plane={"C": np.int64(0)}, scene=np.int64(0))
         expected = (257 * np.arange(32)[:, None] + 11 * np.arange(48)[None, :]).astype(np.uint16)
         np.testing.assert_array_equal(pixels, expected)
 
-    def test_sparse_indices_missing_coordinates_and_unclassified_geometry(self):
+    def test_sparse_indices_missing_coordinates_and_unclassified_geometry(self) -> None:
+        """Verify sparse indices missing coordinates and unclassified geometry."""
         reader = TestSubblockCatalog.reader(
             [
                 TestSubblockCatalog.descriptor(3, {}, -(2**31)),
@@ -491,7 +525,8 @@ class TestPublicSubblockReads:
         )
         decoded = []
 
-        def read_subblock(index):
+        def read_subblock(index: int) -> np.ndarray:
+            """Return literal pixels for the selected synthetic directory index."""
             decoded.append(index)
             return np.full((2, 3, 1), index, dtype=np.uint16)
 
@@ -512,10 +547,12 @@ class TestPublicSubblockReads:
             *[(value, IndexError) for value in [-1, 2, 37, 2**31, 2**100, -(2**100)]],
         ],
     )
-    def test_public_index_validation_precedes_payload(self, public_reader, index, error):
+    def test_public_index_validation_precedes_payload(
+        self, public_reader: tuple[CziReader, list[tuple[int, int]], bytearray], index: object, error: type[Exception]
+    ) -> None:
+        """Verify public index validation precedes payload."""
         reader, reads, _data = public_reader
-        with pytest.raises(error):
-            reader.read_subblock(index)
+        pytest.raises(error, reader.read_subblock, index)
         assert reads == []
 
     @pytest.mark.parametrize(
@@ -536,15 +573,24 @@ class TestPublicSubblockReads:
             (37, {"level": -1}, ValueError),
         ],
     )
-    def test_m_selector_validation_precedes_payload(self, public_reader, m_index, filters, error):
+    def test_m_selector_validation_precedes_payload(
+        self,
+        public_reader: tuple[CziReader, list[tuple[int, int]], bytearray],
+        m_index: object,
+        filters: dict[str, object],
+        error: type[Exception],
+    ) -> None:
+        """Verify m selector validation precedes payload."""
         reader, reads, _data = public_reader
-        with pytest.raises(error):
-            reader.read_subblock_by_m(m_index, **filters)
+        pytest.raises(error, reader.read_subblock_by_m, m_index, **filters)
         assert reads == []
         assert reader._subblock_catalog is None
 
     @pytest.mark.parametrize("method", ["read_subblock", "read_subblock_by_m"])
-    def test_public_signatures_reject_extra_selectors_and_closed_reads(self, public_reader, method):
+    def test_public_signatures_reject_extra_selectors_and_closed_reads(
+        self, public_reader: tuple[CziReader, list[tuple[int, int]], bytearray], method: str
+    ) -> None:
+        """Verify public signatures reject extra selectors and closed reads."""
         reader, reads, _data = public_reader
         with pytest.raises(TypeError):
             getattr(reader, method)(0, {})
@@ -558,19 +604,20 @@ class TestPublicSubblockReads:
         assert reads == []
 
     @pytest.mark.parametrize("failure", ["io", "truncated", "codec"])
-    def test_public_payload_errors_retain_original_causes(self, failure):
+    def test_public_payload_errors_retain_original_causes(self, failure: str) -> None:
+        """Verify public payload errors retain original causes."""
         data = TestIndexedNativeAccess.stream_data("literal_gray16_zstd0.czi")
         injected = OSError("injected public read failure")
         state = {"fail": False}
 
-        def read_at(offset, size):
+        def read_at(offset: int, size: int) -> bytes:
             if state["fail"]:
                 raise injected
             return bytes(data[offset : offset + size])
 
         reader = TestSubblockCatalog.reader([])
         reader._czi_reader = native.czi_reader._from_stream(read_at)
-        try:
+        with closing(reader):
             if failure == "io":
                 state["fail"] = True
             elif failure == "truncated":
@@ -583,10 +630,9 @@ class TestPublicSubblockReads:
             assert caught.value.__cause__ is not None
             if failure == "io":
                 assert caught.value.__cause__ is injected
-        finally:
-            reader.close()
 
-    def test_public_unknown_compression_is_explicit(self):
+    def test_public_unknown_compression_is_explicit(self) -> None:
+        """Verify public unknown compression is explicit."""
         with open_czi(
             os.path.join(working_dir, "../test_data/synthetic/literal_gray16_unsupported42_v2.czi")
         ) as reader:
@@ -596,13 +642,17 @@ class TestPublicSubblockReads:
 
 
 class TestStoredLevelReads:
+    """Verify exact stored-level discovery, geometry and composition behavior."""
+
     @staticmethod
-    def literal(lower=False):
+    def literal(lower: bool = False) -> np.ndarray:
+        """Return independent full-resolution or reduced uint16 reference pixels."""
         if lower:
             return (40000 + 101 * np.arange(16)[:, None] + 7 * np.arange(24)[None, :]).astype(np.uint16)
         return (257 * np.arange(32)[:, None] + 11 * np.arange(48)[None, :]).astype(np.uint16)
 
-    def test_discovery_and_exact_reduced_level_pixels(self):
+    def test_discovery_and_exact_reduced_level_pixels(self) -> None:
+        """Verify discovery and exact reduced level pixels."""
         filepath = os.path.join(working_dir, "../test_data/synthetic/stored_levels_same_m37.czi")
         with open_czi(filepath) as reader:
             levels = reader.list_stored_levels(scene=0, plane={"C": 0})
@@ -614,7 +664,8 @@ class TestStoredLevelReads:
         np.testing.assert_array_equal(pixels, expected)
         assert selected.subblocks[0].stored_shape == pixels.shape
 
-    def test_present_level_with_uncovered_roi_is_black(self):
+    def test_present_level_with_uncovered_roi_is_black(self) -> None:
+        """Verify present level with uncovered roi is black."""
         filepath = os.path.join(working_dir, "../test_data/synthetic/stored_levels_same_m37.czi")
         with open_czi(filepath) as reader:
             selected = next(level for level in reader.list_stored_levels() if level.output_shape == (16, 24))
@@ -623,7 +674,8 @@ class TestStoredLevelReads:
             assert pixels.dtype == np.uint16
             assert not pixels.any()
 
-    def test_frozen_descriptor_required_fields_and_owned_coordinates(self):
+    def test_frozen_descriptor_required_fields_and_owned_coordinates(self) -> None:
+        """Verify frozen descriptor required fields and owned coordinates."""
         coordinates = {"S": 8}
         info = StoredLevelInfo(1, coordinates, (-8, -4, 48, 32), (), None, None)
         coordinates["S"] = 2
@@ -636,15 +688,13 @@ class TestStoredLevelReads:
             "downsample",
             "output_shape",
         ]
-        with pytest.raises(TypeError):
-            StoredLevelInfo()
-        with pytest.raises(FrozenInstanceError):
-            info.level_id = 2
-        with pytest.raises(TypeError):
-            info.coordinates["S"] = 2
+        pytest.raises(TypeError, StoredLevelInfo)
+        pytest.raises(FrozenInstanceError, setattr, info, "level_id", 2)
+        pytest.raises(TypeError, setitem, info.coordinates, "S", 2)
 
     @pytest.mark.parametrize("scenario", ["factor_three", "mixed_types", "absent_m"])
-    def test_directory_geometry_and_ordering_contracts(self, scenario):
+    def test_directory_geometry_and_ordering_contracts(self, scenario: str) -> None:
+        """Verify directory geometry and ordering contracts."""
         filename = "stored_levels_same_m37.czi" if scenario == "factor_three" else "literal_overlapping_tiles.czi"
         data = TestIndexedNativeAccess.stream_data(filename)
         entry = TestIndexedNativeAccess.directory_entry(data, 1 if scenario != "absent_m" else 0)
@@ -665,13 +715,13 @@ class TestStoredLevelReads:
                     struct.pack_into("<i", data, offset + 4, 2**31 - 1)
         reads = []
 
-        def read_at(offset, size):
+        def read_at(offset: int, size: int) -> bytes:
             reads.append((offset, size))
             return bytes(data[offset : offset + size])
 
         reader = TestSubblockCatalog.reader([])
         reader._czi_reader = native.czi_reader._from_stream(read_at)
-        try:
+        with closing(reader):
             reads.clear()
             levels = reader.list_stored_levels()
             if scenario == "mixed_types":
@@ -679,17 +729,16 @@ class TestStoredLevelReads:
                     reader.read_stored_level(levels[0].level_id, roi=(30, 20, 8, 8))
                 assert reads == []
             elif scenario == "factor_three":
-                selected = next(level for level in levels if level.downsample == (3, 3))
+                selected = next(level for level in levels if level.downsample == (Fraction(3), Fraction(3)))
                 np.testing.assert_array_equal(reader.read_stored_level(selected.level_id), self.literal(lower=True))
             else:
                 expected = self.literal()
                 expected[:16, :24] = self.literal(lower=True)
                 np.testing.assert_array_equal(reader.read_stored_level(levels[0].level_id), expected)
-        finally:
-            reader.close()
 
     @pytest.mark.parametrize("filename", ["literal_tiles_with_gap.czi", "literal_overlapping_tiles.czi"])
-    def test_gap_and_ascending_m_overlap_pixels(self, filename):
+    def test_gap_and_ascending_m_overlap_pixels(self, filename: str) -> None:
+        """Verify gap and ascending m overlap pixels."""
         with open_czi(os.path.join(working_dir, "../test_data/synthetic", filename)) as reader:
             levels = reader.list_stored_levels()
             assert len(levels) == 1
@@ -704,7 +753,8 @@ class TestStoredLevelReads:
         np.testing.assert_array_equal(pixels, expected)
 
     @pytest.mark.parametrize("origin", [-1, 1, 3])
-    def test_roi_offsets_truncate_toward_zero(self, origin):
+    def test_roi_offsets_truncate_toward_zero(self, origin: int) -> None:
+        """Verify roi offsets truncate toward zero."""
         filepath = os.path.join(working_dir, "../test_data/synthetic/stored_levels_same_m37.czi")
         with open_czi(filepath) as reader:
             lower = next(level for level in reader.list_stored_levels() if level.output_shape == (16, 24))
@@ -717,7 +767,8 @@ class TestStoredLevelReads:
 
     @pytest.mark.parametrize("enabled", [False, True])
     @pytest.mark.parametrize("corrupt", [False, True])
-    def test_mask_awareness_is_strict_and_does_not_rewrite_direct_pixels(self, enabled, corrupt):
+    def test_mask_awareness_is_strict_and_does_not_rewrite_direct_pixels(self, enabled: bool, corrupt: bool) -> None:
+        """Verify mask awareness is strict and does not rewrite direct pixels."""
         filename = "literal_corrupt_mask_v2.czi" if corrupt else "literal_valid_mask_v2.czi"
         with open_czi(
             os.path.join(working_dir, "../test_data/synthetic", filename),
@@ -736,17 +787,18 @@ class TestStoredLevelReads:
                 np.testing.assert_array_equal(pixels, expected)
             np.testing.assert_array_equal(reader.read_subblock(0), self.literal())
 
-    def test_discovery_and_selected_level_io_are_exact(self):
+    def test_discovery_and_selected_level_io_are_exact(self) -> None:
+        """Verify discovery and selected level io are exact."""
         data = TestIndexedNativeAccess.stream_data("stored_levels_same_m37.czi")
         reads = []
 
-        def read_at(offset, size):
+        def read_at(offset: int, size: int) -> bytes:
             reads.append((offset, size))
             return bytes(data[offset : offset + size])
 
         reader = TestSubblockCatalog.reader([])
         reader._czi_reader = native.czi_reader._from_stream(read_at)
-        try:
+        with closing(reader):
             reads.clear()
             levels = reader.list_stored_levels()
             lower = next(level for level in levels if level.output_shape == (16, 24))
@@ -764,22 +816,22 @@ class TestStoredLevelReads:
             reads.clear()
             reader.read_stored_level(lower.level_id, roi=(1000, 1000, 8, 8))
             assert reads == []
-        finally:
-            reader.close()
         assert lower.subblocks
         with pytest.raises(RuntimeError, match="closed"):
             reader.list_stored_levels()
         with pytest.raises(RuntimeError, match="closed"):
             reader.read_stored_level(lower.level_id)
 
-    def test_multiple_plane_groups_require_explicit_selection(self):
+    def test_multiple_plane_groups_require_explicit_selection(self) -> None:
+        """Verify multiple plane groups require explicit selection."""
         with open_czi(CZI_MULTI_DIM) as reader:
             levels = reader.list_stored_levels()
             assert len(levels) > 1
             with pytest.raises(ValueError, match="scene/plane groups"):
                 reader.read_stored_level(levels[0].level_id)
 
-    def test_unsupported_and_unclassified_geometry_remain_discoverable(self):
+    def test_unsupported_and_unclassified_geometry_remain_discoverable(self) -> None:
+        """Verify unsupported and unclassified geometry remain discoverable."""
         reader = TestSubblockCatalog.reader(
             [
                 TestSubblockCatalog.descriptor(0, {"S": 2}, stored=(23, 16)),
@@ -796,7 +848,8 @@ class TestStoredLevelReads:
     @pytest.mark.parametrize(
         "dtype,components", [("uint8", 1), ("uint16", 1), ("float32", 1), ("uint8", 3), ("uint16", 3), ("float32", 3)]
     )
-    def test_native_layouts_and_post_close_lifetime(self, tmp_path, dtype, components):
+    def test_native_layouts_and_post_close_lifetime(self, tmp_path: Path, dtype: str, components: int) -> None:
+        """Verify native layouts and post close lifetime."""
         expected = np.arange(5 * 7 * components).reshape(5, 7, components).astype(dtype)
         if dtype == "float32":
             expected /= 8
@@ -826,26 +879,31 @@ class TestStoredLevelReads:
             ({"roi": (0, 0, 2**31 - 1, 8)}, OverflowError),
         ],
     )
-    def test_invalid_read_arguments(self, kwargs, error):
+    def test_invalid_read_arguments(self, kwargs: dict[str, object], error: type[Exception]) -> None:
+        """Verify invalid read arguments."""
         with open_czi(os.path.join(working_dir, "../test_data/synthetic/stored_levels_same_m37.czi")) as reader:
-            filters = {"level": reader.list_stored_levels()[0].level_id}
+            filters: dict[str, object] = {"level": reader.list_stored_levels()[0].level_id}
             filters.update(kwargs)
-            with pytest.raises(error):
-                reader.read_stored_level(**filters)
+            pytest.raises(error, reader.read_stored_level, **filters)
 
 
 class TestSelectiveSubblockReads:
-    def test_raw_xml_is_separate_from_pixels(self):
+    """Verify selected raw XML and validity masks independently of pixels."""
+
+    def test_raw_xml_is_separate_from_pixels(self) -> None:
+        """Verify raw xml is separate from pixels."""
         filepath = os.path.join(working_dir, "../test_data/synthetic/literal_gray16_raw.czi")
         with open_czi(filepath) as reader:
             xml = reader.read_subblock_metadata_xml(0)
         assert isinstance(xml, str)
         assert xml
 
-    def test_stored_mask_is_boolean_and_survives_close(self):
+    def test_stored_mask_is_boolean_and_survives_close(self) -> None:
+        """Verify stored mask is boolean and survives close."""
         filepath = os.path.join(working_dir, "../test_data/synthetic/literal_valid_mask_v2.czi")
         with open_czi(filepath) as reader:
             mask = reader.read_subblock_mask(0)
+        assert mask is not None
         assert mask.shape == (32, 48)
         assert mask.dtype == np.bool_
         rows, columns = np.indices((32, 48))
@@ -863,17 +921,20 @@ class TestSelectiveSubblockReads:
             ),
         ],
     )
-    def test_xml_preserves_absence_and_original_text(self, filename, expected):
+    def test_xml_preserves_absence_and_original_text(self, filename: str, expected: Optional[str]) -> None:
+        """Verify xml preserves absence and original text."""
         with open_czi(os.path.join(working_dir, "../test_data/synthetic", filename)) as reader:
             assert reader.read_subblock_metadata_xml(0) == expected
 
-    def test_xml_errors_are_not_absence(self):
+    def test_xml_errors_are_not_absence(self) -> None:
+        """Verify xml errors are not absence."""
         filepath = os.path.join(working_dir, "../test_data/synthetic/literal_gray16_invalid_utf8.czi")
         with open_czi(filepath) as reader:
             with pytest.raises(UnicodeDecodeError):
                 reader.read_subblock_metadata_xml(0)
 
-    def test_unicode_xml_and_io_errors_are_preserved(self):
+    def test_unicode_xml_and_io_errors_are_preserved(self) -> None:
+        """Verify unicode xml and io errors are preserved."""
         data = TestIndexedNativeAccess.stream_data("literal_xml_unknown_element.czi")
         original = b'<UnknownProbe token="alpha">literal</UnknownProbe>'
         replacement = b'<UnknownProbe token="alpha">caf\xc3\xa9  </UnknownProbe>'
@@ -883,14 +944,14 @@ class TestSelectiveSubblockReads:
         injected = OSError("injected metadata read failure")
         state = {"fail": False}
 
-        def read_at(offset, size):
+        def read_at(offset: int, size: int) -> bytes:
             if state["fail"]:
                 raise injected
             return bytes(data[offset : offset + size])
 
         reader = TestSubblockCatalog.reader([])
         reader._czi_reader = native.czi_reader._from_stream(read_at)
-        try:
+        with closing(reader):
             xml = reader.read_subblock_metadata_xml(0)
             assert xml == (
                 "<?xml version='1.0' encoding='utf8'?>\n"
@@ -900,10 +961,9 @@ class TestSelectiveSubblockReads:
             with pytest.raises(OSError) as caught:
                 reader.read_subblock_metadata_xml(0)
             assert caught.value.__cause__ is injected
-        finally:
-            reader.close()
 
-    def test_metadata_does_not_require_supported_pixel_decoder(self):
+    def test_metadata_does_not_require_supported_pixel_decoder(self) -> None:
+        """Verify metadata does not require supported pixel decoder."""
         filepath = os.path.join(working_dir, "../test_data/synthetic/literal_gray16_unsupported42_v2.czi")
         with open_czi(filepath) as reader:
             assert reader.read_subblock_metadata_xml(0)
@@ -911,7 +971,8 @@ class TestSelectiveSubblockReads:
             with pytest.raises(ValueError):
                 reader.read_subblock(0)
 
-    def test_absent_and_corrupt_masks_are_distinct(self):
+    def test_absent_and_corrupt_masks_are_distinct(self) -> None:
+        """Verify absent and corrupt masks are distinct."""
         with open_czi(CZI_SIMPLE) as reader:
             assert reader.read_subblock_mask(0) is None
         filepath = os.path.join(working_dir, "../test_data/synthetic/literal_corrupt_mask_v2.czi")
@@ -932,24 +993,26 @@ class TestSelectiveSubblockReads:
             (99, IndexError),
         ],
     )
-    def test_checked_indices_and_close(self, method, index, error):
+    def test_checked_indices_and_close(self, method: str, index: object, error: type[Exception]) -> None:
+        """Verify checked indices and close."""
         with open_czi(CZI_SIMPLE) as reader:
             with pytest.raises(error):
                 getattr(reader, method)(index)
         with pytest.raises(RuntimeError, match="closed"):
             getattr(reader, method)(0)
 
-    def test_selected_metadata_reads_only_the_selected_segment(self):
+    def test_selected_metadata_reads_only_the_selected_segment(self) -> None:
+        """Verify selected metadata reads only the selected segment."""
         data = TestIndexedNativeAccess.stream_data()
         reads = []
 
-        def read_at(offset, size):
+        def read_at(offset: int, size: int) -> bytes:
             reads.append((offset, size))
             return bytes(data[offset : offset + size])
 
         reader = TestSubblockCatalog.reader([])
         reader._czi_reader = native.czi_reader._from_stream(read_at)
-        try:
+        with closing(reader):
             reads.clear()
             assert reader.read_subblock_metadata_xml(1)
             entry = TestIndexedNativeAccess.directory_entry(data, 1)
@@ -957,13 +1020,20 @@ class TestSelectiveSubblockReads:
             end = start + 32 + struct.unpack_from("<q", data, start + 16)[0]
             assert reads
             assert all(start <= offset and offset + size <= end for offset, size in reads)
-        finally:
-            reader.close()
 
 
 class TestSubblockCatalog:
+    """Verify immutable catalog snapshots and directory-only selector semantics."""
+
     @staticmethod
-    def descriptor(index=0, coordinates=None, m_index=37, logical=(48, 32), stored=(48, 32)):
+    def descriptor(
+        index: int = 0,
+        coordinates: Optional[dict[str, int]] = None,
+        m_index: int = 37,
+        logical: tuple[int, int] = (48, 32),
+        stored: tuple[int, int] = (48, 32),
+    ) -> tuple[int, SimpleNamespace]:
+        """Construct a directory descriptor with explicitly controlled native geometry."""
         return index, SimpleNamespace(
             coordinate=SimpleNamespace(to_dict=lambda: dict(coordinates or {})),
             mIndex=m_index,
@@ -975,16 +1045,21 @@ class TestSubblockCatalog:
         )
 
     @staticmethod
-    def reader(directory):
+    def reader(directory: list[tuple[int, SimpleNamespace]]) -> CziReader:
+        """Construct a reader whose directory-only owner records catalog accesses."""
+
         class DirectoryOnly:
+            """Provide only instrumented directory access and finalization for catalog tests."""
+
             calls = 0
 
-            def GetSubBlockDirectory(self):
+            def GetSubBlockDirectory(self) -> list[tuple[int, SimpleNamespace]]:
+                """Return the supplied directory while recording each native catalog access."""
                 self.calls += 1
                 return directory
 
-            def close(self):
-                pass
+            def close(self) -> None:
+                """Finalize the synthetic directory owner without pixel or stream access."""
 
         reader = CziReader.__new__(CziReader)
         reader._czi_reader = DirectoryOnly()
@@ -992,7 +1067,8 @@ class TestSubblockCatalog:
         reader._subblock_closed = False
         return reader
 
-    def test_counts_preserve_sparse_scenes_and_count_repeated_m(self):
+    def test_counts_preserve_sparse_scenes_and_count_repeated_m(self) -> None:
+        """Verify counts preserve sparse scenes and count repeated m."""
         reader = self.reader(
             [
                 self.descriptor(12, {"S": 2, "C": 5}),
@@ -1017,7 +1093,8 @@ class TestSubblockCatalog:
         assert reader.count_subblocks_by_scene(plane={}) == {8: 1, 2: 2, None: 1, 0: 1}
         assert reader._czi_reader.calls == 1
 
-    def test_counts_filter_levels_and_retain_unclassified_entries(self):
+    def test_counts_filter_levels_and_retain_unclassified_entries(self) -> None:
+        """Verify counts filter levels and retain unclassified entries."""
         reader = self.reader(
             [
                 self.descriptor(0, {"S": 2}, stored=(24, 16)),
@@ -1038,7 +1115,8 @@ class TestSubblockCatalog:
         assert reader.count_subblocks_by_scene(level=2**100) == {}
 
     @pytest.mark.parametrize("method", ["count_subblocks", "count_subblocks_by_scene"])
-    def test_count_signatures_and_closed_reader(self, method):
+    def test_count_signatures_and_closed_reader(self, method: str) -> None:
+        """Verify count signatures and closed reader."""
         reader = self.reader([])
         with pytest.raises(TypeError):
             getattr(reader, method)({"C": 0})
@@ -1047,7 +1125,8 @@ class TestSubblockCatalog:
             getattr(reader, method)()
         assert reader._czi_reader.calls == 0
 
-    def test_owned_frozen_descriptor_required_fields(self):
+    def test_owned_frozen_descriptor_required_fields(self) -> None:
+        """Verify owned frozen descriptor required fields."""
         coordinates = {"S": 2, "C": 5}
         info = SubblockInfo(7, coordinates, None, (-8, -4, 48, 32), (32, 48), 1, 42, None)
         coordinates["S"] = 9
@@ -1062,14 +1141,12 @@ class TestSubblockCatalog:
             "compression_mode",
             "level_id",
         ]
-        with pytest.raises(FrozenInstanceError):
-            info.index = 3
-        with pytest.raises(TypeError):
-            info.coordinates["S"] = 9
-        with pytest.raises(TypeError):
-            SubblockInfo()
+        pytest.raises(FrozenInstanceError, setattr, info, "index", 3)
+        pytest.raises(TypeError, setitem, info.coordinates, "S", 9)
+        pytest.raises(TypeError, SubblockInfo)
 
-    def test_sparse_indices_missing_zero_and_intersecting_filters(self):
+    def test_sparse_indices_missing_zero_and_intersecting_filters(self) -> None:
+        """Verify sparse indices missing zero and intersecting filters."""
         reader = self.reader(
             [
                 self.descriptor(12, {"S": 2, "C": 5, "Z": -3}, -7),
@@ -1086,7 +1163,8 @@ class TestSubblockCatalog:
         assert reader.list_subblocks()[0].m_index is None
         assert reader._czi_reader.calls == 1
 
-    def test_exact_levels_are_stable_not_ordinals_and_keep_unclassified(self):
+    def test_exact_levels_are_stable_not_ordinals_and_keep_unclassified(self) -> None:
+        """Verify exact levels are stable not ordinals and keep unclassified."""
         reader = self.reader(
             [
                 self.descriptor(0, {"S": 2}, stored=(24, 16)),
@@ -1131,20 +1209,23 @@ class TestSubblockCatalog:
             ({"level": -1}, ValueError),
         ],
     )
-    def test_selector_validation_precedes_directory_access(self, method, filters, error):
+    def test_selector_validation_precedes_directory_access(
+        self, method: str, filters: dict[str, object], error: type[Exception]
+    ) -> None:
+        """Verify selector validation precedes directory access."""
         reader = self.reader([])
         with pytest.raises(error):
             getattr(reader, method)(**filters)
         assert reader._czi_reader.calls == 0
 
-    def test_empty_directory_and_numpy_integer_selectors(self):
+    def test_empty_directory_and_numpy_integer_selectors(self) -> None:
+        """Verify empty directory and numpy integer selectors."""
         assert self.reader([]).list_subblocks() == []
         assert self.reader([]).count_subblocks() == 0
         assert self.reader([]).count_subblocks_by_scene() == {}
         reader = self.reader([self.descriptor(5, {"C": -2}, -7)])
         assert reader.list_subblocks(plane={"C": np.int64(-2)}, m_index=np.int64(-7))[0].index == 5
-        with pytest.raises(TypeError):
-            reader.list_subblocks({"C": -2})
+        pytest.raises(TypeError, reader.list_subblocks, {"C": -2})
 
 
 class TestBasicEnumeration:

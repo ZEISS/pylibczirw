@@ -14,6 +14,7 @@ from ..conftest import verify_fixture_manifest
 
 @pytest.fixture
 def sample_manifest(tmp_path: Path) -> tuple[Path, Path]:
+    """Yield an isolated fixture manifest and its verifier dependencies."""
     payload = b"fixture\x00bytes\r\n"
     (tmp_path / "sample.bin").write_bytes(payload)
     (tmp_path / "alias.bin").write_bytes(payload)
@@ -44,11 +45,13 @@ def sample_manifest(tmp_path: Path) -> tuple[Path, Path]:
 
 
 def test_verify_fixture_manifest(sample_manifest: tuple[Path, Path]) -> None:
+    """Verify verify fixture manifest."""
     verify_fixture_manifest(*sample_manifest)
 
 
 @pytest.mark.parametrize("filename", ["sample.bin", "alias.bin"])
 def test_reject_changed_bytes(sample_manifest: tuple[Path, Path], filename: str) -> None:
+    """Verify reject changed bytes."""
     root, manifest_path = sample_manifest
     filepath = root / filename
     filepath.write_bytes(filepath.read_bytes().replace(b"fixture", b"changed"))
@@ -57,6 +60,7 @@ def test_reject_changed_bytes(sample_manifest: tuple[Path, Path], filename: str)
 
 
 def test_reject_missing_fixture(sample_manifest: tuple[Path, Path]) -> None:
+    """Verify reject missing fixture."""
     root, manifest_path = sample_manifest
     (root / "sample.bin").unlink()
     with pytest.raises(ValueError, match="Cannot read fixture"):
@@ -64,6 +68,7 @@ def test_reject_missing_fixture(sample_manifest: tuple[Path, Path]) -> None:
 
 
 def test_reject_size_change(sample_manifest: tuple[Path, Path]) -> None:
+    """Verify reject size change."""
     root, manifest_path = sample_manifest
     (root / "sample.bin").write_bytes(b"short")
     with pytest.raises(ValueError, match="size mismatch"):
@@ -71,6 +76,7 @@ def test_reject_size_change(sample_manifest: tuple[Path, Path]) -> None:
 
 
 def test_reject_newline_conversion(sample_manifest: tuple[Path, Path]) -> None:
+    """Verify reject newline conversion."""
     root, manifest_path = sample_manifest
     filepath = root / "sample.bin"
     filepath.write_bytes(filepath.read_bytes().replace(b"\r\n", b"\n"))
@@ -79,6 +85,7 @@ def test_reject_newline_conversion(sample_manifest: tuple[Path, Path]) -> None:
 
 
 def test_reject_invalid_json(sample_manifest: tuple[Path, Path]) -> None:
+    """Verify reject invalid json."""
     root, manifest_path = sample_manifest
     manifest_path.write_text("{", encoding="utf-8")
     with pytest.raises(ValueError, match="Cannot read fixture manifest"):
@@ -86,6 +93,7 @@ def test_reject_invalid_json(sample_manifest: tuple[Path, Path]) -> None:
 
 
 def test_reject_unknown_schema(sample_manifest: tuple[Path, Path]) -> None:
+    """Verify reject unknown schema."""
     root, manifest_path = sample_manifest
     manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
     manifest["schema_version"] = 2
@@ -95,6 +103,7 @@ def test_reject_unknown_schema(sample_manifest: tuple[Path, Path]) -> None:
 
 
 def test_reject_path_escape(sample_manifest: tuple[Path, Path]) -> None:
+    """Verify reject path escape."""
     root, manifest_path = sample_manifest
     manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
     manifest["assets"][0]["path"] = "../outside.bin"
@@ -104,6 +113,7 @@ def test_reject_path_escape(sample_manifest: tuple[Path, Path]) -> None:
 
 
 def test_reject_inconsistent_inventory(sample_manifest: tuple[Path, Path]) -> None:
+    """Verify reject inconsistent inventory."""
     root, manifest_path = sample_manifest
     manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
     manifest["inventory_scope"]["bytes_including_aliases"] += 1
@@ -114,6 +124,7 @@ def test_reject_inconsistent_inventory(sample_manifest: tuple[Path, Path]) -> No
 
 @pytest.mark.parametrize("discovery", ["file", "root"])
 def test_session_rejects_corruption_before_collection(sample_manifest: tuple[Path, Path], discovery: str) -> None:
+    """Verify session rejects corruption before collection."""
     root, manifest_path = sample_manifest
     test_dir = root / "pylibCZIrw" / "tests"
     data_dir = test_dir / "integration" / "test_data"
@@ -145,6 +156,7 @@ def test_session_rejects_corruption_before_collection(sample_manifest: tuple[Pat
 
 @pytest.fixture(scope="module")
 def assignment_records() -> tuple[dict, dict]:
+    """Return the manifest case assignments used by projection-policy checks."""
     root = Path(__file__).resolve().parents[3]
     manifest = json.loads(
         (root / "pylibCZIrw/tests/integration/test_data/fixture_manifest.json").read_text(encoding="utf-8")
@@ -165,6 +177,7 @@ def assignment_records() -> tuple[dict, dict]:
 def test_case_assignments_have_references_not_implementation_passes(
     assignment_records: tuple[dict, dict], case_id: str
 ) -> None:
+    """Verify case assignments have references not implementation passes."""
     manifest, report = assignment_records
     assets = {asset["id"]: asset for asset in manifest["assets"]}
     group = next(group for group in manifest["required_case_groups"] if group["id"] == case_id)
@@ -195,6 +208,7 @@ def test_case_assignments_have_references_not_implementation_passes(
 
 
 def test_raw_coordinate_and_compression_references(assignment_records: tuple[dict, dict]) -> None:
+    """Verify raw coordinate and compression references."""
     manifest, report = assignment_records
     generated = {asset["id"]: asset for asset in report["generated_assets"]}
     assert generated["asset-044"]["subblocks"][0]["compression"] == 42
@@ -227,6 +241,7 @@ def test_raw_coordinate_and_compression_references(assignment_records: tuple[dic
 def test_historical_review_does_not_promote_unknown_history_or_formatting(
     assignment_records: tuple[dict, dict],
 ) -> None:
+    """Verify historical review does not promote unknown history or formatting."""
     manifest, _ = assignment_records
     root = Path(__file__).resolve().parents[3]
     evidence = next(

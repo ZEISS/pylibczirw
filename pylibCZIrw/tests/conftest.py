@@ -57,7 +57,7 @@ def verify_fixture_manifest(root: Path, manifest_path: Path) -> None:
                     raise ValueError(f"Fixture size mismatch: {relative}; expected {expected_size}, got {size}")
                 digest = hashlib.sha256()
                 with filepath.open("rb") as stream:
-                    for chunk in iter(lambda: stream.read(1024 * 1024), b""):
+                    while chunk := stream.read(1024 * 1024):
                         digest.update(chunk)
             except OSError as exc:
                 raise ValueError(f"Cannot read fixture {relative}: {exc}") from exc

@@ -8,6 +8,7 @@ from pylibCZIrw import czi
 
 
 def main() -> None:
+    """Read one stored bitmap by M and directory index, then display both results."""
     filepath = Path(__file__).resolve().parents[1] / "test_data/Brain_CH=3_M=25.czi"
 
     # define the desired M-Tile index and channel

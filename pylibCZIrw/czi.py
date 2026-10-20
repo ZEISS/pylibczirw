@@ -6,7 +6,8 @@ This czi document can be used to read and write czi.
 
 import contextlib
 import uuid
-from collections.abc import Mapping
+from collections.abc import Iterable, Mapping
+from contextlib import closing
 from dataclasses import dataclass
 from enum import Enum
 from fractions import Fraction
@@ -15,7 +16,7 @@ from operator import index as integer_index
 from os import PathLike, fspath, makedirs
 from os.path import abspath, dirname, isfile
 from types import MappingProxyType, TracebackType
-from typing import Any, Callable, Dict, Generator, Iterator, Literal, NamedTuple, Optional, Tuple, Union
+from typing import Any, Callable, Dict, Generator, Iterator, Literal, NamedTuple, Optional, SupportsIndex, Tuple, Union
 from urllib.parse import urlsplit
 
 import numpy as np
@@ -102,8 +103,10 @@ def _subblock_integer(value: Any, name: str, *, native_range: bool = True) -> in
 
 
 class _SubblockCatalog:
-    def __init__(self, directory) -> None:
-        levels = {}
+    """Own immutable directory snapshots and validated selection state."""
+
+    def __init__(self, directory: Iterable[Tuple[int, _pylibCZIrw.SubBlockInfo]]) -> None:
+        levels: dict[Tuple[Fraction, Fraction], int] = {}
         snapshots = []
         for index, info in sorted(directory, key=lambda entry: entry[0]):
             rect = info.logicalRect
@@ -127,7 +130,13 @@ class _SubblockCatalog:
         self.entries = tuple(snapshots)
 
     @staticmethod
-    def filters(plane, scene, m_index, level):
+    def filters(
+        plane: Optional[Mapping[str, SupportsIndex]],
+        scene: Optional[SupportsIndex],
+        m_index: Optional[SupportsIndex],
+        level: Optional[SupportsIndex],
+    ) -> Tuple[dict[str, int], Optional[int], Optional[int], Optional[int]]:
+        """Validate selectors and return normalized native coordinates."""
         if plane is not None and not isinstance(plane, Mapping):
             raise TypeError("plane must be a mapping or None.")
         coordinates = {}
@@ -147,7 +156,14 @@ class _SubblockCatalog:
                 raise ValueError("level must be a nonnegative catalog token.")
         return coordinates, scene, m_index, level
 
-    def select(self, coordinates, scene, m_index, level) -> list[SubblockInfo]:
+    def select(
+        self,
+        coordinates: Mapping[str, int],
+        scene: Optional[int],
+        m_index: Optional[int],
+        level: Optional[int],
+    ) -> list[SubblockInfo]:
+        """Return every snapshot matching all normalized filters."""
         return [
             info
             for info in self.entries
@@ -959,10 +975,10 @@ class CziReader:
     def list_subblocks(
         self,
         *,
-        plane: Optional[Mapping[str, int]] = None,
-        scene: Optional[int] = None,
-        m_index: Optional[int] = None,
-        level: Optional[int] = None,
+        plane: Optional[Mapping[str, SupportsIndex]] = None,
+        scene: Optional[SupportsIndex] = None,
+        m_index: Optional[SupportsIndex] = None,
+        level: Optional[SupportsIndex] = None,
     ) -> list[SubblockInfo]:
         """List immutable directory snapshots without reading subblock payloads.
 
@@ -980,10 +996,10 @@ class CziReader:
     def count_subblocks(
         self,
         *,
-        plane: Optional[Mapping[str, int]] = None,
-        scene: Optional[int] = None,
-        m_index: Optional[int] = None,
-        level: Optional[int] = None,
+        plane: Optional[Mapping[str, SupportsIndex]] = None,
+        scene: Optional[SupportsIndex] = None,
+        m_index: Optional[SupportsIndex] = None,
+        level: Optional[SupportsIndex] = None,
     ) -> int:
         """Count matching stored subblocks without reading payloads.
 
@@ -997,10 +1013,10 @@ class CziReader:
     def count_subblocks_by_scene(
         self,
         *,
-        plane: Optional[Mapping[str, int]] = None,
-        scene: Optional[int] = None,
-        m_index: Optional[int] = None,
-        level: Optional[int] = None,
+        plane: Optional[Mapping[str, SupportsIndex]] = None,
+        scene: Optional[SupportsIndex] = None,
+        m_index: Optional[SupportsIndex] = None,
+        level: Optional[SupportsIndex] = None,
     ) -> dict[Optional[int], int]:
         """Count matching stored subblocks grouped by their native S coordinate.
 
@@ -1029,7 +1045,7 @@ class CziReader:
             for index, name, kind, guid in sorted(self._czi_reader.GetAttachmentDirectory())
         ]
 
-    def read_attachment(self, index: int) -> bytes:
+    def read_attachment(self, index: SupportsIndex) -> bytes:
         """Materialize one attachment's raw bytes, regardless of its format.
 
         This is not a streaming read. Returned bytes remain usable after close.
@@ -1038,7 +1054,7 @@ class CziReader:
             raise RuntimeError("The CZI reader is closed.")
         return self._czi_reader.ReadAttachment(_subblock_integer(index, "index", native_range=False))
 
-    def read_attachment_image(self, index: int) -> np.ndarray:
+    def read_attachment_image(self, index: SupportsIndex) -> np.ndarray:
         """Decode one supported embedded-CZI attachment as YX or native-BGR YXA.
 
         Requires one full-resolution image plane with a supported native pixel
@@ -1051,7 +1067,7 @@ class CziReader:
         pixels = np.asarray(self._czi_reader.ReadAttachmentImage(index))
         return pixels[..., 0] if pixels.shape[2] == 1 else pixels
 
-    def _read_named_attachment_image(self, name: str, index: Optional[int]) -> Optional[np.ndarray]:
+    def _read_named_attachment_image(self, name: str, index: Optional[SupportsIndex]) -> Optional[np.ndarray]:
         if self._subblock_closed:
             raise RuntimeError("The CZI reader is closed.")
         if index is None:
@@ -1063,26 +1079,26 @@ class CziReader:
             index = matches[0].index
         return self.read_attachment_image(index)
 
-    def read_label(self, *, index: Optional[int] = None) -> Optional[np.ndarray]:
+    def read_label(self, *, index: Optional[SupportsIndex] = None) -> Optional[np.ndarray]:
         """Read the Label image; return None only for absence, not decoding errors."""
         return self._read_named_attachment_image("Label", index)
 
-    def read_preview(self, *, index: Optional[int] = None) -> Optional[np.ndarray]:
+    def read_preview(self, *, index: Optional[SupportsIndex] = None) -> Optional[np.ndarray]:
         """Read the SlidePreview image; duplicate names require an explicit index."""
         return self._read_named_attachment_image("SlidePreview", index)
 
     def list_stored_levels(
         self,
         *,
-        plane: Optional[Mapping[str, int]] = None,
-        scene: Optional[int] = None,
+        plane: Optional[Mapping[str, SupportsIndex]] = None,
+        scene: Optional[SupportsIndex] = None,
     ) -> list[StoredLevelInfo]:
         """Discover exact stored levels per native scene/plane without payload reads.
 
         Unsupported composition geometry remains discoverable with output_shape
         set to None. Tokens are shared with list_subblocks(), not zoom ordinals.
         """
-        groups = {}
+        groups: dict[Tuple[int, Tuple[Tuple[str, int], ...]], list[SubblockInfo]] = {}
         for info in self.list_subblocks(plane=plane, scene=scene):
             if info.level_id is not None:
                 key = (info.level_id, tuple(sorted(info.coordinates.items())))
@@ -1116,10 +1132,10 @@ class CziReader:
 
     def read_stored_level(
         self,
-        level: int,
+        level: SupportsIndex,
         *,
-        plane: Optional[Mapping[str, int]] = None,
-        scene: Optional[int] = None,
+        plane: Optional[Mapping[str, SupportsIndex]] = None,
+        scene: Optional[SupportsIndex] = None,
         roi: Optional[Union[Tuple[int, int, int, int], Rectangle]] = None,
     ) -> np.ndarray:
         """Compose exact stored-level members without resampling or level fallback.
@@ -1163,7 +1179,7 @@ class CziReader:
             raise ValueError(f"{context}: {error}") from error
         return pixels[..., 0] if pixels.shape[2] == 1 else pixels
 
-    def read_subblock(self, index: int) -> np.ndarray:
+    def read_subblock(self, index: SupportsIndex) -> np.ndarray:
         """Decode exactly one file-local directory entry, without composition.
 
         Parameters
@@ -1198,7 +1214,7 @@ class CziReader:
         pixels = np.asarray(self._czi_reader.ReadSubBlock(index))
         return pixels[..., 0] if pixels.shape[2] == 1 else pixels
 
-    def read_subblock_metadata_xml(self, index: int) -> Optional[str]:
+    def read_subblock_metadata_xml(self, index: SupportsIndex) -> Optional[str]:
         """Return original UTF-8 subblock XML, or None when absent.
 
         Only the selected stored payload is fetched; pixels are not decoded.
@@ -1210,7 +1226,7 @@ class CziReader:
         data = self._czi_reader.ReadSubBlockMetadata(index)
         return data.decode("utf-8") if data else None
 
-    def read_subblock_mask(self, index: int) -> Optional[np.ndarray]:
+    def read_subblock_mask(self, index: SupportsIndex) -> Optional[np.ndarray]:
         """Return the stored YX Boolean validity mask, or None when absent.
 
         Corrupt or unsupported masks raise; zero image intensity is not a mask.
@@ -1228,11 +1244,11 @@ class CziReader:
 
     def read_subblock_by_m(
         self,
-        m_index: int,
+        m_index: SupportsIndex,
         *,
-        plane: Optional[Mapping[str, int]] = None,
-        scene: Optional[int] = None,
-        level: Optional[int] = None,
+        plane: Optional[Mapping[str, SupportsIndex]] = None,
+        scene: Optional[SupportsIndex] = None,
+        level: Optional[SupportsIndex] = None,
     ) -> np.ndarray:
         """Read pixels only when the directory selectors identify one subblock.
 
@@ -2371,10 +2387,8 @@ def open_czi(
         cache_options=cache_options,
         reader_options=reader_options,
     )
-    try:
+    with closing(reader):
         yield reader
-    finally:
-        reader.close()
 
 
 @contextlib.contextmanager
@@ -2412,10 +2426,8 @@ def create_czi(
         raise FileExistsError(f"{filepath_abs} already exists and exist_ok is False.")
     makedirs(dirname(filepath_abs), exist_ok=True)
     writer = CziWriter(filepath_abs, compression_options)
-    try:
+    with closing(writer):
         yield writer
-    finally:
-        writer.close()
 
 
 @contextlib.contextmanager
@@ -2433,10 +2445,8 @@ def edit_czi(filepath: str) -> Generator[CziEditor, None, None]:
         CziEditor for in-place metadata editing.
     """
     editor = CziEditor(filepath)
-    try:
+    with closing(editor):
         yield editor
-    finally:
-        editor.close()
 
 
 def _guard_document_session(
@@ -2468,12 +2478,16 @@ class CziDocument:
     @classmethod
     def _acquire(cls, owner: contextlib.AbstractContextManager, mode: Literal["r", "w", "edit"]) -> "CziDocument":
         document = object.__new__(cls)
-        document._owner = owner
-        document._backend = owner.__enter__()
-        document._mode = mode
-        document._closed = False
-        document._entered = False
+        document._initialize_owner(owner, mode)
         return document
+
+    def _initialize_owner(self, owner: contextlib.AbstractContextManager, mode: Literal["r", "w", "edit"]) -> None:
+        """Acquire the backend once and initialize its terminal-state tracking."""
+        self._owner: Optional[contextlib.AbstractContextManager] = owner
+        self._backend = owner.__enter__()
+        self._mode = mode
+        self._closed = False
+        self._entered = False
 
     @classmethod
     def open(
@@ -2538,7 +2552,7 @@ class CziDocument:
 
     def close(self) -> None:
         """Finalize and close the owned backend at most once."""
-        if not self._closed:
+        if self._owner is not None:
             try:
                 self._owner.__exit__(None, None, None)
             finally:
@@ -2590,56 +2604,56 @@ class CziDocument:
     def list_subblocks(
         self,
         *,
-        plane: Optional[Mapping[str, int]] = None,
-        scene: Optional[int] = None,
-        m_index: Optional[int] = None,
-        level: Optional[int] = None,
+        plane: Optional[Mapping[str, SupportsIndex]] = None,
+        scene: Optional[SupportsIndex] = None,
+        m_index: Optional[SupportsIndex] = None,
+        level: Optional[SupportsIndex] = None,
     ) -> list[SubblockInfo]:
         """Delegate directory-only selection to the owned reader."""
         return self._require_mode("list_subblocks", "r").list_subblocks(
             plane=plane, scene=scene, m_index=m_index, level=level
         )
 
-    def read_subblock(self, index: int) -> np.ndarray:
+    def read_subblock(self, index: SupportsIndex) -> np.ndarray:
         """Delegate one native stored bitmap read without stitching."""
         return self._require_mode("read_subblock", "r").read_subblock(index)
 
     def read_subblock_by_m(
         self,
-        m_index: int,
+        m_index: SupportsIndex,
         *,
-        plane: Optional[Mapping[str, int]] = None,
-        scene: Optional[int] = None,
-        level: Optional[int] = None,
+        plane: Optional[Mapping[str, SupportsIndex]] = None,
+        scene: Optional[SupportsIndex] = None,
+        level: Optional[SupportsIndex] = None,
     ) -> np.ndarray:
         """Delegate an exactly-one M selection without adding selector defaults."""
         return self._require_mode("read_subblock_by_m", "r").read_subblock_by_m(
             m_index, plane=plane, scene=scene, level=level
         )
 
-    def read_subblock_metadata_xml(self, index: int) -> Optional[str]:
+    def read_subblock_metadata_xml(self, index: SupportsIndex) -> Optional[str]:
         """Delegate retrieval of the selected raw UTF-8 XML."""
         return self._require_mode("read_subblock_metadata_xml", "r").read_subblock_metadata_xml(index)
 
-    def read_subblock_mask(self, index: int) -> Optional[np.ndarray]:
+    def read_subblock_mask(self, index: SupportsIndex) -> Optional[np.ndarray]:
         """Delegate retrieval of the selected owned validity mask."""
         return self._require_mode("read_subblock_mask", "r").read_subblock_mask(index)
 
     def list_stored_levels(
         self,
         *,
-        plane: Optional[Mapping[str, int]] = None,
-        scene: Optional[int] = None,
+        plane: Optional[Mapping[str, SupportsIndex]] = None,
+        scene: Optional[SupportsIndex] = None,
     ) -> list[StoredLevelInfo]:
         """Delegate directory-only discovery of exact stored-level groups."""
         return self._require_mode("list_stored_levels", "r").list_stored_levels(plane=plane, scene=scene)
 
     def read_stored_level(
         self,
-        level: int,
+        level: SupportsIndex,
         *,
-        plane: Optional[Mapping[str, int]] = None,
-        scene: Optional[int] = None,
+        plane: Optional[Mapping[str, SupportsIndex]] = None,
+        scene: Optional[SupportsIndex] = None,
         roi: Optional[Union[Tuple[int, int, int, int], Rectangle]] = None,
     ) -> np.ndarray:
         """Delegate exact stored-level composition without a resampling fallback."""
@@ -2649,19 +2663,19 @@ class CziDocument:
         """Delegate attachment identity discovery without payload reads."""
         return self._require_mode("list_attachments", "r").list_attachments()
 
-    def read_attachment(self, index: int) -> bytes:
+    def read_attachment(self, index: SupportsIndex) -> bytes:
         """Delegate retrieval of an owned raw attachment payload."""
         return self._require_mode("read_attachment", "r").read_attachment(index)
 
-    def read_attachment_image(self, index: int) -> np.ndarray:
+    def read_attachment_image(self, index: SupportsIndex) -> np.ndarray:
         """Delegate decoding of one supported embedded-CZI image."""
         return self._require_mode("read_attachment_image", "r").read_attachment_image(index)
 
-    def read_label(self, *, index: Optional[int] = None) -> Optional[np.ndarray]:
+    def read_label(self, *, index: Optional[SupportsIndex] = None) -> Optional[np.ndarray]:
         """Delegate label image selection and its existing absence/error rules."""
         return self._require_mode("read_label", "r").read_label(index=index)
 
-    def read_preview(self, *, index: Optional[int] = None) -> Optional[np.ndarray]:
+    def read_preview(self, *, index: Optional[SupportsIndex] = None) -> Optional[np.ndarray]:
         """Delegate slide-preview selection, preserving explicit disambiguation."""
         return self._require_mode("read_preview", "r").read_preview(index=index)
 

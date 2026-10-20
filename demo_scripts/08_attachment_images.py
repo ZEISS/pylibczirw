@@ -8,6 +8,7 @@ from pylibCZIrw import czi
 
 
 def main() -> None:
+    """Inspect attachment identities, extract bytes, and display explicit CZI images."""
     filepath = (
         Path(__file__).resolve().parents[1]
         / "pylibCZIrw/tests/integration/test_data/synthetic/literal_slidepreview_cases.czi"
@@ -25,6 +26,8 @@ def main() -> None:
         print("Unknown-format raw bytes:", reader.read_attachment(unknown.index))
 
     print("Selected preview payload bytes:", len(raw))
+    if label is None or preview is None:
+        raise ValueError("This example requires the fixture's label and preview images.")
     print("Label / preview:", label.shape, label.dtype, preview.shape, preview.dtype)
     # Returned bytes and image buffers remain valid after the parent reader closes.
     figure, axes = plt.subplots(1, 2, figsize=(9, 4))

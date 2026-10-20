@@ -12,16 +12,21 @@ import sys
 import sysconfig
 import tarfile
 import tomllib
-import xml.etree.ElementTree as ET
 import zipfile
+from collections.abc import Mapping, Sequence
 from email.parser import BytesParser
 from importlib.metadata import distribution, distributions, version
 from pathlib import Path
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    import pytest
 
 ROOT = Path(__file__).resolve().parents[1]
 
 
 def fingerprint(filepath: Path) -> dict[str, str | int]:
+    """Return the file size and SHA256 used by evidence records."""
     return {
         "size_bytes": filepath.stat().st_size,
         "sha256": hashlib.sha256(filepath.read_bytes()).hexdigest(),
@@ -29,6 +34,7 @@ def fingerprint(filepath: Path) -> dict[str, str | int]:
 
 
 def stage(destination: Path) -> list[str]:
+    """Copy tracked sources and native submodules into a new external candidate."""
     if destination.resolve().is_relative_to(ROOT):
         raise ValueError("The spike must be staged outside the working checkout.")
     destination.mkdir(parents=True, exist_ok=False)
@@ -56,9 +62,12 @@ def stage(destination: Path) -> list[str]:
 
 
 def execute(label: str, command: list[str], work_dir: Path, environment: dict[str, str]) -> dict:
+    """Run a validation command and retain its exclusive log and exit status."""
     log_path = work_dir / f"{label}.log"
     with log_path.open("x", encoding="utf8") as stream:
-        result = subprocess.run(command, cwd=work_dir, env=environment, stdout=stream, stderr=subprocess.STDOUT)
+        result = subprocess.run(
+            command, cwd=work_dir, env=environment, stdout=stream, stderr=subprocess.STDOUT, check=False
+        )
     print(log_path.read_text(encoding="utf8")[-2500:])
     record = {
         "command": command,
@@ -72,6 +81,7 @@ def execute(label: str, command: list[str], work_dir: Path, environment: dict[st
 
 
 def audit_wheel(wheel: Path, source: Path) -> dict:
+    """Verify wheel metadata, module bytes, selected notices and production readme parity."""
     from packaging.specifiers import SpecifierSet
 
     configuration = tomllib.loads((source / "pyproject.toml").read_text(encoding="utf8"))
@@ -79,17 +89,28 @@ def audit_wheel(wheel: Path, source: Path) -> dict:
     with zipfile.ZipFile(wheel) as archive:
         names = archive.namelist()
         native = [name for name in names if name.startswith("_pylibCZIrw.") and name.endswith((".pyd", ".so"))]
-        assert len(native) == 1, native
-        assert not any("/tests/" in name or "__pycache__" in name for name in names)
-        assert archive.read("pylibCZIrw/czi.py") == (source / "pylibCZIrw/czi.py").read_bytes()
+        if not len(native) == 1:
+            raise AssertionError(native)
+        if not not any("/tests/" in name or "__pycache__" in name for name in names):
+            raise AssertionError()
+        if not archive.read("pylibCZIrw/czi.py") == (source / "pylibCZIrw/czi.py").read_bytes():
+            raise AssertionError()
         metadata = BytesParser().parsebytes(archive.read(next(name for name in names if name.endswith("/METADATA"))))
-        assert metadata["Version"] == project["version"]
-        assert SpecifierSet(metadata["Requires-Python"]) == SpecifierSet(">=3.12,<3.16")
+        if not metadata["Version"] == project["version"]:
+            raise AssertionError()
+        if not SpecifierSet(metadata["Requires-Python"]) == SpecifierSet(">=3.12,<3.16"):
+            raise AssertionError()
         expected_readme = "\n".join((source / name).read_text(encoding="utf8") for name in ("INFO.md", "CHANGELOG.md"))
-        assert metadata["Description-Content-Type"] == "text/markdown"
-        assert metadata.get_payload().rstrip("\n") == expected_readme.rstrip("\n")
+        if not metadata["Description-Content-Type"] == "text/markdown":
+            raise AssertionError()
+        description = metadata.get_payload()
+        if not isinstance(description, str):
+            raise ValueError("Wheel metadata must contain one text description.")
+        if not description.rstrip("\n") == expected_readme.rstrip("\n"):
+            raise AssertionError()
         for license_name in ("COPYING", "COPYING.LESSER", "NOTICE.txt"):
-            assert any(name.endswith(f"/licenses/{license_name}") for name in names), license_name
+            if not any(name.endswith(f"/licenses/{license_name}") for name in names):
+                raise AssertionError(license_name)
         bundled_native_files = {}
         license_files = {}
         for name in names:
@@ -105,8 +126,10 @@ def audit_wheel(wheel: Path, source: Path) -> dict:
                     continue
                 relative = path.relative_to(source).as_posix()
                 matches = [name for name in license_files if name.endswith(f"/licenses/{relative}")]
-                assert len(matches) == 1, f"Missing or ambiguous packaged notice: {relative}"
-                assert archive.read(matches[0]) == path.read_bytes(), f"Packaged notice bytes differ: {relative}"
+                if not len(matches) == 1:
+                    raise AssertionError(f"Missing or ambiguous packaged notice: {relative}")
+                if not archive.read(matches[0]) == path.read_bytes():
+                    raise AssertionError(f"Packaged notice bytes differ: {relative}")
         return {
             "path": str(wheel),
             **fingerprint(wheel),
@@ -125,6 +148,7 @@ def audit_wheel(wheel: Path, source: Path) -> dict:
 
 
 def isolated_sdist(source: Path, work_dir: Path, environment: dict[str, str]) -> Path:
+    """Build and inspect a Git-free sdist using an isolated dependency overlay."""
     from packaging.requirements import Requirement
     from packaging.utils import canonicalize_name
     from pyproject_hooks import BuildBackendHookCaller
@@ -150,8 +174,9 @@ def isolated_sdist(source: Path, work_dir: Path, environment: dict[str, str]) ->
         environment,
     )
 
-    def runner(command: list[str], cwd: str | None = None, extra_environ: dict[str, str] | None = None) -> None:
-        hook_environment = environment | (extra_environ or {})
+    def runner(cmd: Sequence[str], cwd: str | None = None, extra_environ: Mapping[str, str] | None = None) -> None:
+        """Run the backend hook with its declared sequence/mapping contract."""
+        hook_environment = environment | dict(extra_environ or {})
         hook_command = [
             sys.executable,
             "-I",
@@ -159,7 +184,7 @@ def isolated_sdist(source: Path, work_dir: Path, environment: dict[str, str]) ->
             str(Path(__file__).resolve()),
             "backend",
             str(overlay),
-            *command[1:],
+            *cmd[1:],
         ]
         subprocess.run(hook_command, cwd=cwd, env=hook_environment, check=True)
 
@@ -178,10 +203,10 @@ def isolated_sdist(source: Path, work_dir: Path, environment: dict[str, str]) ->
         if requirement.marker is not None and not requirement.marker.evaluate():
             continue
         installed_version = installed.get(canonicalize_name(requirement.name))
-        assert not requirement.extras, f"Hook dependency extras require an explicit isolated install: {specification}"
-        assert (
-            installed_version is not None and installed_version in requirement.specifier
-        ), f"Hook dependency is not satisfied by the isolated build overlay: {specification}"
+        if not not requirement.extras:
+            raise AssertionError(f"Hook dependency extras require an explicit isolated install: {specification}")
+        if not ((installed_version is not None and installed_version in requirement.specifier)):
+            raise AssertionError(f"Hook dependency is not satisfied by the isolated build overlay: {specification}")
     destination = work_dir / "sdists"
     destination.mkdir()
     archive = destination / backend.build_sdist(str(destination), {})
@@ -189,10 +214,12 @@ def isolated_sdist(source: Path, work_dir: Path, environment: dict[str, str]) ->
     unpacked.mkdir()
     with tarfile.open(archive) as stream:
         members = stream.getnames()
-        assert not any(".git" in Path(name).parts for name in members)
+        if not not any(".git" in Path(name).parts for name in members):
+            raise AssertionError()
         stream.extractall(unpacked, filter="data")
     roots = list(unpacked.iterdir())
-    assert len(roots) == 1
+    if not len(roots) == 1:
+        raise AssertionError()
     result = roots[0]
     for relative in (
         "libs/libCZIrw/CMakeLists.txt",
@@ -202,8 +229,10 @@ def isolated_sdist(source: Path, work_dir: Path, environment: dict[str, str]) ->
         "packaging/CMakeLists.txt",
         "COPYING.LESSER",
     ):
-        assert (result / relative).is_file(), relative
-    assert not (result / ".git").exists()
+        if not (result / relative).is_file():
+            raise AssertionError(relative)
+    if not not (result / ".git").exists():
+        raise AssertionError()
     (work_dir / "sdist-record.json").write_text(
         json.dumps(
             {
@@ -227,11 +256,15 @@ def isolated_sdist(source: Path, work_dir: Path, environment: dict[str, str]) ->
 
 
 class LocalOnly:
+    """Select exact local test cases while reporting live-URL deselections."""
+
     def __init__(self) -> None:
         self.deselected: list[str] = []
 
-    def pytest_collection_modifyitems(self, config, items) -> None:
-        local, remote = [], []
+    def pytest_collection_modifyitems(self, config: "pytest.Config", items: list["pytest.Item"]) -> None:
+        """Keep local cases and report the exact excluded live-URL parameters."""
+        local: list[pytest.Item] = []
+        remote: list[pytest.Item] = []
         for item in items:
             parameters = getattr(getattr(item, "callspec", None), "params", {})
             is_remote = any(
@@ -244,15 +277,20 @@ class LocalOnly:
 
 
 def regressions(source: Path, work_dir: Path) -> None:
+    """Run the installed-wheel suite and retain exact results and module identities."""
+    import defusedxml.ElementTree as ET
     import pytest
 
     import _pylibCZIrw as native
     from pylibCZIrw import czi
 
     site_packages = Path(sysconfig.get_path("platlib"))
-    assert Path(czi.__file__).is_relative_to(site_packages)
-    assert Path(native.__file__).is_relative_to(site_packages)
-    assert (source / "pylibCZIrw/czi.py").read_bytes() == Path(czi.__file__).read_bytes()
+    if not Path(czi.__file__).is_relative_to(site_packages):
+        raise AssertionError()
+    if not Path(native.__file__).is_relative_to(site_packages):
+        raise AssertionError()
+    if not (source / "pylibCZIrw/czi.py").read_bytes() == Path(czi.__file__).read_bytes():
+        raise AssertionError()
     os.environ["PYTHON_SEMANTIC_RELEASE_VERSION"] = version("pylibczirw")
     os.environ["CZIRW_RESOURCE_EVIDENCE_DIR"] = str(work_dir / "installed-resources")
     plugin = LocalOnly()
@@ -261,7 +299,7 @@ def regressions(source: Path, work_dir: Path) -> None:
     log_path = work_dir / "installed-regressions.log"
     with log_path.open("x", encoding="utf8") as log, contextlib.redirect_stdout(log), contextlib.redirect_stderr(log):
         result = pytest.main(arguments, plugins=[plugin])
-    cases = list(ET.parse(junit).getroot().iter("testcase"))
+    cases = list(ET.parse(junit, forbid_dtd=True).getroot().iter("testcase"))
     counts = {tag: sum(case.find(tag) is not None for case in cases) for tag in ("failure", "error", "skipped")}
     counts["passed"] = sum(all(case.find(tag) is None for tag in ("failure", "error", "skipped")) for case in cases)
     record = {
@@ -283,10 +321,12 @@ def regressions(source: Path, work_dir: Path) -> None:
     (work_dir / "regressions-record.json").write_text(json.dumps(record, indent=2), encoding="utf8")
     print(log_path.read_text(encoding="utf8")[-4000:])
     print(json.dumps(counts, indent=2))
-    assert result == 0
+    if not result == 0:
+        raise AssertionError()
 
 
 def check(arguments: argparse.Namespace, environment: dict[str, str]) -> None:
+    """Verify wheel, sdist, installed and editable parity in the disposable environment."""
     work_dir = arguments.work_dir.resolve()
     source = work_dir / "source"
     os.chdir(work_dir)
@@ -322,9 +362,8 @@ def check(arguments: argparse.Namespace, environment: dict[str, str]) -> None:
     (work_dir / "sdist-wheel-audit.json").write_text(
         json.dumps(audit_wheel(sdist_wheel, source), indent=2), encoding="utf8"
     )
-    assert (
-        arguments.restore_wheel and arguments.restore_wheel.is_file()
-    ), "Supply the baseline wheel to restore after installed checks."
+    if not ((arguments.restore_wheel and arguments.restore_wheel.is_file())):
+        raise AssertionError("Supply the baseline wheel to restore after installed checks.")
     try:
         execute(
             "install-candidate",
@@ -381,13 +420,21 @@ def check(arguments: argparse.Namespace, environment: dict[str, str]) -> None:
 
 
 def editable_imports(source: Path, work_dir: Path) -> None:
+    """Verify editable module origins and preserve their provenance record."""
     import _pylibCZIrw as native
     from pylibCZIrw import czi
 
-    assert Path(czi.__file__).is_relative_to(source)
-    assert Path(native.__file__).is_relative_to(Path(sysconfig.get_path("platlib")))
-    assert json.loads(distribution("pylibczirw").read_text("direct_url.json"))["dir_info"]["editable"]
-    assert czi.CziDocument.open
+    if not Path(czi.__file__).is_relative_to(source):
+        raise AssertionError()
+    if not Path(native.__file__).is_relative_to(Path(sysconfig.get_path("platlib"))):
+        raise AssertionError()
+    direct_url = distribution("pylibczirw").read_text("direct_url.json")
+    if direct_url is None:
+        raise RuntimeError("Editable provenance is missing direct_url.json.")
+    if not json.loads(direct_url)["dir_info"]["editable"]:
+        raise AssertionError()
+    if not callable(getattr(czi.CziDocument, "open", None)):
+        raise AssertionError()
     record = {
         "python": sys.executable,
         "cwd": str(Path.cwd()),
@@ -399,6 +446,7 @@ def editable_imports(source: Path, work_dir: Path) -> None:
 
 
 def main() -> None:
+    """Evaluate an opt-in packaging candidate without changing the production backend."""
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("work_dir", type=Path)
     parser.add_argument("--toolchain", type=Path)
@@ -451,7 +499,9 @@ def main() -> None:
         command.append(f"--config-settings=cmake.define.VCPKG_TARGET_TRIPLET={arguments.triplet}")
     log_path = work_dir / "isolated-wheel.log"
     with log_path.open("x", encoding="utf8") as stream:
-        result = subprocess.run(command, cwd=work_dir, env=environment, stdout=stream, stderr=subprocess.STDOUT)
+        result = subprocess.run(
+            command, cwd=work_dir, env=environment, stdout=stream, stderr=subprocess.STDOUT, check=False
+        )
     record = {
         "python": sys.executable,
         "command": command,

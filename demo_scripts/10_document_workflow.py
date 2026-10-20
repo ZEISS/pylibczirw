@@ -10,6 +10,7 @@ from pylibCZIrw.czi import CziDocument
 
 
 def main() -> None:
+    """Create, edit and reopen one CZI with the bounded document facade."""
     rows, columns = np.indices((128, 192))
     expected = ((211 * rows + 37 * columns) % 65536).astype(np.uint16)
 
@@ -22,12 +23,14 @@ def main() -> None:
         with CziDocument.edit(filepath) as document:
             with document.edit_session() as builder:
                 builder.set_general_document_info(name="Edited facade example")
-            assert "Edited facade example" in document.read_metadata_xml()
+            if "Edited facade example" not in document.read_metadata_xml():
+                raise AssertionError()
 
         with CziDocument.open(filepath) as document:
             info = document.list_subblocks()[0]
             pixels = document.read_subblock(info.index)
-        assert document.closed
+        if not document.closed:
+            raise AssertionError()
 
     np.testing.assert_array_equal(pixels, expected)
     print("Retained pixels:", pixels.shape, pixels.dtype, "placement:", info.logical_rect)
