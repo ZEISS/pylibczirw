@@ -6,6 +6,10 @@ The test session checks the inventory before collection. Git LFS stores CZI,
 NumPy and reference-array assets; hashed JSON evidence and XML text references
 use LF line endings.
 
+The four fixture inventory/reference JSON files are excluded from automatic
+Prettier formatting because whitespace changes their recorded byte identities.
+JSON syntax checks and the fixture hash/inventory tests still apply.
+
 ## Scope
 
 Existing checked-in fixtures are reused as regression inputs. Their original

@@ -107,7 +107,7 @@ unchanged, and use the existing reader's range-request behavior. Create and edit
 accept local paths only. Create refuses existing files unless `exist_ok=True`.
 
 | Read-Only `mode` | Delegated Operations                                                                                                                                                                                                                                         |
-| ---------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+|------------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | `"r"`            | `read`, `list_subblocks`, `read_subblock`, `read_subblock_by_m`, `read_subblock_metadata_xml`, `read_subblock_mask`, `list_stored_levels`, `read_stored_level`, `list_attachments`, `read_attachment`, `read_attachment_image`, `read_label`, `read_preview` |
 | `"w"`            | `write`, `write_metadata`                                                                                                                                                                                                                                    |
 | `"edit"`         | `read_metadata_xml`, `edit_session`                                                                                                                                                                                                                          |
@@ -1023,7 +1023,7 @@ Data can be read and written in different pixel types, with BGR having some pecu
 ##### Reading
 
 | Pixel type  | NumPy dtype | Read shape |
-| ----------- | ----------- | ---------- |
+|-------------|-------------|------------|
 | Gray8       | uint8       | Y, X, 1    |
 | Gray16      | uint16      | Y, X, 1    |
 | Gray32Float | float32     | Y, X, 1    |

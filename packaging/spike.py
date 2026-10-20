@@ -125,10 +125,9 @@ def audit_wheel(wheel: Path, source: Path) -> dict:
 
 
 def isolated_sdist(source: Path, work_dir: Path, environment: dict[str, str]) -> Path:
-    from pyproject_hooks import BuildBackendHookCaller
-
     from packaging.requirements import Requirement
     from packaging.utils import canonicalize_name
+    from pyproject_hooks import BuildBackendHookCaller
 
     project = tomllib.loads((source / "pyproject.toml").read_text(encoding="utf8"))
     dependencies = project["build-system"]["requires"]
