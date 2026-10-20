@@ -5,5 +5,5 @@ tox==3.27.1
 tox-current-env
 pytest
 defusedxml
-czifile
-imagecodecs
+czifile>=2026.8.16; python_version >= "3.12"
+imagecodecs>=2026.8.16; python_version >= "3.12"
