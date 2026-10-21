@@ -7,8 +7,10 @@
 #include "../api/site.h"
 #include "PbHelper.h"
 
+#include <cstring>
 #include <exception>
 #include <functional>
+#include <limits>
 #include <optional>
 
 #include <pybind11/chrono.h>
@@ -21,6 +23,91 @@
 namespace py = pybind11;
 
 namespace {
+class CallbackInputStream : public libCZI::IStream {
+  std::function<py::bytes(uint64_t, uint64_t)> readAt;
+
+public:
+  explicit CallbackInputStream(
+      std::function<py::bytes(uint64_t, uint64_t)> read)
+      : readAt(std::move(read)) {}
+
+  void Read(uint64_t offset, void *buffer, uint64_t size,
+            uint64_t *bytesRead) override {
+    py::gil_scoped_acquire acquire;
+    const auto data = this->readAt(offset, size);
+    char *bytes = nullptr;
+    Py_ssize_t length = 0;
+    if (PyBytes_AsStringAndSize(data.ptr(), &bytes, &length) < 0) {
+      throw py::error_already_set();
+    }
+    if (static_cast<uint64_t>(length) > size) {
+      throw std::invalid_argument(
+          "Stream callback returned more bytes than requested.");
+    }
+    if (length > 0) {
+      std::memcpy(buffer, bytes, static_cast<size_t>(length));
+    }
+    if (bytesRead) {
+      *bytesRead = static_cast<uint64_t>(length);
+    }
+  }
+};
+
+[[noreturn]] void RaiseSubBlockError(PyObject *type,
+                                     const std::exception &error,
+                                     const std::nested_exception *nested) {
+  py::object cause =
+      py::reinterpret_borrow<py::object>(PyExc_RuntimeError)(error.what());
+  if (nested && nested->nested_ptr()) {
+    try {
+      std::rethrow_exception(nested->nested_ptr());
+    } catch (const py::error_already_set &original) {
+      cause = original.value();
+    } catch (const std::exception &original) {
+      cause = py::reinterpret_borrow<py::object>(PyExc_RuntimeError)(
+          original.what());
+    }
+  }
+  auto translated = py::reinterpret_borrow<py::object>(type)(error.what());
+  PyException_SetCause(translated.ptr(), cause.release().ptr());
+  PyErr_SetObject(type, translated.ptr());
+  throw py::error_already_set();
+}
+
+template <typename Function>
+auto SubBlockOperation(Function operation) -> decltype(operation()) {
+  try {
+    return operation();
+  } catch (const libCZI::LibCZIIOException &error) {
+    RaiseSubBlockError(PyExc_OSError, error, &error);
+  } catch (const libCZI::LibCZICZIParseException &error) {
+    RaiseSubBlockError(PyExc_ValueError, error, nullptr);
+  } catch (const SubBlockDecodeError &error) {
+    RaiseSubBlockError(PyExc_ValueError, error, &error);
+  }
+}
+
+int CheckedSubBlockIndex(py::handle value) {
+  if (PyBool_Check(value.ptr()) || !PyIndex_Check(value.ptr())) {
+    throw py::type_error("Subblock index must be an integer, not bool.");
+  }
+  const auto integer =
+      py::reinterpret_steal<py::object>(PyNumber_Index(value.ptr()));
+  if (!integer) {
+    throw py::error_already_set();
+  }
+  int overflow = 0;
+  const auto index = PyLong_AsLongLongAndOverflow(integer.ptr(), &overflow);
+  if (PyErr_Occurred()) {
+    throw py::error_already_set();
+  }
+  if (overflow || index < 0 || index > std::numeric_limits<int>::max()) {
+    throw py::index_error(
+        "Subblock index is outside the directory index range.");
+  }
+  return static_cast<int>(index);
+}
+
 std::function<bool(int, const libCZI::SubBlockInfo &)> StopOnCallbackException(
     const std::function<bool(int, const libCZI::SubBlockInfo &)> &func,
     std::exception_ptr &callbackException) {
@@ -67,6 +154,103 @@ PYBIND11_MODULE(_pylibCZIrw, m) {
                               readerOptions);
       }))
       .def("close", &CZIreadAPI::close)
+      .def_static(
+          "_from_stream",
+          [](std::function<py::bytes(uint64_t, uint64_t)> readAt) {
+            return SubBlockOperation([&]() {
+              return std::make_unique<CZIreadAPI>(
+                  std::make_shared<CallbackInputStream>(std::move(readAt)));
+            });
+          },
+          py::arg("read_at"))
+      .def("GetSubBlockDirectory",
+           [](CZIreadAPI &self) {
+             return SubBlockOperation(
+                 [&]() { return self.GetSubBlockDirectory(); });
+           })
+      .def(
+          "GetSubBlockInfo",
+          [](CZIreadAPI &self, py::object index) {
+            return SubBlockOperation([&]() {
+              return self.GetSubBlockInfo(CheckedSubBlockIndex(index));
+            });
+          },
+          py::arg("index"))
+      .def(
+          "ReadSubBlock",
+          [](CZIreadAPI &self, py::object index) {
+            return SubBlockOperation([&]() {
+              return self.ReadSubBlock(CheckedSubBlockIndex(index));
+            });
+          },
+          py::arg("index"))
+      .def(
+          "ReadSubBlockMetadata",
+          [](CZIreadAPI &self, py::object index) {
+            return SubBlockOperation([&]() {
+              return py::bytes(
+                  self.ReadSubBlockMetadata(CheckedSubBlockIndex(index)));
+            });
+          },
+          py::arg("index"))
+      .def(
+          "ReadSubBlockMask",
+          [](CZIreadAPI &self, py::object index) -> py::object {
+            return SubBlockOperation([&]() -> py::object {
+              const auto mask =
+                  self.ReadSubBlockMask(CheckedSubBlockIndex(index));
+              if (!mask) {
+                return py::none();
+              }
+              return py::make_tuple(mask->height, mask->width,
+                                    py::bytes(mask->bits));
+            });
+          },
+          py::arg("index"))
+      .def(
+          "ReadStoredLevel",
+          [](CZIreadAPI &self, const std::vector<int> &indices,
+             libCZI::IntRect roi, int factor) {
+            return SubBlockOperation(
+                [&]() { return self.ReadStoredLevel(indices, roi, factor); });
+          },
+          py::arg("indices"), py::arg("roi"), py::arg("factor"))
+      .def("GetAttachmentDirectory",
+           [](CZIreadAPI &self) {
+             return SubBlockOperation([&]() {
+               py::list result;
+               for (const auto &entry : self.GetAttachmentDirectory()) {
+                 const auto &info = entry.second;
+                 const auto &guid = info.contentGuid;
+                 uint64_t node = 0;
+                 for (int part = 2; part < 8; ++part) {
+                   node = (node << 8) | guid.Data4[part];
+                 }
+                 result.append(py::make_tuple(
+                     entry.first, info.name, std::string(info.contentFileType),
+                     py::make_tuple(guid.Data1, guid.Data2, guid.Data3,
+                                    guid.Data4[0], guid.Data4[1], node)));
+               }
+               return result;
+             });
+           })
+      .def(
+          "ReadAttachment",
+          [](CZIreadAPI &self, py::object index) {
+            return SubBlockOperation([&]() {
+              return py::bytes(
+                  self.ReadAttachment(CheckedSubBlockIndex(index)));
+            });
+          },
+          py::arg("index"))
+      .def(
+          "ReadAttachmentImage",
+          [](CZIreadAPI &self, py::object index) {
+            return SubBlockOperation([&]() {
+              return self.ReadAttachmentImage(CheckedSubBlockIndex(index));
+            });
+          },
+          py::arg("index"))
       .def("GetXmlMetadata", &CZIreadAPI::GetXmlMetadata)
       .def("GetSubBlockStats", &CZIreadAPI::GetSubBlockStats)
       .def("GetDimensionSize", &CZIreadAPI::GetDimensionSize)

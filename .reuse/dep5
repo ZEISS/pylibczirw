@@ -19,7 +19,7 @@ Files: _pylibCZIrw/*
 Copyright: 2017-2022 Carl Zeiss Microscopy GmbH
 License: LGPL-3.0-or-later
 
-Files: doc/*
+Files: doc/* demo_scripts/* packaging/*
 Copyright: 2017-2022 Carl Zeiss Microscopy GmbH
 License: LGPL-3.0-or-later
 
@@ -31,6 +31,134 @@ Files: test_data/*
 Copyright: 2017-2022 Carl Zeiss Microscopy GmbH
 License: LGPL-3.0-or-later
 
-Files: cla_*.txt CODE_OF_CONDUCT.md CONTRIBUTING.md README.md SECURITY.md API.md CHANGELOG.md INFO.md TROUBLESHOOTING.md CMake* MANIFEST.in NOTICE.txt python-semantic-release.json .gitignore .gitattributes .gitmodules .mega-linter.yml CPPLINT.cfg .editorconfig [Doc]* .bandit.yml requirements_*.txt setup.py tox.ini tox_cibuildwheel.ini .flake8 .isort.cfg .mypy.ini .pylintrc
+Files: third_party/native/Eigen-5.0.1-vcpkg-copyright.txt
+Copyright: NOASSERTION
+License: LicenseRef-native-Eigen-5.0.1-vcpkg-copyright
+
+Files: third_party/native/Linux-eigen3-devel-COPYING.BSD.txt
+Copyright: NOASSERTION
+License: LicenseRef-native-Linux-eigen3-devel-COPYING.BSD
+
+Files: third_party/native/Linux-eigen3-devel-COPYING.LGPL.txt
+Copyright: NOASSERTION
+License: LicenseRef-native-Linux-eigen3-devel-COPYING.LGPL
+
+Files: third_party/native/Linux-eigen3-devel-COPYING.MPL2.txt
+Copyright: NOASSERTION
+License: LicenseRef-native-Linux-eigen3-devel-COPYING.MPL2
+
+Files: third_party/native/Linux-eigen3-devel-COPYING.README.txt
+Copyright: NOASSERTION
+License: LicenseRef-native-Linux-eigen3-devel-COPYING.README
+
+Files: third_party/native/Linux-libidn2-AUTHORS.txt
+Copyright: NOASSERTION
+License: LicenseRef-native-Linux-libidn2-AUTHORS
+
+Files: third_party/native/Linux-libidn2-COPYING.LESSERv3.txt
+Copyright: NOASSERTION
+License: LicenseRef-native-Linux-libidn2-COPYING.LESSERv3
+
+Files: third_party/native/Linux-libidn2-COPYING.txt
+Copyright: NOASSERTION
+License: LicenseRef-native-Linux-libidn2-COPYING
+
+Files: third_party/native/Linux-libidn2-COPYING.unicode.txt
+Copyright: NOASSERTION
+License: LicenseRef-native-Linux-libidn2-COPYING.unicode
+
+Files: third_party/native/Linux-libidn2-COPYINGv2.txt
+Copyright: NOASSERTION
+License: LicenseRef-native-Linux-libidn2-COPYINGv2
+
+Files: third_party/native/Linux-libpsl-COPYING.txt
+Copyright: NOASSERTION
+License: LicenseRef-native-Linux-libpsl-COPYING
+
+Files: third_party/native/Linux-libunistring-AUTHORS.txt
+Copyright: NOASSERTION
+License: LicenseRef-native-Linux-libunistring-AUTHORS
+
+Files: third_party/native/Linux-libunistring-COPYING.LIB.txt
+Copyright: NOASSERTION
+License: LicenseRef-native-Linux-libunistring-COPYING.LIB
+
+Files: third_party/native/Linux-libunistring-COPYING.txt
+Copyright: NOASSERTION
+License: LicenseRef-native-Linux-libunistring-COPYING
+
+Files: third_party/native/Linux-openssl-libs-LICENSE.txt
+Copyright: NOASSERTION
+License: LicenseRef-native-Linux-openssl-libs-LICENSE
+
+Files: third_party/native/Linux-publicsuffix-list-MPL-2.0.txt
+Copyright: NOASSERTION
+License: LicenseRef-native-Linux-publicsuffix-list-MPL-2.0
+
+Files: third_party/native/Linux-publicsuffix-list-data-notice.txt
+Copyright: NOASSERTION
+License: LicenseRef-native-Linux-publicsuffix-list-data-notice
+
+Files: third_party/native/OpenSSL-3.6.3-LICENSE.txt
+Copyright: NOASSERTION
+License: LicenseRef-native-OpenSSL-3.6.3-LICENSE
+
+Files: third_party/native/brotli-1.2.0-LICENSE.txt
+Copyright: NOASSERTION
+License: LicenseRef-native-brotli-1.2.0-LICENSE
+
+Files: third_party/native/curl-8.18.0-vcpkg-copyright.txt
+Copyright: NOASSERTION
+License: LicenseRef-native-curl-8.18.0-vcpkg-copyright
+
+Files: third_party/native/curl-8.21.0-COPYING.txt
+Copyright: NOASSERTION
+License: LicenseRef-native-curl-8.21.0-COPYING
+
+Files: third_party/native/curl-8.9.1-COPYING.txt
+Copyright: NOASSERTION
+License: LicenseRef-native-curl-8.9.1-COPYING
+
+Files: third_party/native/libCZI-and-vendored-components-COPYING.txt
+Copyright: NOASSERTION
+License: LicenseRef-native-libCZI-and-vendored-components-COPYING
+
+Files: third_party/native/libpsl-0.23.3-COPYING.txt
+Copyright: NOASSERTION
+License: LicenseRef-native-libpsl-0.23.3-COPYING
+
+Files: third_party/native/libssh2-1.11.1-COPYING.txt
+Copyright: NOASSERTION
+License: LicenseRef-native-libssh2-1.11.1-COPYING
+
+Files: third_party/native/nghttp2-1.70.0-COPYING.txt
+Copyright: NOASSERTION
+License: LicenseRef-native-nghttp2-1.70.0-COPYING
+
+Files: third_party/native/nghttp3-1.18.0-COPYING.txt
+Copyright: NOASSERTION
+License: LicenseRef-native-nghttp3-1.18.0-COPYING
+
+Files: third_party/native/ngtcp2-1.25.0-COPYING.txt
+Copyright: NOASSERTION
+License: LicenseRef-native-ngtcp2-1.25.0-COPYING
+
+Files: third_party/native/pybind11-LICENSE.txt
+Copyright: NOASSERTION
+License: LicenseRef-native-pybind11-LICENSE
+
+Files: third_party/native/zlib-1.3.1-vcpkg-copyright.txt
+Copyright: NOASSERTION
+License: LicenseRef-native-zlib-1.3.1-vcpkg-copyright
+
+Files: third_party/native/zstd-1.5.7-LICENSE.txt
+Copyright: NOASSERTION
+License: LicenseRef-native-zstd-1.5.7-LICENSE
+
+Files: third_party/native/zstd-1.5.7-xxhash-source-notice.txt
+Copyright: NOASSERTION
+License: LicenseRef-native-zstd-1.5.7-xxhash-source-notice
+
+Files: cla_*.txt CODE_OF_CONDUCT.md CONTRIBUTING.md README.md SECURITY.md API.md CHANGELOG.md INFO.md TROUBLESHOOTING.md CMake* MANIFEST.in NOTICE.txt python-semantic-release.json .gitignore .gitattributes .gitmodules .mega-linter.yml CPPLINT.cfg .editorconfig [Doc]* .bandit.yml requirements_*.txt setup.py tox.ini tox_cibuildwheel.ini .flake8 .isort.cfg .mypy.ini .pylintrc .prettierignore .gitleaks.toml
 Copyright: 2017-2022 Carl Zeiss Microscopy GmbH
 License: LGPL-3.0-or-later

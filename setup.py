@@ -325,7 +325,8 @@ setup(
     keywords="czi, imaging",
     ext_modules=[CMakeExtension("_pylibCZIrw")],
     packages=["pylibCZIrw"],
-    cmdclass={"build_ext": CMakeBuild},
+    # mypy 1.10 rejects setuptools' dict-like protocol for ordinary dictionaries.
+    cmdclass={"build_ext": CMakeBuild},  # type: ignore[arg-type]
     install_requires=requirements,
     # we require at least python version 3.9
     python_requires=">=3.9,<3.15",

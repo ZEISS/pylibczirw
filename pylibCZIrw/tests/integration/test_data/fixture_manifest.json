@@ -1,0 +1,2169 @@
+{
+  "schema_version": 1,
+  "recorded_on": "2026-10-14",
+  "status": "public-regression-corpus",
+  "policy": "doc/fixture_policy.md",
+  "path_base": "repository-root",
+  "record_semantics": "Exact asset hashes and labeled publication-projection references; not an immutable original approval record.",
+  "privacy_decisions": [
+    {
+      "id": "existing-fixture-reuse-20261015",
+      "asset_ids": [
+        "asset-001",
+        "asset-003",
+        "asset-005",
+        "asset-007",
+        "asset-009",
+        "asset-011",
+        "asset-013",
+        "asset-014",
+        "asset-015",
+        "asset-016",
+        "asset-017",
+        "asset-018",
+        "asset-019",
+        "asset-020",
+        "asset-021",
+        "asset-022",
+        "asset-023",
+        "asset-024",
+        "asset-025",
+        "asset-026",
+        "asset-027",
+        "asset-028",
+        "asset-029",
+        "asset-030",
+        "asset-031",
+        "asset-032",
+        "asset-033",
+        "asset-034",
+        "asset-035",
+        "asset-036",
+        "asset-037",
+        "asset-038",
+        "asset-039",
+        "asset-040"
+      ],
+      "scope": "Existing checked-in regression fixtures only; no new acquisition-data rights or history claim."
+    }
+  ],
+  "reference_audits": [
+    {
+      "id": "fixture-audit-20261015",
+      "recorded_on": "2026-10-15",
+      "path": "pylibCZIrw/tests/integration/test_data/fixture_public_audit.json",
+      "size_bytes": 643089,
+      "sha256": "A4014CFC5EDAAD8E2820FDD53F6DB5BD3793063DE1ACAD27380878B9571B72E2",
+      "state": "partial-reference-evidence",
+      "record": "doc/fixture_policy.md",
+      "scope": "One independently verified existing Gray8/NPZ case; 15 existing CZI structural/pixel catalogues; candidate mapping for C01-C07; 15 bounded private synthetic CZI candidates and 12 existing-wrapper interoperability checks.",
+      "limits": "Historical initial audit of 34 byte streams/49 paths; no new fixtures were admitted by that run. Its record and byte pin are unchanged. The subsequent fixture-refresh-20261015 record governs expanded inventory/admissions/assignments; source/oracle and implementation gates remain separate.",
+      "publication_projection": true,
+      "historical_record_sha256": "8B0FB2BB7D24BF5CD8AFF78B05F8FAF5CEDE7DB89953A4759297B9968391E83D"
+    },
+    {
+      "id": "fixture-refresh-20261015",
+      "recorded_on": "2026-10-15",
+      "path": "pylibCZIrw/tests/integration/test_data/fixture_public_references.json",
+      "size_bytes": 832860,
+      "sha256": "63DDD47F45E8EBD9A7E0379F030BB76B93F3854889592F98EA8C13F29C433C34",
+      "state": "reference-verified",
+      "record": "doc/fixture_policy.md",
+      "scope": "Eleven refreshed script runs; literal/structural checks for eighteen admitted generated inputs; complete C01-C07 input assignments.",
+      "limits": "Original audit unchanged; C07 historical oracle/source gaps and all new-API implementation gates remain open.",
+      "publication_projection": true,
+      "historical_record_sha256": "74E95435A47A35CC3EA1D248BD33BE09BFED372BE683CE73BAF87EB953C16518"
+    },
+    {
+      "id": "legacy-reference-review-20261015",
+      "recorded_on": "2026-10-15",
+      "path": "pylibCZIrw/tests/integration/test_data/fixture_public_legacy_review.json",
+      "size_bytes": 31579,
+      "sha256": "C4A48F94DEF6CEDC233F0672B8E29628BA50C2AF5DB996F4107229D0DF693F22",
+      "state": "partial-reference-evidence",
+      "record": "doc/fixture_policy.md",
+      "scope": "Three required writer pixel references verified exactly; six global XML references verified for content only.",
+      "limits": "Current values only; original producers/recipes, native XML formatting and remaining legacy zoom/conversion expectations are not proven. Owner corpus/evidence scope decision remains pending.",
+      "publication_projection": true,
+      "historical_record_sha256": "EDEC68E5BD2854CCE55517C98F563C1658FACCF46609199DF40D8E2810DD1427"
+    }
+  ],
+  "inventory_scope": {
+    "tracked_only": false,
+    "roots": [
+      "test_data",
+      "pylibCZIrw/tests/integration"
+    ],
+    "extensions": [
+      ".czi",
+      ".npz",
+      ".npy",
+      ".txt"
+    ],
+    "hash_algorithm": "SHA-256",
+    "hash_bytes": "Exact working-tree bytes; no newline normalization or archive-member canonicalization.",
+    "unique_assets": 52,
+    "paths_including_aliases": 67,
+    "bytes_including_aliases": 97442720,
+    "paths_by_extension": {
+      ".czi": 47,
+      ".npz": 13,
+      ".npy": 1,
+      ".txt": 6
+    },
+    "limits": [
+      "Initial inventory limits are historical; refreshed independent observations, generated inputs and complete input assignments are in fixture_public_references.json. No new-API implementation pass is inferred.",
+      "The six TXT references use approved canonical LF bytes. The original Windows CRLF identities and counts are retained in historical_inventories; active checks compare exact bytes without normalization.",
+      "This file is not a source-distribution inclusion manifest or proof that each asset was exercised by the baseline."
+    ]
+  },
+  "asset_defaults": {
+    "required": null,
+    "admission": "candidate-not-admitted",
+    "origin": {
+      "original_source": null,
+      "producer": null,
+      "producer_version": null,
+      "generator_revision": null,
+      "creation_recipe": null,
+      "evidence": [
+        {
+          "kind": "local-repository-path-introduction",
+          "commit": "8d6f0bde73e446c47878b2c1bc74b8eceee6828f",
+          "date": "2024-06-04",
+          "subject": "Add core structure",
+          "command": "git log --format='%H %ad %s' --date=short --diff-filter=A -- pylibCZIrw/tests/integration/test_data pylibCZIrw/tests/integration/metadata/test_data test_data",
+          "local_history_shallow": false,
+          "limits": "An introduction commit identifies repository import, not original acquisition, generator, independent expected values or privacy clearance. A targeted current-checkout search found no NumPy save calls; generation remains unverified."
+        }
+      ]
+    },
+    "rights": {
+      "state": "reference-verified",
+      "decision": "Record the existing repository licensing declaration; no new per-file permission letter is presumed necessary.",
+      "license": "LGPL-3.0-or-later",
+      "copyright": "2017-2022 Carl Zeiss Microscopy GmbH",
+      "verification_scope": "Declaration observed, not independent proof of original producer, privacy clearance or third-party exceptions.",
+      "evidence": [
+        {
+          "path": ".reuse/dep5",
+          "file_patterns": [
+            "pylibCZIrw/*",
+            "test_data/*"
+          ],
+          "source_lines": [
+            26,
+            32
+          ]
+        }
+      ]
+    },
+    "privacy": {
+      "state": "unverified",
+      "decision": null,
+      "evidence": []
+    },
+    "roles": [],
+    "case_ids": [],
+    "expected": {
+      "directory_records": null,
+      "pixels": null,
+      "dtype": null,
+      "shape": null,
+      "component_order": null,
+      "xml": null,
+      "mask": null,
+      "levels": null,
+      "attachments": null,
+      "negative_outcomes": null
+    },
+    "oracle": {
+      "tool": null,
+      "version_or_commit": null,
+      "command": null,
+      "shared_dependencies": null,
+      "limits": null
+    },
+    "evidence": {
+      "state": "unverified",
+      "reference_runs": [],
+      "implementation_state": "not-evaluated",
+      "implementation_runs": []
+    }
+  },
+  "historical_inventories": [
+    {
+      "id": "initial-windows-crlf-20261014",
+      "recorded_on": "2026-10-14",
+      "unique_assets": 34,
+      "paths_including_aliases": 49,
+      "bytes_including_aliases": 97320612,
+      "baseline": "doc/fixture_policy.md",
+      "unchanged_asset_ids": [
+        "asset-001",
+        "asset-003",
+        "asset-005",
+        "asset-007",
+        "asset-009",
+        "asset-011",
+        "asset-013",
+        "asset-014",
+        "asset-015",
+        "asset-016",
+        "asset-017",
+        "asset-018",
+        "asset-019",
+        "asset-020",
+        "asset-021",
+        "asset-022",
+        "asset-023",
+        "asset-024",
+        "asset-025",
+        "asset-026",
+        "asset-027",
+        "asset-028",
+        "asset-029",
+        "asset-030",
+        "asset-031",
+        "asset-032",
+        "asset-033",
+        "asset-034"
+      ],
+      "replaced_assets": [
+        {
+          "id": "asset-002",
+          "path": "pylibCZIrw/tests/integration/metadata/test_data/c1_bgr24_metadata.txt",
+          "aliases": [],
+          "size_bytes": 718,
+          "sha256": "941957DEEBD72CDBF73F215FB3F4CEBC3FE5E0F55FF1FB74EADBEB16CCA0160D"
+        },
+        {
+          "id": "asset-004",
+          "path": "pylibCZIrw/tests/integration/metadata/test_data/c1_bgr24_t1_z1_h1_metadata.txt",
+          "aliases": [],
+          "size_bytes": 293143,
+          "sha256": "18E5EA9400592D57444391ADE76A35F21035E2B1AB73A35DC04F97788638B757"
+        },
+        {
+          "id": "asset-006",
+          "path": "pylibCZIrw/tests/integration/metadata/test_data/c1_gray8_t1_z1_h1_s2_overlapping_subblocks_accross_scenes_metadata.txt",
+          "aliases": [],
+          "size_bytes": 297492,
+          "sha256": "D016D0D6890A65A0FFEC8932524802151628B9C1E552E306305F33D29541EFA9"
+        },
+        {
+          "id": "asset-008",
+          "path": "pylibCZIrw/tests/integration/metadata/test_data/c2_gray8_gray16_t1_z1_h1_metadata.txt",
+          "aliases": [],
+          "size_bytes": 301539,
+          "sha256": "72A1C69E5892C0FE25627B2076F6C48B4D8A02C0FAA63C9821D81C7B0E17877E"
+        },
+        {
+          "id": "asset-010",
+          "path": "pylibCZIrw/tests/integration/metadata/test_data/c2_gray8_t3_z5_h1_s2_metadata.txt",
+          "aliases": [],
+          "size_bytes": 299988,
+          "sha256": "7780405D1E29FFE99DBC882F95FC2AC8A8E9F63E88F8A09AFBC8F6A24B1648E9"
+        },
+        {
+          "id": "asset-012",
+          "path": "pylibCZIrw/tests/integration/metadata/test_data/test_additional_metadata_metadata.txt",
+          "aliases": [],
+          "size_bytes": 597944,
+          "sha256": "3D01AE88A808C3339FD77909E966FB111ADC2E2289C316FA270735942C1319E9"
+        }
+      ]
+    },
+    {
+      "id": "canonical-LF-before-assignment-20261015",
+      "recorded_on": "2026-10-15",
+      "unique_assets": 34,
+      "paths_including_aliases": 49,
+      "bytes_including_aliases": 97298912,
+      "asset_ids": [
+        "asset-001",
+        "asset-035",
+        "asset-003",
+        "asset-036",
+        "asset-005",
+        "asset-037",
+        "asset-007",
+        "asset-038",
+        "asset-009",
+        "asset-039",
+        "asset-011",
+        "asset-040",
+        "asset-013",
+        "asset-014",
+        "asset-015",
+        "asset-016",
+        "asset-017",
+        "asset-018",
+        "asset-019",
+        "asset-020",
+        "asset-021",
+        "asset-022",
+        "asset-023",
+        "asset-024",
+        "asset-025",
+        "asset-026",
+        "asset-027",
+        "asset-028",
+        "asset-029",
+        "asset-030",
+        "asset-031",
+        "asset-032",
+        "asset-033",
+        "asset-034"
+      ],
+      "scope": "Original fixtures remain unchanged; initial audit and reuse approvals apply to this cohort."
+    }
+  ],
+  "assets": [
+    {
+      "id": "asset-001",
+      "path": "pylibCZIrw/tests/integration/metadata/test_data/c1_bgr24.czi",
+      "aliases": [
+        "pylibCZIrw/tests/integration/test_data/c1_bgr24.czi"
+      ],
+      "size_bytes": 3602176,
+      "sha256": "A2B6E116EB6815779BC940B23BB49A4F9863DDFCB9C099085EF68A3E4EBEE66E",
+      "case_ids": [
+        "C01",
+        "C02",
+        "C07"
+      ],
+      "admission": "admitted",
+      "required": true
+    },
+    {
+      "id": "asset-035",
+      "previous_checkout_asset_id": "asset-002",
+      "path": "pylibCZIrw/tests/integration/metadata/test_data/c1_bgr24_metadata.txt",
+      "aliases": [],
+      "size_bytes": 688,
+      "sha256": "95BE5C69310590501F1CDD9D19889DF800485D8DDC70953A586B545EE705F482",
+      "case_ids": [
+        "C07"
+      ],
+      "admission": "admitted",
+      "required": true
+    },
+    {
+      "id": "asset-003",
+      "path": "pylibCZIrw/tests/integration/metadata/test_data/c1_bgr24_t1_z1_h1.czi",
+      "aliases": [
+        "test_data/c1_bgr24.czi"
+      ],
+      "size_bytes": 541088,
+      "sha256": "8B0B4FBB370497E699FB7821E45F5D67A965807143275345266AAE6F72EAAF77",
+      "case_ids": [
+        "C01",
+        "C06",
+        "C07"
+      ],
+      "admission": "admitted",
+      "required": true
+    },
+    {
+      "id": "asset-036",
+      "previous_checkout_asset_id": "asset-004",
+      "path": "pylibCZIrw/tests/integration/metadata/test_data/c1_bgr24_t1_z1_h1_metadata.txt",
+      "aliases": [],
+      "size_bytes": 289639,
+      "sha256": "FBD432463A2F42043FC466531CF78F79AD86DA891404EA1217357F4B7A775DD1",
+      "case_ids": [
+        "C07"
+      ],
+      "admission": "admitted",
+      "required": true
+    },
+    {
+      "id": "asset-005",
+      "path": "pylibCZIrw/tests/integration/metadata/test_data/c1_gray8_t1_z1_h1_s2_overlapping_subblocks_accross_scenes.czi",
+      "aliases": [
+        "test_data/c1_gray8_s2_overlapping_subblocks_accross_scenes.czi"
+      ],
+      "size_bytes": 1000032,
+      "sha256": "0DC72EDF12CF7DF5FF04D09A34A07A2FA74755C8C0E5623139AEDEB96693F586",
+      "case_ids": [
+        "C07"
+      ],
+      "admission": "admitted",
+      "required": true
+    },
+    {
+      "id": "asset-037",
+      "previous_checkout_asset_id": "asset-006",
+      "path": "pylibCZIrw/tests/integration/metadata/test_data/c1_gray8_t1_z1_h1_s2_overlapping_subblocks_accross_scenes_metadata.txt",
+      "aliases": [],
+      "size_bytes": 293894,
+      "sha256": "B2F8E900DC6D411683D48B77A881CF27E52E399C49C3A52F8D2F3ACA3E87375C",
+      "case_ids": [
+        "C07"
+      ],
+      "admission": "admitted",
+      "required": true
+    },
+    {
+      "id": "asset-007",
+      "path": "pylibCZIrw/tests/integration/metadata/test_data/c2_gray8_gray16_t1_z1_h1.czi",
+      "aliases": [
+        "pylibCZIrw/tests/integration/test_data/c2_gray8_gray16.czi",
+        "test_data/c2_gray8_gray16.czi"
+      ],
+      "size_bytes": 552224,
+      "sha256": "5C07604B5D0E894EBA8A5D9A54FC48D113C0F72BA040A05A519325D3B025FE6D",
+      "case_ids": [
+        "C07"
+      ],
+      "admission": "admitted",
+      "required": true
+    },
+    {
+      "id": "asset-038",
+      "previous_checkout_asset_id": "asset-008",
+      "path": "pylibCZIrw/tests/integration/metadata/test_data/c2_gray8_gray16_t1_z1_h1_metadata.txt",
+      "aliases": [],
+      "size_bytes": 297837,
+      "sha256": "08EB1571EC29D8528967BD6C1100C4FDED11EC6B3080ADDDD7BF16870E9A7415",
+      "case_ids": [
+        "C07"
+      ],
+      "admission": "admitted",
+      "required": true
+    },
+    {
+      "id": "asset-009",
+      "path": "pylibCZIrw/tests/integration/metadata/test_data/c2_gray8_t3_z5_h1_s2.czi",
+      "aliases": [
+        "pylibCZIrw/tests/integration/test_data/c2_gray8_t3_z5_s2.czi",
+        "test_data/c2_gray8_t3_z5_s2.czi"
+      ],
+      "size_bytes": 20581952,
+      "sha256": "BAF4BACA9668A9AA655BF918F00C0B0BEF6FBF6C3DDC220D03B3F32D1DADAF95",
+      "case_ids": [
+        "C01",
+        "C02",
+        "C05",
+        "C07"
+      ],
+      "admission": "admitted",
+      "required": true
+    },
+    {
+      "id": "asset-039",
+      "previous_checkout_asset_id": "asset-010",
+      "path": "pylibCZIrw/tests/integration/metadata/test_data/c2_gray8_t3_z5_h1_s2_metadata.txt",
+      "aliases": [],
+      "size_bytes": 296338,
+      "sha256": "C7D1E729867DC028D1E87980E75DDE5298A6D1DC0B9397D8FFA0009C7F871FD6",
+      "case_ids": [
+        "C07"
+      ],
+      "admission": "admitted",
+      "required": true
+    },
+    {
+      "id": "asset-011",
+      "path": "pylibCZIrw/tests/integration/metadata/test_data/test_additional_metadata.czi",
+      "aliases": [],
+      "size_bytes": 838304,
+      "sha256": "7F0F6F3CB63E6C556C68EC1CA14BA713999770A261C6EB72AA23C41601D70BE1",
+      "case_ids": [
+        "C07"
+      ],
+      "admission": "admitted",
+      "required": true
+    },
+    {
+      "id": "asset-040",
+      "previous_checkout_asset_id": "asset-012",
+      "path": "pylibCZIrw/tests/integration/metadata/test_data/test_additional_metadata_metadata.txt",
+      "aliases": [],
+      "size_bytes": 590728,
+      "sha256": "F75A3F00114E8EBEF163D3A0B374770F81D143C015E697DE7C783F37F2288145",
+      "case_ids": [
+        "C07"
+      ],
+      "admission": "admitted",
+      "required": true
+    },
+    {
+      "id": "asset-013",
+      "path": "pylibCZIrw/tests/integration/test_data/c1_bgr24_plane.npz",
+      "aliases": [],
+      "size_bytes": 3600260,
+      "sha256": "88BF8216780D28B4E8BBF6EC77367745FBF21CFC11F2985A2FFC579A2D7A5769",
+      "case_ids": [
+        "C07"
+      ],
+      "admission": "admitted",
+      "required": true
+    },
+    {
+      "id": "asset-014",
+      "path": "pylibCZIrw/tests/integration/test_data/c1_bgr48.czi",
+      "aliases": [
+        "test_data/c1_bgr48.czi"
+      ],
+      "size_bytes": 737664,
+      "sha256": "E63C001C2271C976D87E1C1597A8C2BEDA92DB192ED4C032C1E864874B3AA8D3",
+      "case_ids": [
+        "C02",
+        "C07"
+      ],
+      "admission": "admitted",
+      "required": true
+    },
+    {
+      "id": "asset-015",
+      "path": "pylibCZIrw/tests/integration/test_data/c1_bgr48_plane.npz",
+      "aliases": [],
+      "size_bytes": 2030,
+      "sha256": "43CBDBD80000B0C65998036BCD36D20A1710B5B93BD86EEBBD23F7C91463BD43",
+      "case_ids": [
+        "C07"
+      ],
+      "admission": "admitted",
+      "required": true
+    },
+    {
+      "id": "asset-016",
+      "path": "pylibCZIrw/tests/integration/test_data/c1_bgr96float.czi",
+      "aliases": [
+        "test_data/c1_bgr96float.czi"
+      ],
+      "size_bytes": 1130848,
+      "sha256": "256D8459C94D2FB092C4C66701D6B75910B38EB31C9FAB0A621BD14C4176CD0D",
+      "case_ids": [
+        "C02",
+        "C07"
+      ],
+      "admission": "admitted",
+      "required": true
+    },
+    {
+      "id": "asset-017",
+      "path": "pylibCZIrw/tests/integration/test_data/c1_gray16.czi",
+      "aliases": [
+        "test_data/c1_gray16.czi"
+      ],
+      "size_bytes": 475520,
+      "sha256": "C62E731C6893B18423977673CCAA298267A80C3AD1DD974B9CACAC22ECA82A9F",
+      "case_ids": [
+        "C02",
+        "C07"
+      ],
+      "admission": "admitted",
+      "required": true
+    },
+    {
+      "id": "asset-018",
+      "path": "pylibCZIrw/tests/integration/test_data/c1_gray16_plane_Gray8.npz",
+      "aliases": [
+        "pylibCZIrw/tests/integration/test_data/c1_gray8_plane.npz"
+      ],
+      "size_bytes": 494,
+      "sha256": "9335A7F275BFD43C4221752F726E798BC3980511C8FDFCBFAE888170D0C092F8",
+      "case_ids": [
+        "C07"
+      ],
+      "admission": "admitted",
+      "required": true
+    },
+    {
+      "id": "asset-019",
+      "path": "pylibCZIrw/tests/integration/test_data/c1_gray32float.czi",
+      "aliases": [
+        "test_data/c1_gray32float.czi"
+      ],
+      "size_bytes": 606624,
+      "sha256": "D6A9B435BBC5B3EBCFA47BCEB3C5CBC0328A0EB14612EE685E59DE7FC9B3C43C",
+      "case_ids": [
+        "C02",
+        "C07"
+      ],
+      "admission": "admitted",
+      "required": true
+    },
+    {
+      "id": "asset-020",
+      "path": "pylibCZIrw/tests/integration/test_data/c1_gray8.czi",
+      "aliases": [
+        "test_data/c1_gray8.czi"
+      ],
+      "size_bytes": 404896,
+      "sha256": "2002A89DD49D29C8D16FFC9240D4BAB76F6A0D2F3F9D0E66654FBB457B1526C7",
+      "case_ids": [
+        "C02",
+        "C07"
+      ],
+      "admission": "admitted",
+      "required": true
+    },
+    {
+      "id": "asset-021",
+      "path": "pylibCZIrw/tests/integration/test_data/c1_gray8_plane_zoom07.npz",
+      "aliases": [],
+      "size_bytes": 32301,
+      "sha256": "C48994E5BE9BD1E60FD5910D03E1243284FA61FA5E71F344DC0166B1AA07AB5D",
+      "case_ids": [
+        "C07"
+      ],
+      "admission": "admitted",
+      "required": true
+    },
+    {
+      "id": "asset-022",
+      "path": "pylibCZIrw/tests/integration/test_data/c1_gray8_s2_non_overlapping_bounding_boxes.czi",
+      "aliases": [
+        "test_data/c1_gray8_s2_non_overlapping_bounding_boxes.czi"
+      ],
+      "size_bytes": 999168,
+      "sha256": "882F181D08162760AA696419034EB040EBF0E39F46AAED7A402A045902916D0A",
+      "case_ids": [
+        "C07"
+      ],
+      "admission": "admitted",
+      "required": true
+    },
+    {
+      "id": "asset-023",
+      "path": "pylibCZIrw/tests/integration/test_data/c1_gray8_s2_non_overlapping_bounding_boxes_plane_s0_zoom05.npz",
+      "aliases": [],
+      "size_bytes": 59552,
+      "sha256": "74C41C08F4E4CE4CE3D6321F02921DF21676F2CFB2DC120C22AF771253B7A0E6",
+      "case_ids": [
+        "C07"
+      ],
+      "admission": "admitted",
+      "required": true
+    },
+    {
+      "id": "asset-024",
+      "path": "pylibCZIrw/tests/integration/test_data/c1_gray8_s2_non_overlapping_bounding_boxes_plane_s1.npz",
+      "aliases": [],
+      "size_bytes": 236456,
+      "sha256": "2BDB2EBA97068EFD00221C9C646AF19A8C10A6DC5AF134485398475FBA728076",
+      "case_ids": [
+        "C07"
+      ],
+      "admission": "admitted",
+      "required": true
+    },
+    {
+      "id": "asset-025",
+      "path": "pylibCZIrw/tests/integration/test_data/c1_gray8_s2_overlapping_bounding_boxes.czi",
+      "aliases": [
+        "test_data/c1_gray8_s2_overlapping_bounding_boxes.czi"
+      ],
+      "size_bytes": 1399264,
+      "sha256": "FAD7F157AB4465968D623FE9176F0BB10956A046F25BEC60ABE11D754E1E0C84",
+      "case_ids": [
+        "C07"
+      ],
+      "admission": "admitted",
+      "required": true
+    },
+    {
+      "id": "asset-026",
+      "path": "pylibCZIrw/tests/integration/test_data/c1_gray8_s2_overlapping_bounding_boxes_plane.npz",
+      "aliases": [],
+      "size_bytes": 607097,
+      "sha256": "10D596CEED7D2EAAE5909CC135DC4C77CD709908A573C81547D345DEA580A724",
+      "case_ids": [
+        "C07"
+      ],
+      "admission": "admitted",
+      "required": true
+    },
+    {
+      "id": "asset-027",
+      "path": "pylibCZIrw/tests/integration/test_data/c1_gray8_s2_overlapping_bounding_boxes_plane_s1_zoom05_Bgr24.npz",
+      "aliases": [],
+      "size_bytes": 1345,
+      "sha256": "C98D5399D389E79A07ECCF723AE32ECED4E37D1EBA57422BC31183658DEF5BAE",
+      "case_ids": [
+        "C07"
+      ],
+      "admission": "admitted",
+      "required": true
+    },
+    {
+      "id": "asset-028",
+      "path": "pylibCZIrw/tests/integration/test_data/c2_gray8_gray16_plane_c0_zoom05_Gray16.npz",
+      "aliases": [],
+      "size_bytes": 373,
+      "sha256": "D06FDD340B89B84E628BA603FCE3F767F6F9E5591F9FF1CB0B6DDB5FC55A4F30",
+      "case_ids": [
+        "C07"
+      ],
+      "admission": "admitted",
+      "required": true
+    },
+    {
+      "id": "asset-029",
+      "path": "pylibCZIrw/tests/integration/test_data/c2_gray8_gray16_plane_c1.npz",
+      "aliases": [],
+      "size_bytes": 1171,
+      "sha256": "645D92D0FF0525CD642D1BA783168C4D01C20E5D29A7982E416097D99F309670",
+      "case_ids": [
+        "C07"
+      ],
+      "admission": "admitted",
+      "required": true
+    },
+    {
+      "id": "asset-030",
+      "path": "pylibCZIrw/tests/integration/test_data/c2_gray8_t3_z5_s2_plane_c0_z3_t2.npz",
+      "aliases": [],
+      "size_bytes": 4803,
+      "sha256": "07B4C04E8835D62786CC0C37FB9545F2FE29FE5A92129545F53A64E5A63493A7",
+      "case_ids": [
+        "C07"
+      ],
+      "admission": "admitted",
+      "required": true
+    },
+    {
+      "id": "asset-031",
+      "path": "pylibCZIrw/tests/integration/test_data/c2_gray8_t3_z5_s2_plane_s1_c0_z4_t1.npz",
+      "aliases": [],
+      "size_bytes": 1364,
+      "sha256": "5D64AA8233C8A440F71F1B6B292348E1088909ABBB21C47D45BC122A262D32A8",
+      "case_ids": [
+        "C07"
+      ],
+      "admission": "admitted",
+      "required": true
+    },
+    {
+      "id": "asset-032",
+      "path": "pylibCZIrw/tests/integration/test_data/rgb-image.czi",
+      "aliases": [],
+      "size_bytes": 1082240,
+      "sha256": "818DE64671D5E79C43426604EF9BFB3CE926D832F3B3CF911CCC19CC816F5269",
+      "case_ids": [
+        "C07"
+      ],
+      "admission": "admitted",
+      "required": true
+    },
+    {
+      "id": "asset-033",
+      "path": "pylibCZIrw/tests/integration/test_data/rgb-image.npy",
+      "aliases": [],
+      "size_bytes": 1080128,
+      "sha256": "04CAA3358E8A5FC834749B74045409622C587FAE5D2604D963F9E057230E17EC",
+      "case_ids": [
+        "C07"
+      ],
+      "admission": "admitted",
+      "required": true
+    },
+    {
+      "id": "asset-034",
+      "path": "test_data/c2_gray8_t3_z5.czi",
+      "aliases": [],
+      "size_bytes": 2784288,
+      "sha256": "726D9BA3499C950D925D9123552CC2F26DF0841DAC3CAD02E132CBC4E6C72BF1",
+      "case_ids": [
+        "C07"
+      ],
+      "admission": "admitted",
+      "required": true
+    },
+    {
+      "id": "asset-041",
+      "path": "pylibCZIrw/tests/integration/test_data/synthetic/literal_gray16_raw.czi",
+      "aliases": [],
+      "size_bytes": 5312,
+      "sha256": "F9CB5A76E4C83F95523EFE53E003DC76AD1C73582A566A3064BAC38661D7AF78",
+      "required": true,
+      "admission": "admitted",
+      "origin": {
+        "original_source": "locally generated literal numeric inputs; no acquired image data",
+        "producer": "existing pinned native writer plus bounded DV/segment mutations",
+        "producer_version": "baseline wheel 0.0.0; Python 3.12.12",
+        "generator_revision": "fixture-refresh-20261015",
+        "creation_recipe": "pylibCZIrw/tests/integration/test_data/fixture_public_references.json#/source_review/sources",
+        "evidence": [
+          {
+            "path": "pylibCZIrw/tests/integration/test_data/fixture_public_references.json",
+            "pointer": "/generated_assets/0"
+          }
+        ]
+      },
+      "privacy": {
+        "state": "reference-verified",
+        "decision": "literal numeric pixels and known fixture metadata; no nonempty screened personal metadata tags",
+        "evidence": [
+          {
+            "path": "pylibCZIrw/tests/integration/test_data/fixture_public_references.json",
+            "pointer": "/admission"
+          }
+        ]
+      },
+      "oracle": {
+        "tool": "czifile + literal formulas; imagecodecs for supported compression",
+        "version_or_commit": "ab0f6388c39388a4e38d37810cdd693d41fa5c95",
+        "command": "pylibCZIrw/tests/integration/test_data/fixture_public_references.json#/replay/runs",
+        "shared_dependencies": "Codec-library/reference-code families may be shared; expected pixels are literal inputs",
+        "limits": "Input/reference evidence only; negative error behavior follows approved contracts, not a new-API pass"
+      },
+      "evidence": {
+        "state": "reference-verified",
+        "reference_runs": [
+          "fixture-refresh-20261015"
+        ],
+        "implementation_state": "not-evaluated",
+        "implementation_runs": []
+      },
+      "case_ids": [
+        "C02",
+        "C03",
+        "C06",
+        "C07"
+      ]
+    },
+    {
+      "id": "asset-042",
+      "path": "pylibCZIrw/tests/integration/test_data/synthetic/literal_gray16_zstd0.czi",
+      "aliases": [],
+      "size_bytes": 5088,
+      "sha256": "BA0A56BEA6B5E269819D953D2A069B27AFD63D14FEE3BE150ED921E5DED6FED9",
+      "required": true,
+      "admission": "admitted",
+      "origin": {
+        "original_source": "locally generated literal numeric inputs; no acquired image data",
+        "producer": "existing pinned native writer plus bounded DV/segment mutations",
+        "producer_version": "baseline wheel 0.0.0; Python 3.12.12",
+        "generator_revision": "fixture-refresh-20261015",
+        "creation_recipe": "pylibCZIrw/tests/integration/test_data/fixture_public_references.json#/source_review/sources",
+        "evidence": [
+          {
+            "path": "pylibCZIrw/tests/integration/test_data/fixture_public_references.json",
+            "pointer": "/generated_assets/1"
+          }
+        ]
+      },
+      "privacy": {
+        "state": "reference-verified",
+        "decision": "literal numeric pixels and known fixture metadata; no nonempty screened personal metadata tags",
+        "evidence": [
+          {
+            "path": "pylibCZIrw/tests/integration/test_data/fixture_public_references.json",
+            "pointer": "/admission"
+          }
+        ]
+      },
+      "oracle": {
+        "tool": "czifile + literal formulas; imagecodecs for supported compression",
+        "version_or_commit": "ab0f6388c39388a4e38d37810cdd693d41fa5c95",
+        "command": "pylibCZIrw/tests/integration/test_data/fixture_public_references.json#/replay/runs",
+        "shared_dependencies": "Codec-library/reference-code families may be shared; expected pixels are literal inputs",
+        "limits": "Input/reference evidence only; negative error behavior follows approved contracts, not a new-API pass"
+      },
+      "evidence": {
+        "state": "reference-verified",
+        "reference_runs": [
+          "fixture-refresh-20261015"
+        ],
+        "implementation_state": "not-evaluated",
+        "implementation_runs": []
+      },
+      "case_ids": [
+        "C03"
+      ]
+    },
+    {
+      "id": "asset-043",
+      "path": "pylibCZIrw/tests/integration/test_data/synthetic/literal_gray16_zstd1.czi",
+      "aliases": [],
+      "size_bytes": 5088,
+      "sha256": "00B24AD0C08D63EA9189A484C3D1FD8A0C35BDA11C3577A47A92286B03206195",
+      "required": true,
+      "admission": "admitted",
+      "origin": {
+        "original_source": "locally generated literal numeric inputs; no acquired image data",
+        "producer": "existing pinned native writer plus bounded DV/segment mutations",
+        "producer_version": "baseline wheel 0.0.0; Python 3.12.12",
+        "generator_revision": "fixture-refresh-20261015",
+        "creation_recipe": "pylibCZIrw/tests/integration/test_data/fixture_public_references.json#/source_review/sources",
+        "evidence": [
+          {
+            "path": "pylibCZIrw/tests/integration/test_data/fixture_public_references.json",
+            "pointer": "/generated_assets/2"
+          }
+        ]
+      },
+      "privacy": {
+        "state": "reference-verified",
+        "decision": "literal numeric pixels and known fixture metadata; no nonempty screened personal metadata tags",
+        "evidence": [
+          {
+            "path": "pylibCZIrw/tests/integration/test_data/fixture_public_references.json",
+            "pointer": "/admission"
+          }
+        ]
+      },
+      "oracle": {
+        "tool": "czifile + literal formulas; imagecodecs for supported compression",
+        "version_or_commit": "ab0f6388c39388a4e38d37810cdd693d41fa5c95",
+        "command": "pylibCZIrw/tests/integration/test_data/fixture_public_references.json#/replay/runs",
+        "shared_dependencies": "Codec-library/reference-code families may be shared; expected pixels are literal inputs",
+        "limits": "Input/reference evidence only; negative error behavior follows approved contracts, not a new-API pass"
+      },
+      "evidence": {
+        "state": "reference-verified",
+        "reference_runs": [
+          "fixture-refresh-20261015"
+        ],
+        "implementation_state": "not-evaluated",
+        "implementation_runs": []
+      },
+      "case_ids": [
+        "C03"
+      ]
+    },
+    {
+      "id": "asset-044",
+      "path": "pylibCZIrw/tests/integration/test_data/synthetic/literal_gray16_unsupported42_v2.czi",
+      "aliases": [],
+      "size_bytes": 5312,
+      "sha256": "03422A6B0D01551DB9037E142A0BD60005027DD925E3A776CD3104FD370562AF",
+      "required": true,
+      "admission": "admitted",
+      "origin": {
+        "original_source": "locally generated literal numeric inputs; no acquired image data",
+        "producer": "existing pinned native writer plus bounded DV/segment mutations",
+        "producer_version": "baseline wheel 0.0.0; Python 3.12.12",
+        "generator_revision": "fixture-refresh-20261015",
+        "creation_recipe": "pylibCZIrw/tests/integration/test_data/fixture_public_references.json#/source_review/sources",
+        "evidence": [
+          {
+            "path": "pylibCZIrw/tests/integration/test_data/fixture_public_references.json",
+            "pointer": "/generated_assets/3"
+          }
+        ]
+      },
+      "privacy": {
+        "state": "reference-verified",
+        "decision": "literal numeric pixels and known fixture metadata; no nonempty screened personal metadata tags",
+        "evidence": [
+          {
+            "path": "pylibCZIrw/tests/integration/test_data/fixture_public_references.json",
+            "pointer": "/admission"
+          }
+        ]
+      },
+      "oracle": {
+        "tool": "czifile + literal formulas; imagecodecs for supported compression",
+        "version_or_commit": "ab0f6388c39388a4e38d37810cdd693d41fa5c95",
+        "command": "pylibCZIrw/tests/integration/test_data/fixture_public_references.json#/replay/runs",
+        "shared_dependencies": "Codec-library/reference-code families may be shared; expected pixels are literal inputs",
+        "limits": "Input/reference evidence only; negative error behavior follows approved contracts, not a new-API pass"
+      },
+      "evidence": {
+        "state": "reference-verified",
+        "reference_runs": [
+          "fixture-refresh-20261015"
+        ],
+        "implementation_state": "not-evaluated",
+        "implementation_runs": []
+      },
+      "case_ids": [
+        "C03"
+      ]
+    },
+    {
+      "id": "asset-045",
+      "path": "pylibCZIrw/tests/integration/test_data/synthetic/literal_gray16_invalid_utf8.czi",
+      "aliases": [],
+      "size_bytes": 5312,
+      "sha256": "D157A7FBB8E4B5F6E2B1BEF8D8ECDB924697492D7767E7F35055289D41A35C2A",
+      "required": true,
+      "admission": "admitted",
+      "origin": {
+        "original_source": "locally generated literal numeric inputs; no acquired image data",
+        "producer": "existing pinned native writer plus bounded DV/segment mutations",
+        "producer_version": "baseline wheel 0.0.0; Python 3.12.12",
+        "generator_revision": "fixture-refresh-20261015",
+        "creation_recipe": "pylibCZIrw/tests/integration/test_data/fixture_public_references.json#/source_review/sources",
+        "evidence": [
+          {
+            "path": "pylibCZIrw/tests/integration/test_data/fixture_public_references.json",
+            "pointer": "/generated_assets/4"
+          }
+        ]
+      },
+      "privacy": {
+        "state": "reference-verified",
+        "decision": "literal numeric pixels and known fixture metadata; no nonempty screened personal metadata tags",
+        "evidence": [
+          {
+            "path": "pylibCZIrw/tests/integration/test_data/fixture_public_references.json",
+            "pointer": "/admission"
+          }
+        ]
+      },
+      "oracle": {
+        "tool": "czifile + literal formulas; imagecodecs for supported compression",
+        "version_or_commit": "ab0f6388c39388a4e38d37810cdd693d41fa5c95",
+        "command": "pylibCZIrw/tests/integration/test_data/fixture_public_references.json#/replay/runs",
+        "shared_dependencies": "Codec-library/reference-code families may be shared; expected pixels are literal inputs",
+        "limits": "Input/reference evidence only; negative error behavior follows approved contracts, not a new-API pass"
+      },
+      "evidence": {
+        "state": "reference-verified",
+        "reference_runs": [
+          "fixture-refresh-20261015"
+        ],
+        "implementation_state": "not-evaluated",
+        "implementation_runs": []
+      },
+      "case_ids": [
+        "C04"
+      ]
+    },
+    {
+      "id": "asset-046",
+      "path": "pylibCZIrw/tests/integration/test_data/synthetic/stored_levels_same_m37.czi",
+      "aliases": [],
+      "size_bytes": 6624,
+      "sha256": "85A1DD05B89D37D0BF86A0441EE149DEC3FD8FE7B8B47C231141CCCEA892819E",
+      "required": true,
+      "admission": "admitted",
+      "origin": {
+        "original_source": "locally generated literal numeric inputs; no acquired image data",
+        "producer": "existing pinned native writer plus bounded DV/segment mutations",
+        "producer_version": "baseline wheel 0.0.0; Python 3.12.12",
+        "generator_revision": "fixture-refresh-20261015",
+        "creation_recipe": "pylibCZIrw/tests/integration/test_data/fixture_public_references.json#/source_review/sources",
+        "evidence": [
+          {
+            "path": "pylibCZIrw/tests/integration/test_data/fixture_public_references.json",
+            "pointer": "/generated_assets/5"
+          }
+        ]
+      },
+      "privacy": {
+        "state": "reference-verified",
+        "decision": "literal numeric pixels and known fixture metadata; no nonempty screened personal metadata tags",
+        "evidence": [
+          {
+            "path": "pylibCZIrw/tests/integration/test_data/fixture_public_references.json",
+            "pointer": "/admission"
+          }
+        ]
+      },
+      "oracle": {
+        "tool": "czifile + literal formulas; imagecodecs for supported compression",
+        "version_or_commit": "ab0f6388c39388a4e38d37810cdd693d41fa5c95",
+        "command": "pylibCZIrw/tests/integration/test_data/fixture_public_references.json#/replay/runs",
+        "shared_dependencies": "Codec-library/reference-code families may be shared; expected pixels are literal inputs",
+        "limits": "Input/reference evidence only; negative error behavior follows approved contracts, not a new-API pass"
+      },
+      "evidence": {
+        "state": "reference-verified",
+        "reference_runs": [
+          "fixture-refresh-20261015"
+        ],
+        "implementation_state": "not-evaluated",
+        "implementation_runs": []
+      },
+      "case_ids": [
+        "C01",
+        "C05"
+      ]
+    },
+    {
+      "id": "asset-047",
+      "path": "pylibCZIrw/tests/integration/test_data/synthetic/stored_levels_negative_m7.czi",
+      "aliases": [],
+      "size_bytes": 6624,
+      "sha256": "38B3ED94870C0C129A49A2EE015D6BC8D8E7E5F6036CEC9A3DA7C9810338D58A",
+      "required": true,
+      "admission": "admitted",
+      "origin": {
+        "original_source": "locally generated literal numeric inputs; no acquired image data",
+        "producer": "existing pinned native writer plus bounded DV/segment mutations",
+        "producer_version": "baseline wheel 0.0.0; Python 3.12.12",
+        "generator_revision": "fixture-refresh-20261015",
+        "creation_recipe": "pylibCZIrw/tests/integration/test_data/fixture_public_references.json#/source_review/sources",
+        "evidence": [
+          {
+            "path": "pylibCZIrw/tests/integration/test_data/fixture_public_references.json",
+            "pointer": "/generated_assets/6"
+          }
+        ]
+      },
+      "privacy": {
+        "state": "reference-verified",
+        "decision": "literal numeric pixels and known fixture metadata; no nonempty screened personal metadata tags",
+        "evidence": [
+          {
+            "path": "pylibCZIrw/tests/integration/test_data/fixture_public_references.json",
+            "pointer": "/admission"
+          }
+        ]
+      },
+      "oracle": {
+        "tool": "czifile + literal formulas; imagecodecs for supported compression",
+        "version_or_commit": "ab0f6388c39388a4e38d37810cdd693d41fa5c95",
+        "command": "pylibCZIrw/tests/integration/test_data/fixture_public_references.json#/replay/runs",
+        "shared_dependencies": "Codec-library/reference-code families may be shared; expected pixels are literal inputs",
+        "limits": "Input/reference evidence only; negative error behavior follows approved contracts, not a new-API pass"
+      },
+      "evidence": {
+        "state": "reference-verified",
+        "reference_runs": [
+          "fixture-refresh-20261015"
+        ],
+        "implementation_state": "not-evaluated",
+        "implementation_runs": []
+      },
+      "case_ids": [
+        "C01"
+      ]
+    },
+    {
+      "id": "asset-048",
+      "path": "pylibCZIrw/tests/integration/test_data/synthetic/literal_valid_mask_v2.czi",
+      "aliases": [],
+      "size_bytes": 9056,
+      "sha256": "010756D24E295236FE41E68FD6A5978C38FF11A0ED384B19B99A291DB12A7FC8",
+      "required": true,
+      "admission": "admitted",
+      "origin": {
+        "original_source": "locally generated literal numeric inputs; no acquired image data",
+        "producer": "existing pinned native writer plus bounded DV/segment mutations",
+        "producer_version": "baseline wheel 0.0.0; Python 3.12.12",
+        "generator_revision": "fixture-refresh-20261015",
+        "creation_recipe": "pylibCZIrw/tests/integration/test_data/fixture_public_references.json#/source_review/sources",
+        "evidence": [
+          {
+            "path": "pylibCZIrw/tests/integration/test_data/fixture_public_references.json",
+            "pointer": "/generated_assets/7"
+          }
+        ]
+      },
+      "privacy": {
+        "state": "reference-verified",
+        "decision": "literal numeric pixels and known fixture metadata; no nonempty screened personal metadata tags",
+        "evidence": [
+          {
+            "path": "pylibCZIrw/tests/integration/test_data/fixture_public_references.json",
+            "pointer": "/admission"
+          }
+        ]
+      },
+      "oracle": {
+        "tool": "czifile + literal formulas; imagecodecs for supported compression",
+        "version_or_commit": "ab0f6388c39388a4e38d37810cdd693d41fa5c95",
+        "command": "pylibCZIrw/tests/integration/test_data/fixture_public_references.json#/replay/runs",
+        "shared_dependencies": "Codec-library/reference-code families may be shared; expected pixels are literal inputs",
+        "limits": "Input/reference evidence only; negative error behavior follows approved contracts, not a new-API pass"
+      },
+      "evidence": {
+        "state": "reference-verified",
+        "reference_runs": [
+          "fixture-refresh-20261015"
+        ],
+        "implementation_state": "not-evaluated",
+        "implementation_runs": []
+      },
+      "case_ids": [
+        "C02"
+      ]
+    },
+    {
+      "id": "asset-049",
+      "path": "pylibCZIrw/tests/integration/test_data/synthetic/literal_corrupt_mask_v2.czi",
+      "aliases": [],
+      "size_bytes": 9056,
+      "sha256": "06B97395E30F3BA0D12CC2052F6A41651D001A34921CC0D1353D9BC955B4DA77",
+      "required": true,
+      "admission": "admitted",
+      "origin": {
+        "original_source": "locally generated literal numeric inputs; no acquired image data",
+        "producer": "existing pinned native writer plus bounded DV/segment mutations",
+        "producer_version": "baseline wheel 0.0.0; Python 3.12.12",
+        "generator_revision": "fixture-refresh-20261015",
+        "creation_recipe": "pylibCZIrw/tests/integration/test_data/fixture_public_references.json#/source_review/sources",
+        "evidence": [
+          {
+            "path": "pylibCZIrw/tests/integration/test_data/fixture_public_references.json",
+            "pointer": "/generated_assets/8"
+          }
+        ]
+      },
+      "privacy": {
+        "state": "reference-verified",
+        "decision": "literal numeric pixels and known fixture metadata; no nonempty screened personal metadata tags",
+        "evidence": [
+          {
+            "path": "pylibCZIrw/tests/integration/test_data/fixture_public_references.json",
+            "pointer": "/admission"
+          }
+        ]
+      },
+      "oracle": {
+        "tool": "czifile + literal formulas; imagecodecs for supported compression",
+        "version_or_commit": "ab0f6388c39388a4e38d37810cdd693d41fa5c95",
+        "command": "pylibCZIrw/tests/integration/test_data/fixture_public_references.json#/replay/runs",
+        "shared_dependencies": "Codec-library/reference-code families may be shared; expected pixels are literal inputs",
+        "limits": "Input/reference evidence only; negative error behavior follows approved contracts, not a new-API pass"
+      },
+      "evidence": {
+        "state": "reference-verified",
+        "reference_runs": [
+          "fixture-refresh-20261015"
+        ],
+        "implementation_state": "not-evaluated",
+        "implementation_runs": []
+      },
+      "case_ids": [
+        "C02"
+      ]
+    },
+    {
+      "id": "asset-050",
+      "path": "pylibCZIrw/tests/integration/test_data/synthetic/literal_slidepreview_cases.czi",
+      "aliases": [],
+      "size_bytes": 23680,
+      "sha256": "10AF0405DD03F7241B5ABF42E043D2827DC05AC0476C447549A50F737E0548D8",
+      "required": true,
+      "admission": "admitted",
+      "origin": {
+        "original_source": "locally generated literal numeric inputs; no acquired image data",
+        "producer": "existing pinned native writer plus bounded DV/segment mutations",
+        "producer_version": "baseline wheel 0.0.0; Python 3.12.12",
+        "generator_revision": "fixture-refresh-20261015",
+        "creation_recipe": "pylibCZIrw/tests/integration/test_data/fixture_public_references.json#/source_review/sources",
+        "evidence": [
+          {
+            "path": "pylibCZIrw/tests/integration/test_data/fixture_public_references.json",
+            "pointer": "/generated_assets/9"
+          }
+        ]
+      },
+      "privacy": {
+        "state": "reference-verified",
+        "decision": "literal numeric pixels and known fixture metadata; no nonempty screened personal metadata tags",
+        "evidence": [
+          {
+            "path": "pylibCZIrw/tests/integration/test_data/fixture_public_references.json",
+            "pointer": "/admission"
+          }
+        ]
+      },
+      "oracle": {
+        "tool": "czifile + literal formulas; imagecodecs for supported compression",
+        "version_or_commit": "ab0f6388c39388a4e38d37810cdd693d41fa5c95",
+        "command": "pylibCZIrw/tests/integration/test_data/fixture_public_references.json#/replay/runs",
+        "shared_dependencies": "Codec-library/reference-code families may be shared; expected pixels are literal inputs",
+        "limits": "Input/reference evidence only; negative error behavior follows approved contracts, not a new-API pass"
+      },
+      "evidence": {
+        "state": "reference-verified",
+        "reference_runs": [
+          "fixture-refresh-20261015"
+        ],
+        "implementation_state": "not-evaluated",
+        "implementation_runs": []
+      },
+      "case_ids": [
+        "C06",
+        "C07"
+      ]
+    },
+    {
+      "id": "asset-051",
+      "path": "pylibCZIrw/tests/integration/test_data/synthetic/literal_gray16_jpegxr.czi",
+      "aliases": [],
+      "size_bytes": 5312,
+      "sha256": "3C728C259CF325AD8C745FE1D8890FE9C0CC998ABA34728DE098087DDE147D3C",
+      "required": true,
+      "admission": "admitted",
+      "origin": {
+        "original_source": "locally generated literal numeric inputs; no acquired image data",
+        "producer": "existing pinned native writer plus bounded DV/segment mutations",
+        "producer_version": "baseline wheel 0.0.0; Python 3.12.12",
+        "generator_revision": "fixture-refresh-20261015",
+        "creation_recipe": "pylibCZIrw/tests/integration/test_data/fixture_public_references.json#/source_review/sources",
+        "evidence": [
+          {
+            "path": "pylibCZIrw/tests/integration/test_data/fixture_public_references.json",
+            "pointer": "/generated_assets/10"
+          }
+        ]
+      },
+      "privacy": {
+        "state": "reference-verified",
+        "decision": "literal numeric pixels and known fixture metadata; no nonempty screened personal metadata tags",
+        "evidence": [
+          {
+            "path": "pylibCZIrw/tests/integration/test_data/fixture_public_references.json",
+            "pointer": "/admission"
+          }
+        ]
+      },
+      "oracle": {
+        "tool": "czifile + literal formulas; imagecodecs for supported compression",
+        "version_or_commit": "ab0f6388c39388a4e38d37810cdd693d41fa5c95",
+        "command": "pylibCZIrw/tests/integration/test_data/fixture_public_references.json#/replay/runs",
+        "shared_dependencies": "Codec-library/reference-code families may be shared; expected pixels are literal inputs",
+        "limits": "Input/reference evidence only; negative error behavior follows approved contracts, not a new-API pass"
+      },
+      "evidence": {
+        "state": "reference-verified",
+        "reference_runs": [
+          "fixture-refresh-20261015"
+        ],
+        "implementation_state": "not-evaluated",
+        "implementation_runs": []
+      },
+      "case_ids": [
+        "C03"
+      ]
+    },
+    {
+      "id": "asset-052",
+      "path": "pylibCZIrw/tests/integration/test_data/synthetic/stored_levels_irregular.czi",
+      "aliases": [],
+      "size_bytes": 6624,
+      "sha256": "6F1B0520D66BB2607112B7426CEAF382C537818D30BDB7F72176686F48F92A8D",
+      "required": true,
+      "admission": "admitted",
+      "origin": {
+        "original_source": "locally generated literal numeric inputs; no acquired image data",
+        "producer": "existing pinned native writer plus bounded DV/segment mutations",
+        "producer_version": "baseline wheel 0.0.0; Python 3.12.12",
+        "generator_revision": "fixture-refresh-20261015",
+        "creation_recipe": "pylibCZIrw/tests/integration/test_data/fixture_public_references.json#/source_review/sources",
+        "evidence": [
+          {
+            "path": "pylibCZIrw/tests/integration/test_data/fixture_public_references.json",
+            "pointer": "/generated_assets/11"
+          }
+        ]
+      },
+      "privacy": {
+        "state": "reference-verified",
+        "decision": "literal numeric pixels and known fixture metadata; no nonempty screened personal metadata tags",
+        "evidence": [
+          {
+            "path": "pylibCZIrw/tests/integration/test_data/fixture_public_references.json",
+            "pointer": "/admission"
+          }
+        ]
+      },
+      "oracle": {
+        "tool": "czifile + literal formulas; imagecodecs for supported compression",
+        "version_or_commit": "ab0f6388c39388a4e38d37810cdd693d41fa5c95",
+        "command": "pylibCZIrw/tests/integration/test_data/fixture_public_references.json#/replay/runs",
+        "shared_dependencies": "Codec-library/reference-code families may be shared; expected pixels are literal inputs",
+        "limits": "Input/reference evidence only; negative error behavior follows approved contracts, not a new-API pass"
+      },
+      "evidence": {
+        "state": "reference-verified",
+        "reference_runs": [
+          "fixture-refresh-20261015"
+        ],
+        "implementation_state": "not-evaluated",
+        "implementation_runs": []
+      },
+      "case_ids": [
+        "C05"
+      ]
+    },
+    {
+      "id": "asset-053",
+      "path": "pylibCZIrw/tests/integration/test_data/synthetic/literal_xml_absent.czi",
+      "aliases": [],
+      "size_bytes": 8672,
+      "sha256": "C17A051457705C3DCF1F4BF9078E9F35CAE6B7454F5D28CA035D78FF09B3A6FD",
+      "required": true,
+      "admission": "admitted",
+      "origin": {
+        "original_source": "locally generated literal numeric inputs; no acquired image data",
+        "producer": "existing pinned native writer plus bounded DV/segment mutations",
+        "producer_version": "baseline wheel 0.0.0; Python 3.12.12",
+        "generator_revision": "fixture-refresh-20261015",
+        "creation_recipe": "pylibCZIrw/tests/integration/test_data/fixture_public_references.json#/source_review/sources",
+        "evidence": [
+          {
+            "path": "pylibCZIrw/tests/integration/test_data/fixture_public_references.json",
+            "pointer": "/generated_assets/12"
+          }
+        ]
+      },
+      "privacy": {
+        "state": "reference-verified",
+        "decision": "literal numeric pixels and known fixture metadata; no nonempty screened personal metadata tags",
+        "evidence": [
+          {
+            "path": "pylibCZIrw/tests/integration/test_data/fixture_public_references.json",
+            "pointer": "/admission"
+          }
+        ]
+      },
+      "oracle": {
+        "tool": "czifile + literal formulas; imagecodecs for supported compression",
+        "version_or_commit": "ab0f6388c39388a4e38d37810cdd693d41fa5c95",
+        "command": "pylibCZIrw/tests/integration/test_data/fixture_public_references.json#/replay/runs",
+        "shared_dependencies": "Codec-library/reference-code families may be shared; expected pixels are literal inputs",
+        "limits": "Input/reference evidence only; negative error behavior follows approved contracts, not a new-API pass"
+      },
+      "evidence": {
+        "state": "reference-verified",
+        "reference_runs": [
+          "fixture-refresh-20261015"
+        ],
+        "implementation_state": "not-evaluated",
+        "implementation_runs": []
+      },
+      "case_ids": [
+        "C04"
+      ]
+    },
+    {
+      "id": "asset-054",
+      "path": "pylibCZIrw/tests/integration/test_data/synthetic/literal_xml_unknown_element.czi",
+      "aliases": [],
+      "size_bytes": 8800,
+      "sha256": "A1875268A4A5CD86AE0D6E524149F17CBAE7FA4D5BE3572F489802FDA8D217BA",
+      "required": true,
+      "admission": "admitted",
+      "origin": {
+        "original_source": "locally generated literal numeric inputs; no acquired image data",
+        "producer": "existing pinned native writer plus bounded DV/segment mutations",
+        "producer_version": "baseline wheel 0.0.0; Python 3.12.12",
+        "generator_revision": "fixture-refresh-20261015",
+        "creation_recipe": "pylibCZIrw/tests/integration/test_data/fixture_public_references.json#/source_review/sources",
+        "evidence": [
+          {
+            "path": "pylibCZIrw/tests/integration/test_data/fixture_public_references.json",
+            "pointer": "/generated_assets/13"
+          }
+        ]
+      },
+      "privacy": {
+        "state": "reference-verified",
+        "decision": "literal numeric pixels and known fixture metadata; no nonempty screened personal metadata tags",
+        "evidence": [
+          {
+            "path": "pylibCZIrw/tests/integration/test_data/fixture_public_references.json",
+            "pointer": "/admission"
+          }
+        ]
+      },
+      "oracle": {
+        "tool": "czifile + literal formulas; imagecodecs for supported compression",
+        "version_or_commit": "ab0f6388c39388a4e38d37810cdd693d41fa5c95",
+        "command": "pylibCZIrw/tests/integration/test_data/fixture_public_references.json#/replay/runs",
+        "shared_dependencies": "Codec-library/reference-code families may be shared; expected pixels are literal inputs",
+        "limits": "Input/reference evidence only; negative error behavior follows approved contracts, not a new-API pass"
+      },
+      "evidence": {
+        "state": "reference-verified",
+        "reference_runs": [
+          "fixture-refresh-20261015"
+        ],
+        "implementation_state": "not-evaluated",
+        "implementation_runs": []
+      },
+      "case_ids": [
+        "C04"
+      ]
+    },
+    {
+      "id": "asset-055",
+      "path": "pylibCZIrw/tests/integration/test_data/synthetic/literal_xml_malformed_xml.czi",
+      "aliases": [],
+      "size_bytes": 8704,
+      "sha256": "E9DD0B9CABD74791085C1B91C10BE9BF7C70675E61D61DE156D509CA347222B0",
+      "required": true,
+      "admission": "admitted",
+      "origin": {
+        "original_source": "locally generated literal numeric inputs; no acquired image data",
+        "producer": "existing pinned native writer plus bounded DV/segment mutations",
+        "producer_version": "baseline wheel 0.0.0; Python 3.12.12",
+        "generator_revision": "fixture-refresh-20261015",
+        "creation_recipe": "pylibCZIrw/tests/integration/test_data/fixture_public_references.json#/source_review/sources",
+        "evidence": [
+          {
+            "path": "pylibCZIrw/tests/integration/test_data/fixture_public_references.json",
+            "pointer": "/generated_assets/14"
+          }
+        ]
+      },
+      "privacy": {
+        "state": "reference-verified",
+        "decision": "literal numeric pixels and known fixture metadata; no nonempty screened personal metadata tags",
+        "evidence": [
+          {
+            "path": "pylibCZIrw/tests/integration/test_data/fixture_public_references.json",
+            "pointer": "/admission"
+          }
+        ]
+      },
+      "oracle": {
+        "tool": "czifile + literal formulas; imagecodecs for supported compression",
+        "version_or_commit": "ab0f6388c39388a4e38d37810cdd693d41fa5c95",
+        "command": "pylibCZIrw/tests/integration/test_data/fixture_public_references.json#/replay/runs",
+        "shared_dependencies": "Codec-library/reference-code families may be shared; expected pixels are literal inputs",
+        "limits": "Input/reference evidence only; negative error behavior follows approved contracts, not a new-API pass"
+      },
+      "evidence": {
+        "state": "reference-verified",
+        "reference_runs": [
+          "fixture-refresh-20261015"
+        ],
+        "implementation_state": "not-evaluated",
+        "implementation_runs": []
+      },
+      "case_ids": [
+        "C04"
+      ]
+    },
+    {
+      "id": "asset-056",
+      "path": "pylibCZIrw/tests/integration/test_data/synthetic/stored_sparse_coordinates.czi",
+      "aliases": [],
+      "size_bytes": 11296,
+      "sha256": "DDF39CA8814CBF2CB8AB166ED7EA9BAFD91E6025391629BB307254460E4DF60F",
+      "required": true,
+      "admission": "admitted",
+      "origin": {
+        "original_source": "locally generated literal numeric inputs; no acquired image data",
+        "producer": "existing pinned native writer plus bounded DV/segment mutations",
+        "producer_version": "baseline wheel 0.0.0; Python 3.12.12",
+        "generator_revision": "fixture-refresh-20261015",
+        "creation_recipe": "pylibCZIrw/tests/integration/test_data/fixture_public_references.json#/source_review/sources",
+        "evidence": [
+          {
+            "path": "pylibCZIrw/tests/integration/test_data/fixture_public_references.json",
+            "pointer": "/generated_assets/15"
+          }
+        ]
+      },
+      "privacy": {
+        "state": "reference-verified",
+        "decision": "literal numeric pixels and known fixture metadata; no nonempty screened personal metadata tags",
+        "evidence": [
+          {
+            "path": "pylibCZIrw/tests/integration/test_data/fixture_public_references.json",
+            "pointer": "/admission"
+          }
+        ]
+      },
+      "oracle": {
+        "tool": "czifile + literal formulas; imagecodecs for supported compression",
+        "version_or_commit": "ab0f6388c39388a4e38d37810cdd693d41fa5c95",
+        "command": "pylibCZIrw/tests/integration/test_data/fixture_public_references.json#/replay/runs",
+        "shared_dependencies": "Codec-library/reference-code families may be shared; expected pixels are literal inputs",
+        "limits": "Input/reference evidence only; negative error behavior follows approved contracts, not a new-API pass"
+      },
+      "evidence": {
+        "state": "reference-verified",
+        "reference_runs": [
+          "fixture-refresh-20261015"
+        ],
+        "implementation_state": "not-evaluated",
+        "implementation_runs": []
+      },
+      "case_ids": [
+        "C01",
+        "C04",
+        "C05",
+        "C07"
+      ]
+    },
+    {
+      "id": "asset-057",
+      "path": "pylibCZIrw/tests/integration/test_data/synthetic/literal_tiles_with_gap.czi",
+      "aliases": [],
+      "size_bytes": 6624,
+      "sha256": "C7F5BC09721D69539B68D80182A3B46930B45E6E022FE625D2082A520DF8D480",
+      "required": true,
+      "admission": "admitted",
+      "origin": {
+        "original_source": "locally generated literal numeric inputs; no acquired image data",
+        "producer": "existing pinned native writer plus bounded DV/segment mutations",
+        "producer_version": "baseline wheel 0.0.0; Python 3.12.12",
+        "generator_revision": "fixture-refresh-20261015",
+        "creation_recipe": "pylibCZIrw/tests/integration/test_data/fixture_public_references.json#/source_review/sources",
+        "evidence": [
+          {
+            "path": "pylibCZIrw/tests/integration/test_data/fixture_public_references.json",
+            "pointer": "/generated_assets/16"
+          }
+        ]
+      },
+      "privacy": {
+        "state": "reference-verified",
+        "decision": "literal numeric pixels and known fixture metadata; no nonempty screened personal metadata tags",
+        "evidence": [
+          {
+            "path": "pylibCZIrw/tests/integration/test_data/fixture_public_references.json",
+            "pointer": "/admission"
+          }
+        ]
+      },
+      "oracle": {
+        "tool": "czifile + literal formulas; imagecodecs for supported compression",
+        "version_or_commit": "ab0f6388c39388a4e38d37810cdd693d41fa5c95",
+        "command": "pylibCZIrw/tests/integration/test_data/fixture_public_references.json#/replay/runs",
+        "shared_dependencies": "Codec-library/reference-code families may be shared; expected pixels are literal inputs",
+        "limits": "Input/reference evidence only; negative error behavior follows approved contracts, not a new-API pass"
+      },
+      "evidence": {
+        "state": "reference-verified",
+        "reference_runs": [
+          "fixture-refresh-20261015"
+        ],
+        "implementation_state": "not-evaluated",
+        "implementation_runs": []
+      },
+      "case_ids": [
+        "C02",
+        "C05"
+      ]
+    },
+    {
+      "id": "asset-058",
+      "path": "pylibCZIrw/tests/integration/test_data/synthetic/literal_overlapping_tiles.czi",
+      "aliases": [],
+      "size_bytes": 6624,
+      "sha256": "0CB8A1A7433DDC2871FBDC82853C264FA18CB0B62A5A160BC224CFFE1A34781A",
+      "required": true,
+      "admission": "admitted",
+      "origin": {
+        "original_source": "locally generated literal numeric inputs; no acquired image data",
+        "producer": "existing pinned native writer plus bounded DV/segment mutations",
+        "producer_version": "baseline wheel 0.0.0; Python 3.12.12",
+        "generator_revision": "fixture-refresh-20261015",
+        "creation_recipe": "pylibCZIrw/tests/integration/test_data/fixture_public_references.json#/source_review/sources",
+        "evidence": [
+          {
+            "path": "pylibCZIrw/tests/integration/test_data/fixture_public_references.json",
+            "pointer": "/generated_assets/17"
+          }
+        ]
+      },
+      "privacy": {
+        "state": "reference-verified",
+        "decision": "literal numeric pixels and known fixture metadata; no nonempty screened personal metadata tags",
+        "evidence": [
+          {
+            "path": "pylibCZIrw/tests/integration/test_data/fixture_public_references.json",
+            "pointer": "/admission"
+          }
+        ]
+      },
+      "oracle": {
+        "tool": "czifile + literal formulas; imagecodecs for supported compression",
+        "version_or_commit": "ab0f6388c39388a4e38d37810cdd693d41fa5c95",
+        "command": "pylibCZIrw/tests/integration/test_data/fixture_public_references.json#/replay/runs",
+        "shared_dependencies": "Codec-library/reference-code families may be shared; expected pixels are literal inputs",
+        "limits": "Input/reference evidence only; negative error behavior follows approved contracts, not a new-API pass"
+      },
+      "evidence": {
+        "state": "reference-verified",
+        "reference_runs": [
+          "fixture-refresh-20261015"
+        ],
+        "implementation_state": "not-evaluated",
+        "implementation_runs": []
+      },
+      "case_ids": [
+        "C02",
+        "C05",
+        "C07"
+      ]
+    }
+  ],
+  "existing_test_references": [
+    {
+      "test_module": "pylibCZIrw/tests/integration/read/test_read.py",
+      "source_lines": [
+        15,
+        61
+      ],
+      "reference_format": "NPZ member arr; request-specific scene/plane/zoom/pixel-type expectations remain in the tests",
+      "verified_cases": [
+        {
+          "id": "reference-gray8-full-plane-20261015",
+          "input": "asset-020",
+          "reference": "asset-018",
+          "state": "reference-verified",
+          "audit": "fixture-audit-20261015",
+          "request": "Full-resolution single Gray8 plane, no ROI/zoom/conversion; czifile YX equals NPZ YXA[...,0], A size 1",
+          "limits": "Only this pairing/request is verified; the historical reference producer remains unknown. Other pairings/zoom/conversions, privacy/admission and new-API tests remain unverified."
+        }
+      ],
+      "pairs": [
+        {
+          "input": "asset-001",
+          "references": [
+            "asset-013"
+          ]
+        },
+        {
+          "input": "asset-014",
+          "references": [
+            "asset-015"
+          ]
+        },
+        {
+          "input": "asset-020",
+          "references": [
+            "asset-018",
+            "asset-021"
+          ]
+        },
+        {
+          "input": "asset-022",
+          "references": [
+            "asset-023",
+            "asset-024"
+          ]
+        },
+        {
+          "input": "asset-025",
+          "references": [
+            "asset-026"
+          ]
+        },
+        {
+          "input": "asset-017",
+          "references": [
+            "asset-018"
+          ]
+        },
+        {
+          "input": "asset-007",
+          "references": [
+            "asset-028",
+            "asset-029"
+          ]
+        },
+        {
+          "input": "asset-009",
+          "references": [
+            "asset-030",
+            "asset-031"
+          ]
+        }
+      ],
+      "reference_evidence_state": "unverified",
+      "scoped_reference_reviews": [
+        {
+          "run": "legacy-reference-review-20261015",
+          "cases": [
+            "legacy-pixels-asset-001-asset-013",
+            "legacy-pixels-asset-014-asset-015",
+            "legacy-pixels-asset-020-asset-018"
+          ],
+          "limits": "Only named current input/reference requests are verified; XML content is not exact native serialization."
+        }
+      ]
+    },
+    {
+      "test_module": "pylibCZIrw/tests/integration/metadata/test_metadata.py",
+      "source_lines": [
+        15,
+        59
+      ],
+      "test_name": "test_raw_metadata",
+      "reference_format": "UTF-8 text read by the existing test; raw file hashes above are byte-exact",
+      "pairs": [
+        {
+          "input": "asset-003",
+          "references": [
+            "asset-036"
+          ]
+        },
+        {
+          "input": "asset-005",
+          "references": [
+            "asset-037"
+          ]
+        },
+        {
+          "input": "asset-001",
+          "references": [
+            "asset-035"
+          ]
+        },
+        {
+          "input": "asset-007",
+          "references": [
+            "asset-038"
+          ]
+        },
+        {
+          "input": "asset-009",
+          "references": [
+            "asset-039"
+          ]
+        }
+      ],
+      "reference_evidence_state": "unverified",
+      "scoped_reference_reviews": [
+        {
+          "run": "legacy-reference-review-20261015",
+          "cases": [
+            "legacy-XML-asset-001-asset-035",
+            "legacy-XML-asset-003-asset-036",
+            "legacy-XML-asset-005-asset-037",
+            "legacy-XML-asset-007-asset-038",
+            "legacy-XML-asset-009-asset-039"
+          ],
+          "limits": "Only named current input/reference requests are verified; XML content is not exact native serialization."
+        }
+      ]
+    },
+    {
+      "test_module": "pylibCZIrw/tests/integration/read/test_subblock_enumeration.py",
+      "source_lines": [
+        13,
+        16
+      ],
+      "inputs": [
+        "asset-020",
+        "asset-007",
+        "asset-009",
+        "asset-025"
+      ],
+      "scope": "Existing enumeration/coordinate assertions; not new indexed/M-selected pixel or selective-payload evidence.",
+      "reference_evidence_state": "unverified"
+    }
+  ],
+  "required_case_groups": [
+    {
+      "id": "C01",
+      "role": "index-and-M-selection",
+      "required": true,
+      "state": "reference-verified",
+      "asset_ids": [
+        "asset-046",
+        "asset-009",
+        "asset-056",
+        "asset-001",
+        "asset-003",
+        "asset-047"
+      ],
+      "expected_results": {
+        "path": "pylibCZIrw/tests/integration/test_data/fixture_public_references.json",
+        "pointer": "/case_assignments/C01",
+        "scope": "Reviewed inputs, exact references and parameter/double specifications; not implementation coverage"
+      },
+      "reference_runs": [
+        "fixture-refresh-20261015"
+      ],
+      "implementation_runs": [],
+      "assignment_state": "complete"
+    },
+    {
+      "id": "C02",
+      "role": "direct-pixels-masks-and-lifetimes",
+      "required": true,
+      "state": "reference-verified",
+      "asset_ids": [
+        "asset-001",
+        "asset-014",
+        "asset-016",
+        "asset-017",
+        "asset-019",
+        "asset-020",
+        "asset-041",
+        "asset-009",
+        "asset-057",
+        "asset-058",
+        "asset-048",
+        "asset-049"
+      ],
+      "expected_results": {
+        "path": "pylibCZIrw/tests/integration/test_data/fixture_public_references.json",
+        "pointer": "/case_assignments/C02",
+        "scope": "Reviewed inputs, exact references and parameter/double specifications; not implementation coverage"
+      },
+      "reference_runs": [
+        "fixture-refresh-20261015"
+      ],
+      "implementation_runs": [],
+      "assignment_state": "complete"
+    },
+    {
+      "id": "C03",
+      "role": "compression-and-unsupported-identifiers",
+      "required": true,
+      "state": "reference-verified",
+      "asset_ids": [
+        "asset-041",
+        "asset-042",
+        "asset-043",
+        "asset-051",
+        "asset-044"
+      ],
+      "expected_results": {
+        "path": "pylibCZIrw/tests/integration/test_data/fixture_public_references.json",
+        "pointer": "/case_assignments/C03",
+        "scope": "Reviewed inputs, exact references and parameter/double specifications; not implementation coverage"
+      },
+      "reference_runs": [
+        "fixture-refresh-20261015"
+      ],
+      "implementation_runs": [],
+      "assignment_state": "complete"
+    },
+    {
+      "id": "C04",
+      "role": "selected-subblock-XML",
+      "required": true,
+      "state": "reference-verified",
+      "asset_ids": [
+        "asset-056",
+        "asset-053",
+        "asset-054",
+        "asset-055",
+        "asset-045"
+      ],
+      "expected_results": {
+        "path": "pylibCZIrw/tests/integration/test_data/fixture_public_references.json",
+        "pointer": "/case_assignments/C04",
+        "scope": "Reviewed inputs, exact references and parameter/double specifications; not implementation coverage"
+      },
+      "reference_runs": [
+        "fixture-refresh-20261015"
+      ],
+      "implementation_runs": [],
+      "assignment_state": "complete"
+    },
+    {
+      "id": "C05",
+      "role": "actual-stored-levels-and-irregular-geometry",
+      "required": true,
+      "state": "reference-verified",
+      "asset_ids": [
+        "asset-046",
+        "asset-009",
+        "asset-056",
+        "asset-057",
+        "asset-058",
+        "asset-052"
+      ],
+      "expected_results": {
+        "path": "pylibCZIrw/tests/integration/test_data/fixture_public_references.json",
+        "pointer": "/case_assignments/C05",
+        "scope": "Reviewed inputs, exact references and parameter/double specifications; not implementation coverage"
+      },
+      "reference_runs": [
+        "fixture-refresh-20261015"
+      ],
+      "implementation_runs": [],
+      "assignment_state": "complete"
+    },
+    {
+      "id": "C06",
+      "role": "attachment-payloads-images-and-errors",
+      "required": true,
+      "state": "reference-verified",
+      "asset_ids": [
+        "asset-050",
+        "asset-041",
+        "asset-003"
+      ],
+      "expected_results": {
+        "path": "pylibCZIrw/tests/integration/test_data/fixture_public_references.json",
+        "pointer": "/case_assignments/C06",
+        "scope": "Reviewed inputs, exact references and parameter/double specifications; not implementation coverage"
+      },
+      "reference_runs": [
+        "fixture-refresh-20261015"
+      ],
+      "implementation_runs": [],
+      "assignment_state": "complete"
+    },
+    {
+      "id": "C07",
+      "role": "existing-writer-editor-compatibility-and-errors",
+      "required": true,
+      "state": "reference-verified",
+      "asset_ids": [
+        "asset-041",
+        "asset-058",
+        "asset-001",
+        "asset-035",
+        "asset-003",
+        "asset-036",
+        "asset-005",
+        "asset-037",
+        "asset-007",
+        "asset-038",
+        "asset-009",
+        "asset-039",
+        "asset-011",
+        "asset-040",
+        "asset-013",
+        "asset-014",
+        "asset-015",
+        "asset-016",
+        "asset-017",
+        "asset-018",
+        "asset-019",
+        "asset-020",
+        "asset-021",
+        "asset-022",
+        "asset-023",
+        "asset-024",
+        "asset-025",
+        "asset-026",
+        "asset-027",
+        "asset-028",
+        "asset-029",
+        "asset-030",
+        "asset-031",
+        "asset-032",
+        "asset-033",
+        "asset-034",
+        "asset-050",
+        "asset-056"
+      ],
+      "expected_results": {
+        "path": "pylibCZIrw/tests/integration/test_data/fixture_public_references.json",
+        "pointer": "/case_assignments/C07",
+        "scope": "Reviewed inputs, exact references and parameter/double specifications; not implementation coverage"
+      },
+      "reference_runs": [
+        "fixture-refresh-20261015",
+        "legacy-reference-review-20261015"
+      ],
+      "implementation_runs": [],
+      "assignment_state": "complete",
+      "reference_scope_decision": "public-fixture-policy",
+      "remaining_reference_scope": "Historical producer/recipe details remain explicitly unknown under the approved scope decision. Three writer pixel references are independently exact and six global XML contents match. Unverified zoom/conversion/exact-format snapshots remain unchanged regression-only references; none becomes a new-feature oracle. The earlier refresh record's blocked state is historical."
+    }
+  ],
+  "resource_protocol": {
+    "policy": "doc/fixture_policy.md",
+    "logical_budgets": {
+      "listing_pixel_XML_attachment_payload_reads": 0,
+      "listing_pixel_decodes": 0,
+      "ambiguous_or_missing_M_selection_payload_reads": 0,
+      "selected_XML_pixel_decodes": 0,
+      "stored_reduced_level_level0_payload_reads": 0,
+      "unselected_subblock_or_attachment_payload_reads": 0
+    },
+    "XML_overhead": "Selected native subblock reads may load full selected payloads; record that overhead without claiming XML-only I/O.",
+    "memory": {
+      "warmup_cycles": 10,
+      "measured_cycles": 100,
+      "release_outputs_between_cycles": true,
+      "test_retained_outputs_after_close_separately": true,
+      "cross_platform_RSS_ceiling": null
+    },
+    "required_measurements": [
+      "logical stream ranges",
+      "payload read and decoder counts",
+      "cache state",
+      "compressed and decoded selected sizes",
+      "output sizes and lifetimes",
+      "native-process peak/private memory",
+      "command and environment"
+    ],
+    "feature_measurements": "pending owning N01/F01/F03-F05/T02 tasks; not a T01 prerequisite or a claimed result"
+  },
+  "network_evidence": {
+    "core_suite": "local hash-pinned fixtures; no internet required",
+    "HTTPS": "Separate required release checks; preserve existing URI tests and add invalid-certificate rejection evidence.",
+    "remote_fixture_identity_and_rights": "unverified; URL accessibility is neither hash identity nor redistribution permission",
+    "invalid_certificate_rejection": "unverified"
+  },
+  "integrity_gate": {
+    "state": "reference-verified",
+    "hook": "pylibCZIrw/tests/conftest.py",
+    "tests": "pylibCZIrw/tests/unit/test_fixture_manifest.py",
+    "phase": "pytest_configure, including late/root discovery before owned test modules are collected",
+    "checks": "Streamed exact-byte sizes and SHA256 for every active asset and alias, unique IDs/paths and inventory totals; no text normalization or missing-file skips.",
+    "artifact_test_layout": "Preserve repository-relative fixture paths, the manifest and the tests tree when staging installed-wheel tests. The verifier requires neither Git nor source package imports.",
+    "previous_candidate_run": {
+      "evidence_root": "public-artifacts/czi-fixture-lf-20261014",
+      "results": {
+        "passed": 64,
+        "skipped": 0,
+        "failed": 0,
+        "errors": 0
+      },
+      "limits": "Superseded: subsequent root-discovery regression exposed that pytest_sessionstart misses late conftest loading; the final pytest_configure guard includes both discovery cases."
+    },
+    "local_run": {
+      "date": "2026-10-14",
+      "platform": "Windows 11 x86-64",
+      "python": "3.12.12",
+      "pytest": "9.1.1",
+      "numpy": "2.5.4",
+      "evidence_root": "public-artifacts/czi-fixture-lf-20261014-final",
+      "command": "python -I -m pytest --import-mode=importlib pylibCZIrw/tests/unit/test_fixture_manifest.py pylibCZIrw/tests/integration/metadata/test_metadata.py -q -rs --timeout=120 --junitxml=results.xml",
+      "log": "tests.log",
+      "junit": "results.xml",
+      "results": {
+        "passed": 65,
+        "skipped": 0,
+        "failed": 0,
+        "errors": 0
+      },
+      "integrity_tests": 12,
+      "metadata_tests": 53,
+      "python_module": "public-artifacts/czi.py",
+      "native_module": "public-artifacts/_pylibCZIrw.cp312-win_amd64.pyd",
+      "limits": "Focused existing installed-wheel regression, not a rebuilt wheel, full-suite rerun, other-platform certification or G1/G2/G3 evidence completion. Historical 292-pass/one-skip baseline is unchanged."
+    }
+  },
+  "assignment_evidence": {
+    "id": "fixture-refresh-20261015",
+    "recorded_on": "2026-10-15",
+    "state": "complete-input-assignments",
+    "case_ids": [
+      "C01",
+      "C02",
+      "C03",
+      "C04",
+      "C05",
+      "C06",
+      "C07"
+    ],
+    "original_assets": 34,
+    "generated_assets": 18,
+    "limits": "Historical assignment evidence is unchanged. C07's former provenance blocker is resolved by historical-provenance-scope-20261015; implementation runs remain empty for all groups.",
+    "variants": 32
+  },
+  "compatibility_refresh": {
+    "evidence": "fixture-refresh-20261015",
+    "results": {
+      "tests": 80,
+      "failed": 0,
+      "errors": 0,
+      "skipped": 0,
+      "passed": 80
+    },
+    "scope": "Focused installed-wheel writer/editor/enumeration and manifest regression only, not a full-suite rerun, new-API test or all-target certification."
+  },
+  "corpus_policy": {
+    "id": "public-fixture-policy",
+    "record": "doc/fixture_policy.md",
+    "existing_history_not_reconstructed": true,
+    "release_or_distribution_approval": false
+  },
+  "public_projection": {
+    "not_original_record": true,
+    "historical_manifest_sha256": "96F21998214FFBC47810AE0F1293EA23DDCCEE83B3F1508E61077898E6E8FF2A",
+    "fixture_bytes_changed": false,
+    "reference_states_promoted": false,
+    "internal_approval_records_omitted": true
+  }
+}

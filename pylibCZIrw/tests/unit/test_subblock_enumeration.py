@@ -6,6 +6,8 @@ from unittest import mock
 import pytest
 
 # pylint: disable=no-name-in-module
+# Package-owned private/native API intentionally exercised.
+# pylint: disable-next=import-private-name
 from _pylibCZIrw import (
     CompressionMode,
     DimCoordinate,

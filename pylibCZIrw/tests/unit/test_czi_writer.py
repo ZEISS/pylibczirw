@@ -10,6 +10,8 @@ from unittest.mock import call, patch
 import numpy as np
 import pytest
 
+# Package-owned private/native API intentionally exercised.
+# pylint: disable-next=import-private-name
 import _pylibCZIrw
 from pylibCZIrw.czi import CziReader, CziWriter, create_czi
 

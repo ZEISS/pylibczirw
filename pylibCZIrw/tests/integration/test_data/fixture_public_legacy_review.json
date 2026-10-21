@@ -1,0 +1,379 @@
+{
+  "schema_version": 1,
+  "id": "legacy-reference-review-20261015",
+  "recorded_on": "2026-10-15",
+  "state": "partial-request-scoped-reference-evidence; owner scope decision pending",
+  "record": "doc/fixture_policy.md",
+  "reader_commit": "ab0f6388c39388a4e38d37810cdd693d41fa5c95",
+  "independent_results": {
+    "recorded_on": "2026-10-15",
+    "python": "3.12.12 (main, Feb 12 2026, 00:40:26) [MSC v.1944 64 bit (AMD64)]",
+    "czifile": "2026.8.16",
+    "numpy": "2.5.4",
+    "reader_source_sha256": "12E0ACA17260B3B16DE3FC556C1165074EF9D3F35B0FD9661B42972C095D0548",
+    "cases": [
+      {
+        "id": "legacy-pixels-asset-001-asset-013",
+        "input_asset_id": "asset-001",
+        "reference_asset_id": "asset-013",
+        "state": "reference-verified",
+        "method": "Uncompressed stored payload reshaped by raw X/Y sizes and native component count; no color swap, conversion, resampling or wrapper import",
+        "dtype": "uint8",
+        "shape_YXA": [
+          1000,
+          1200,
+          3
+        ],
+        "component_order": "B,G,R",
+        "pixel_count": 1200000,
+        "component_count": 3600000,
+        "expected_sha256": "5A407901153C11B020C8A100CD65B75BE9222CDF337A7BF8AF273B8A38253256",
+        "actual_sha256": "5A407901153C11B020C8A100CD65B75BE9222CDF337A7BF8AF273B8A38253256"
+      },
+      {
+        "id": "legacy-pixels-asset-014-asset-015",
+        "input_asset_id": "asset-014",
+        "reference_asset_id": "asset-015",
+        "state": "reference-verified",
+        "method": "Uncompressed stored payload reshaped by raw X/Y sizes and native component count; no color swap, conversion, resampling or wrapper import",
+        "dtype": "uint16",
+        "shape_YXA": [
+          256,
+          256,
+          3
+        ],
+        "component_order": "B,G,R",
+        "pixel_count": 65536,
+        "component_count": 196608,
+        "expected_sha256": "229104101789D400DFE5BCB7F36C4963A9A87F10AFB99A5C77A34AAEF3F47A97",
+        "actual_sha256": "229104101789D400DFE5BCB7F36C4963A9A87F10AFB99A5C77A34AAEF3F47A97"
+      },
+      {
+        "id": "legacy-pixels-asset-020-asset-018",
+        "input_asset_id": "asset-020",
+        "reference_asset_id": "asset-018",
+        "state": "reference-verified",
+        "method": "Uncompressed stored payload reshaped by raw X/Y sizes and native component count; no color swap, conversion, resampling or wrapper import",
+        "dtype": "uint8",
+        "shape_YXA": [
+          256,
+          256,
+          1
+        ],
+        "component_order": "grayscale",
+        "pixel_count": 65536,
+        "component_count": 65536,
+        "expected_sha256": "3923A7B44E71FB71AA0A18173EAC5B8C4A55F072E1B2270BAB6BBFC9393613CD",
+        "actual_sha256": "3923A7B44E71FB71AA0A18173EAC5B8C4A55F072E1B2270BAB6BBFC9393613CD"
+      },
+      {
+        "id": "legacy-XML-asset-001-asset-035",
+        "input_asset_id": "asset-001",
+        "reference_asset_id": "asset-035",
+        "state": "reference-verified",
+        "method": "Independent XML content comparison: ordered tags/attributes and all significant text/tails; ignore whitespace-only formatting and declaration spelling only. Exact native serialization remains regression evidence, not an independent byte oracle.",
+        "semantic_match": true,
+        "exact_native_text_oracle": "unverified",
+        "exact_bytes": false,
+        "approved_LF_only_equivalence": false,
+        "source_bytes": 767,
+        "reference_bytes": 688,
+        "source_sha256": "330B11F6BCDDBC98E250C51E914441D0D3DC60ED1338AE95873F28F67855185E",
+        "reference_sha256": "95BE5C69310590501F1CDD9D19889DF800485D8DDC70953A586B545EE705F482"
+      },
+      {
+        "id": "legacy-XML-asset-003-asset-036",
+        "input_asset_id": "asset-003",
+        "reference_asset_id": "asset-036",
+        "state": "reference-verified",
+        "method": "Independent XML content comparison: ordered tags/attributes and all significant text/tails; ignore whitespace-only formatting and declaration spelling only. Exact native serialization remains regression evidence, not an independent byte oracle.",
+        "semantic_match": true,
+        "exact_native_text_oracle": "unverified",
+        "exact_bytes": false,
+        "approved_LF_only_equivalence": false,
+        "source_bytes": 331977,
+        "reference_bytes": 289639,
+        "source_sha256": "DD1BDA9507C43C2219F99799E6422DC57885697B282FCA6F1CBE1B0D7490E2ED",
+        "reference_sha256": "FBD432463A2F42043FC466531CF78F79AD86DA891404EA1217357F4B7A775DD1"
+      },
+      {
+        "id": "legacy-XML-asset-005-asset-037",
+        "input_asset_id": "asset-005",
+        "reference_asset_id": "asset-037",
+        "state": "reference-verified",
+        "method": "Independent XML content comparison: ordered tags/attributes and all significant text/tails; ignore whitespace-only formatting and declaration spelling only. Exact native serialization remains regression evidence, not an independent byte oracle.",
+        "semantic_match": true,
+        "exact_native_text_oracle": "unverified",
+        "exact_bytes": false,
+        "approved_LF_only_equivalence": false,
+        "source_bytes": 337466,
+        "reference_bytes": 293894,
+        "source_sha256": "3F763CB722238155DD86A3203AC4399F721199A8E076B37C8B18D110250A3956",
+        "reference_sha256": "B2F8E900DC6D411683D48B77A881CF27E52E399C49C3A52F8D2F3ACA3E87375C"
+      },
+      {
+        "id": "legacy-XML-asset-007-asset-038",
+        "input_asset_id": "asset-007",
+        "reference_asset_id": "asset-038",
+        "state": "reference-verified",
+        "method": "Independent XML content comparison: ordered tags/attributes and all significant text/tails; ignore whitespace-only formatting and declaration spelling only. Exact native serialization remains regression evidence, not an independent byte oracle.",
+        "semantic_match": true,
+        "exact_native_text_oracle": "unverified",
+        "exact_bytes": false,
+        "approved_LF_only_equivalence": false,
+        "source_bytes": 341914,
+        "reference_bytes": 297837,
+        "source_sha256": "54653292ECE9F865C9CC74387102EA47071CEC55853885CA1719DE37F79CAB73",
+        "reference_sha256": "08EB1571EC29D8528967BD6C1100C4FDED11EC6B3080ADDDD7BF16870E9A7415"
+      },
+      {
+        "id": "legacy-XML-asset-009-asset-039",
+        "input_asset_id": "asset-009",
+        "reference_asset_id": "asset-039",
+        "state": "reference-verified",
+        "method": "Independent XML content comparison: ordered tags/attributes and all significant text/tails; ignore whitespace-only formatting and declaration spelling only. Exact native serialization remains regression evidence, not an independent byte oracle.",
+        "semantic_match": true,
+        "exact_native_text_oracle": "unverified",
+        "exact_bytes": false,
+        "approved_LF_only_equivalence": false,
+        "source_bytes": 337601,
+        "reference_bytes": 296338,
+        "source_sha256": "AF1937AB228ADA7BD0C5E80E66C039C35384FEA92262818D95355C2809609C1D",
+        "reference_sha256": "C7D1E729867DC028D1E87980E75DDE5298A6D1DC0B9397D8FFA0009C7F871FD6"
+      },
+      {
+        "id": "legacy-XML-asset-011-asset-040",
+        "input_asset_id": "asset-011",
+        "reference_asset_id": "asset-040",
+        "state": "reference-verified",
+        "method": "Independent XML content comparison: ordered tags/attributes and all significant text/tails; ignore whitespace-only formatting and declaration spelling only. Exact native serialization remains regression evidence, not an independent byte oracle.",
+        "semantic_match": true,
+        "exact_native_text_oracle": "unverified",
+        "exact_bytes": false,
+        "approved_LF_only_equivalence": false,
+        "source_bytes": 590703,
+        "reference_bytes": 590728,
+        "source_sha256": "24D741BA7EE913B777FBA0FE333F4AADDAA5A9B4248BDC6A79CADF061FD9D95A",
+        "reference_sha256": "F75A3F00114E8EBEF163D3A0B374770F81D143C015E697DE7C783F37F2288145"
+      }
+    ],
+    "limits": "Verifies these current input/reference requests, not historical generation recipes, arbitrary zoom/conversion outputs, API implementation coverage or rights exceptions."
+  },
+  "initial_byte_comparison": {
+    "recorded_on": "2026-10-15",
+    "python": "3.12.12 (main, Feb 12 2026, 00:40:26) [MSC v.1944 64 bit (AMD64)]",
+    "czifile": "2026.8.16",
+    "numpy": "2.5.4",
+    "reader_source_sha256": "12E0ACA17260B3B16DE3FC556C1165074EF9D3F35B0FD9661B42972C095D0548",
+    "cases": [
+      {
+        "id": "legacy-pixels-asset-001-asset-013",
+        "input_asset_id": "asset-001",
+        "reference_asset_id": "asset-013",
+        "state": "reference-verified",
+        "method": "Uncompressed stored payload reshaped by raw X/Y sizes and native component count; no color swap, conversion, resampling or wrapper import",
+        "dtype": "uint8",
+        "shape_YXA": [
+          1000,
+          1200,
+          3
+        ],
+        "component_order": "B,G,R",
+        "pixel_count": 1200000,
+        "component_count": 3600000,
+        "expected_sha256": "5A407901153C11B020C8A100CD65B75BE9222CDF337A7BF8AF273B8A38253256",
+        "actual_sha256": "5A407901153C11B020C8A100CD65B75BE9222CDF337A7BF8AF273B8A38253256"
+      },
+      {
+        "id": "legacy-pixels-asset-014-asset-015",
+        "input_asset_id": "asset-014",
+        "reference_asset_id": "asset-015",
+        "state": "reference-verified",
+        "method": "Uncompressed stored payload reshaped by raw X/Y sizes and native component count; no color swap, conversion, resampling or wrapper import",
+        "dtype": "uint16",
+        "shape_YXA": [
+          256,
+          256,
+          3
+        ],
+        "component_order": "B,G,R",
+        "pixel_count": 65536,
+        "component_count": 196608,
+        "expected_sha256": "229104101789D400DFE5BCB7F36C4963A9A87F10AFB99A5C77A34AAEF3F47A97",
+        "actual_sha256": "229104101789D400DFE5BCB7F36C4963A9A87F10AFB99A5C77A34AAEF3F47A97"
+      },
+      {
+        "id": "legacy-pixels-asset-020-asset-018",
+        "input_asset_id": "asset-020",
+        "reference_asset_id": "asset-018",
+        "state": "reference-verified",
+        "method": "Uncompressed stored payload reshaped by raw X/Y sizes and native component count; no color swap, conversion, resampling or wrapper import",
+        "dtype": "uint8",
+        "shape_YXA": [
+          256,
+          256,
+          1
+        ],
+        "component_order": "grayscale",
+        "pixel_count": 65536,
+        "component_count": 65536,
+        "expected_sha256": "3923A7B44E71FB71AA0A18173EAC5B8C4A55F072E1B2270BAB6BBFC9393613CD",
+        "actual_sha256": "3923A7B44E71FB71AA0A18173EAC5B8C4A55F072E1B2270BAB6BBFC9393613CD"
+      },
+      {
+        "id": "legacy-XML-asset-001-asset-035",
+        "input_asset_id": "asset-001",
+        "reference_asset_id": "asset-035",
+        "state": "blocked",
+        "method": "Independent global XML extraction compared with pinned canonical LF reference; no XML parse/reformat or metadata values exposed",
+        "exact_bytes": false,
+        "approved_LF_only_equivalence": false,
+        "source_bytes": 767,
+        "reference_bytes": 688,
+        "source_sha256": "330B11F6BCDDBC98E250C51E914441D0D3DC60ED1338AE95873F28F67855185E",
+        "reference_sha256": "95BE5C69310590501F1CDD9D19889DF800485D8DDC70953A586B545EE705F482"
+      },
+      {
+        "id": "legacy-XML-asset-003-asset-036",
+        "input_asset_id": "asset-003",
+        "reference_asset_id": "asset-036",
+        "state": "blocked",
+        "method": "Independent global XML extraction compared with pinned canonical LF reference; no XML parse/reformat or metadata values exposed",
+        "exact_bytes": false,
+        "approved_LF_only_equivalence": false,
+        "source_bytes": 331977,
+        "reference_bytes": 289639,
+        "source_sha256": "DD1BDA9507C43C2219F99799E6422DC57885697B282FCA6F1CBE1B0D7490E2ED",
+        "reference_sha256": "FBD432463A2F42043FC466531CF78F79AD86DA891404EA1217357F4B7A775DD1"
+      },
+      {
+        "id": "legacy-XML-asset-005-asset-037",
+        "input_asset_id": "asset-005",
+        "reference_asset_id": "asset-037",
+        "state": "blocked",
+        "method": "Independent global XML extraction compared with pinned canonical LF reference; no XML parse/reformat or metadata values exposed",
+        "exact_bytes": false,
+        "approved_LF_only_equivalence": false,
+        "source_bytes": 337466,
+        "reference_bytes": 293894,
+        "source_sha256": "3F763CB722238155DD86A3203AC4399F721199A8E076B37C8B18D110250A3956",
+        "reference_sha256": "B2F8E900DC6D411683D48B77A881CF27E52E399C49C3A52F8D2F3ACA3E87375C"
+      },
+      {
+        "id": "legacy-XML-asset-007-asset-038",
+        "input_asset_id": "asset-007",
+        "reference_asset_id": "asset-038",
+        "state": "blocked",
+        "method": "Independent global XML extraction compared with pinned canonical LF reference; no XML parse/reformat or metadata values exposed",
+        "exact_bytes": false,
+        "approved_LF_only_equivalence": false,
+        "source_bytes": 341914,
+        "reference_bytes": 297837,
+        "source_sha256": "54653292ECE9F865C9CC74387102EA47071CEC55853885CA1719DE37F79CAB73",
+        "reference_sha256": "08EB1571EC29D8528967BD6C1100C4FDED11EC6B3080ADDDD7BF16870E9A7415"
+      },
+      {
+        "id": "legacy-XML-asset-009-asset-039",
+        "input_asset_id": "asset-009",
+        "reference_asset_id": "asset-039",
+        "state": "blocked",
+        "method": "Independent global XML extraction compared with pinned canonical LF reference; no XML parse/reformat or metadata values exposed",
+        "exact_bytes": false,
+        "approved_LF_only_equivalence": false,
+        "source_bytes": 337601,
+        "reference_bytes": 296338,
+        "source_sha256": "AF1937AB228ADA7BD0C5E80E66C039C35384FEA92262818D95355C2809609C1D",
+        "reference_sha256": "C7D1E729867DC028D1E87980E75DDE5298A6D1DC0B9397D8FFA0009C7F871FD6"
+      },
+      {
+        "id": "legacy-XML-asset-011-asset-040",
+        "input_asset_id": "asset-011",
+        "reference_asset_id": "asset-040",
+        "state": "blocked",
+        "method": "Independent global XML extraction compared with pinned canonical LF reference; no XML parse/reformat or metadata values exposed",
+        "exact_bytes": false,
+        "approved_LF_only_equivalence": false,
+        "source_bytes": 590703,
+        "reference_bytes": 590728,
+        "source_sha256": "24D741BA7EE913B777FBA0FE333F4AADDAA5A9B4248BDC6A79CADF061FD9D95A",
+        "reference_sha256": "F75A3F00114E8EBEF163D3A0B374770F81D143C015E697DE7C783F37F2288145"
+      }
+    ],
+    "limits": "Verifies these current input/reference requests, not historical generation recipes, arbitrary zoom/conversion outputs, API implementation coverage or rights exceptions."
+  },
+  "sources": [
+    {
+      "name": "review_references.py",
+      "size_bytes": 5521,
+      "sha256": "279AA35047CD3A111CE6803AA7A9E16BCC1CB677DCEDF8FE9AFEF65D919F8B75",
+      "source_utf8": "from __future__ import annotations\r\n\r\nimport hashlib\r\nimport json\r\nfrom pathlib import Path\r\nimport struct\r\nimport sys\r\nfrom xml.etree import ElementTree\r\n\r\nsys.path.insert(0, \"public-artifacts/czifile\")\r\n\r\nimport czifile\r\nimport numpy as np\r\n\r\n\r\ndef digest(content: bytes) -> str:\r\n    return hashlib.sha256(content).hexdigest().upper()\r\n\r\n\r\ndef xml_content(element) -> tuple:\r\n    text = element.text if element.text and element.text.strip() else None\r\n    tail = element.tail if element.tail and element.tail.strip() else None\r\n    return element.tag, sorted(element.attrib.items()), text, tail, tuple(xml_content(child) for child in element)\r\n\r\n\r\ndef main() -> None:\r\n    root = Path(\"public-artifacts/pylibczirw\")\r\n    manifest = json.loads((root / \"pylibCZIrw/tests/integration/test_data/fixture_manifest.json\").read_text())\r\n    assets = {asset[\"id\"]: asset for asset in manifest[\"assets\"]}\r\n    results = []\r\n    for input_id, reference_id in ((\"asset-001\", \"asset-013\"), (\"asset-014\", \"asset-015\"), (\"asset-020\", \"asset-018\")):\r\n        source = assets[input_id]\r\n        reference = assets[reference_id]\r\n        content = (root / source[\"path\"]).read_bytes()\r\n        expected_bytes = (root / reference[\"path\"]).read_bytes()\r\n        assert digest(content) == source[\"sha256\"] and digest(expected_bytes) == reference[\"sha256\"]\r\n        with np.load(root / reference[\"path\"], allow_pickle=False) as archive:\r\n            expected = archive[\"arr\"]\r\n        with czifile.CziFile(root / source[\"path\"]) as reader:\r\n            assert len(reader.subblock_directory) == 1\r\n            entry = reader.subblock_directory[0]\r\n            assert int(entry.compression) == 0\r\n            dimensions = {\r\n                axis.rstrip(b\"\\0\").decode(\"ascii\"): (start, size, stored or size)\r\n                for axis, start, size, physical, stored in struct.iter_unpack(\r\n                    \"<4siifi\", content[entry.offset + 32:entry.offset + 32 + entry.dimensions_count * 20]\r\n                )\r\n            }\r\n            height, width = dimensions[\"Y\"][2], dimensions[\"X\"][2]\r\n            assert expected.shape[:2] == (height, width)\r\n            components = 3 if entry.pixel_type.name.startswith(\"BGR\") else 1\r\n            actual = np.frombuffer(entry.read_segment_data(reader).data(raw=True), dtype=entry.pixel_type.dtype).reshape(height, width, components)\r\n            assert actual.dtype == expected.dtype\r\n            np.testing.assert_array_equal(actual, expected)\r\n            results.append({\"id\": f\"legacy-pixels-{input_id}-{reference_id}\", \"input_asset_id\": input_id, \"reference_asset_id\": reference_id, \"state\": \"reference-verified\", \"method\": \"Uncompressed stored payload reshaped by raw X/Y sizes and native component count; no color swap, conversion, resampling or wrapper import\", \"dtype\": str(actual.dtype), \"shape_YXA\": list(actual.shape), \"component_order\": \"B,G,R\" if components == 3 else \"grayscale\", \"pixel_count\": int(height * width), \"component_count\": int(actual.size), \"expected_sha256\": digest(expected.tobytes()), \"actual_sha256\": digest(actual.tobytes())})\r\n    for input_id, reference_id in ((\"asset-001\", \"asset-035\"), (\"asset-003\", \"asset-036\"), (\"asset-005\", \"asset-037\"), (\"asset-007\", \"asset-038\"), (\"asset-009\", \"asset-039\"), (\"asset-011\", \"asset-040\")):\r\n        source = assets[input_id]\r\n        reference = assets[reference_id]\r\n        assert digest((root / source[\"path\"]).read_bytes()) == source[\"sha256\"]\r\n        expected = (root / reference[\"path\"]).read_bytes()\r\n        assert digest(expected) == reference[\"sha256\"]\r\n        with czifile.CziFile(root / source[\"path\"]) as reader:\r\n            actual = reader.metadata().encode(\"utf8\")\r\n        normalized = actual.replace(b\"\\r\\n\", b\"\\n\")\r\n        matched = actual == expected or normalized == expected\r\n        semantic_match = xml_content(ElementTree.fromstring(actual)) == xml_content(ElementTree.fromstring(expected))\r\n        results.append({\"id\": f\"legacy-XML-{input_id}-{reference_id}\", \"input_asset_id\": input_id, \"reference_asset_id\": reference_id, \"state\": \"reference-verified\" if semantic_match else \"blocked\", \"method\": \"Independent XML content comparison: ordered tags/attributes and all significant text/tails; ignore whitespace-only formatting and declaration spelling only. Exact native serialization remains regression evidence, not an independent byte oracle.\", \"semantic_match\": semantic_match, \"exact_native_text_oracle\": \"unverified\" if not matched else \"reference-verified\", \"exact_bytes\": actual == expected, \"approved_LF_only_equivalence\": normalized == expected, \"source_bytes\": len(actual), \"reference_bytes\": len(expected), \"source_sha256\": digest(actual), \"reference_sha256\": digest(expected)})\r\n    assert not any(name in sys.modules for name in (\"_pylibCZIrw\", \"pylibCZIrw\", \"libczi\"))\r\n    reader_source = Path(\"public-artifacts/czifile.py\")\r\n    report = {\"recorded_on\": \"2026-10-15\", \"python\": sys.version, \"czifile\": czifile.__version__, \"numpy\": np.__version__, \"reader_source_sha256\": digest(reader_source.read_bytes()), \"cases\": results, \"limits\": \"Verifies these current input/reference requests, not historical generation recipes, arbitrary zoom/conversion outputs, API implementation coverage or rights exceptions.\"}\r\n    destination = Path(__file__).parent / \"reference-checks-v2.json\"\r\n    assert not destination.exists()\r\n    destination.write_text(json.dumps(report, indent=2), encoding=\"utf8\")\r\n    print(json.dumps(report, indent=2))\r\n\r\n\r\nif __name__ == \"__main__\":\r\n    main()",
+      "historical_source_sha256": "AA2D3809F624D3E0B7B53BD72C1DC8122F0EE1E3BEE4701B05AB87908E396573",
+      "historical_source_size_bytes": 5516,
+      "publication_source_projection": true
+    },
+    {
+      "name": "record_review.js",
+      "size_bytes": 6740,
+      "sha256": "26609EF7DED919F42337BF6221DA51F9015D32AF98B8C8C9E175F4FEA6777F3F",
+      "source_utf8": "const fs = require('node:fs');\r\nconst path = require('node:path');\r\nconst crypto = require('node:crypto');\r\nconst assert = require('node:assert/strict');\r\n\r\nconst root = 'public-artifacts/pylibczirw';\r\nconst data = 'pylibCZIrw/tests/integration/test_data';\r\nconst manifestPath = path.join(root, data, 'fixture_manifest.json');\r\nconst manifest = JSON.parse(fs.readFileSync(manifestPath, 'utf8'));\r\nconst read = name => JSON.parse(fs.readFileSync(path.join(__dirname, name), 'utf8'));\r\nconst hash = bytes => crypto.createHash('sha256').update(bytes).digest('hex').toUpperCase();\r\nconst id = 'legacy-reference-review-20261015';\r\nconst destination = `${data}/fixture_public_legacy_review.json`;\r\nassert(!fs.existsSync(path.join(root,destination)));\r\nassert(!manifest.reference_audits.some(record => record.id === id));\r\nfor(const pin of manifest.reference_audits){const bytes=fs.readFileSync(path.join(root,pin.path));assert.equal(bytes.length,pin.size_bytes);assert.equal(hash(bytes),pin.sha256);}\r\nconst results = read('reference-checks-v2.json');\r\nassert.equal(results.cases.length, 9);\r\nassert(results.cases.every(record => record.state === 'reference-verified'));\r\nconst sources = ['review_references.py','record_review.js'].map(name => {\r\n  const bytes = fs.readFileSync(path.join(__dirname,name));\r\n  return {name,size_bytes:bytes.length,sha256:hash(bytes),source_utf8:bytes.toString('utf8')};\r\n});\r\nconst report = {\r\n  schema_version:1,id,recorded_on:'2026-10-15',\r\n  state:'partial-request-scoped-reference-evidence; owner scope decision pending',\r\n  record:'doc/fixture_policy.md',\r\n  command:['python','-I',path.join(__dirname,'review_references.py')],\r\n  reader_commit:'ab0f6388c39388a4e38d37810cdd693d41fa5c95',\r\n  independent_results:results,\r\n  initial_byte_comparison:read('reference-checks.json'),\r\n  sources,\r\n  verification_scope:{writer_pixels:'Three exact uncompressed native-order input/reference pairs used by integration/write/test_write.py: BGR24, BGR48 and Gray8; no wrapper/libCZI imports.',metadata_content:'Six exact ordered XML element/attribute/significant-text content comparisons; whitespace-only indentation/declaration spelling ignored. This does not independently verify exact native XML serialization.',historical_recipes:'Unknown remains unknown. Verification of current reference values is not proof of who originally generated them or with which reader/version.'},\r\n  source_review:{repository:manifest.repository_snapshot.repository,introduction_evidence:manifest.asset_defaults.origin.evidence,licensing:manifest.asset_defaults.rights,privacy_decision:'existing-fixture-reuse-20261015',producer_clues:'Collection-level ZEN/CZICmd/pylibCZIrw report and embedded application clues remain qualified, not per-file provenance.',known_new_restrictions_identified:false,limits:'No newly identified exception is not proof that none exists. No license or historical producer/recipe is inferred from byte equality or a passing regression.'},\r\n  proposed_owner_decision:{state:'pending',scope:'T01 corpus/evidence completion only',recommendation:'Accept explicitly unknown original producer/reference-generation details for the existing approved corpus where unavailable. Use independently verified values and literal fixtures as required oracles; retain remaining legacy zoom/conversion/format snapshots as regression-only evidence, not new-feature correctness oracles.',does_not_authorize:['relicensing or removing existing tests/references','known third-party restrictions','new API or release-gate passes','M0-12 sign-off','silently treating unverified historical expectations as independent oracles']},\r\n  limits:'No fixture/reference bytes changed, historical records overwritten, source history fabricated, blanket reference promotion, new-API certification or T01 completion.'\r\n};\r\nconst bytes = Buffer.from(JSON.stringify(report,null,2)+'\\n');\r\nfs.writeFileSync(path.join(root,destination),bytes);\r\nmanifest.reference_audits.push({id,recorded_on:'2026-10-15',path:destination,size_bytes:bytes.length,sha256:hash(bytes),state:'partial-reference-evidence',record:report.record,scope:'Three required writer pixel references verified exactly; six global XML references verified for content only.',limits:'Current values only; original producers/recipes, native XML formatting and remaining legacy zoom/conversion expectations are not proven. Owner corpus/evidence scope decision remains pending.'});\r\nmanifest.provenance_scope_decision = {...report.proposed_owner_decision,evidence:id};\r\nfor(const entry of manifest.existing_test_references){\r\n  const matches=results.cases.filter(record=>entry.pairs?.some(pair=>{\r\n    if(Array.isArray(pair)) return pair[0]===record.input_asset_id && (pair[1]===record.reference_asset_id || (Array.isArray(pair[1])&&pair[1].includes(record.reference_asset_id)));\r\n    return JSON.stringify(pair).includes(record.input_asset_id)&&JSON.stringify(pair).includes(record.reference_asset_id);\r\n  }));\r\n  if(matches.length) entry.scoped_reference_reviews=[...(entry.scoped_reference_reviews||[]),{run:id,cases:matches.map(record=>record.id),limits:'Only named current input/reference requests are verified; XML content is not exact native serialization.'}];\r\n}\r\nconst group = manifest.required_case_groups.find(group=>group.id==='C07');\r\ngroup.reference_runs.push(id);\r\ngroup.remaining_reference_scope='Three writer pixel references are independently exact and six global XML contents match. Historical generation and exact native XML formatting are not proven; owner acceptance of declared unknown history and regression-only legacy snapshots is pending.';\r\nconst rights=manifest.blockers.find(record=>record.id==='B-RIGHTS');\r\nrights.needed='Record owner acceptance or rejection of explicitly unknown producer/recipe history under the where-known policy. Existing repository licensing/reuse evidence is unchanged; do not infer a new per-file licensing requirement merely from unknown acquisition history.';\r\nconst oracles=manifest.blockers.find(record=>record.id==='B-ORACLES');\r\noracles.scope='Remaining historical zoom/conversion/exact-serialization scope and owner corpus-evidence decision; required writer pixels and six global XML contents now have independent evidence.';\r\noracles.needed='Owner decides whether remaining historical snapshots stay regression-only rather than required independent new-feature oracles. If rejected, independently verify the specifically required remaining requests; do not regenerate or overwrite snapshots.';\r\nfs.writeFileSync(manifestPath,JSON.stringify(manifest,null,4)+'\\n');\r\nconsole.log(JSON.stringify({record:destination,size_bytes:bytes.length,sha256:hash(bytes),exact_pixel_pairs:3,semantic_XML_pairs:6,decision:'pending'},null,2));",
+      "historical_source_sha256": "FB01CE6FF6B220B6BE1A453F9DF8457339035424C0CE61DF8B0C726A82919774",
+      "historical_source_size_bytes": 6837,
+      "publication_source_projection": true
+    }
+  ],
+  "verification_scope": {
+    "writer_pixels": "Three exact uncompressed native-order input/reference pairs used by integration/write/test_write.py: BGR24, BGR48 and Gray8; no wrapper/libCZI imports.",
+    "metadata_content": "Six exact ordered XML element/attribute/significant-text content comparisons; whitespace-only indentation/declaration spelling ignored. This does not independently verify exact native XML serialization.",
+    "historical_recipes": "Unknown remains unknown. Verification of current reference values is not proof of who originally generated them or with which reader/version."
+  },
+  "source_review": {
+    "repository": "https://github.com/ZEISS/pylibczirw",
+    "introduction_evidence": [
+      {
+        "kind": "local-repository-path-introduction",
+        "commit": "8d6f0bde73e446c47878b2c1bc74b8eceee6828f",
+        "date": "2024-06-04",
+        "subject": "Add core structure",
+        "command": "git log --format='%H %ad %s' --date=short --diff-filter=A -- pylibCZIrw/tests/integration/test_data pylibCZIrw/tests/integration/metadata/test_data test_data",
+        "local_history_shallow": false,
+        "limits": "An introduction commit identifies repository import, not original acquisition, generator, independent expected values or privacy clearance. A targeted current-checkout search found no NumPy save calls; generation remains unverified."
+      }
+    ],
+    "licensing": {
+      "state": "reference-verified",
+      "decision": "Record the existing repository licensing declaration; no new per-file permission letter is presumed necessary.",
+      "license": "LGPL-3.0-or-later",
+      "copyright": "2017-2022 Carl Zeiss Microscopy GmbH",
+      "verification_scope": "Declaration observed, not independent proof of original producer, privacy clearance or third-party exceptions.",
+      "evidence": [
+        {
+          "path": ".reuse/dep5",
+          "file_patterns": [
+            "pylibCZIrw/*",
+            "test_data/*"
+          ],
+          "source_lines": [
+            26,
+            32
+          ]
+        }
+      ]
+    },
+    "privacy_decision": "existing-fixture-reuse-20261015",
+    "producer_clues": "Collection-level ZEN/CZICmd/pylibCZIrw report and embedded application clues remain qualified, not per-file provenance.",
+    "known_new_restrictions_identified": false,
+    "limits": "No newly identified exception is not proof that none exists. No license or historical producer/recipe is inferred from byte equality or a passing regression."
+  },
+  "limits": "No fixture/reference bytes changed, historical records overwritten, source history fabricated, blanket reference promotion, new-API certification or T01 completion.",
+  "public_projection": {
+    "not_original_record": true,
+    "historical_record_sha256": "EDEC68E5BD2854CCE55517C98F563C1658FACCF46609199DF40D8E2810DD1427",
+    "embedded_helpers_reexecuted": false,
+    "case_values_and_reference_states_preserved": true,
+    "omitted_machine_or_approval_fields": [
+      "command",
+      "proposed_owner_decision"
+    ],
+    "scope": "Public-content projection of historical reference material; paths and embedded-source text hashes are adapted. This is not a new validation run or an approval."
+  }
+}

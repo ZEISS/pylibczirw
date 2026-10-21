@@ -12,6 +12,10 @@
 *.cmd text eol=crlf
 # Text files where line endings should be preserved
 *.patch -text
+/LICENSES/native/** -text
+/third_party/native/** -text
+/pylibCZIrw/tests/integration/metadata/test_data/*.txt text eol=lf
+/pylibCZIrw/tests/integration/test_data/fixture_*.json text eol=lf
 # LFS (add more on demand)
 # Archives
 *.7z filter=lfs diff=lfs merge=lfs -text

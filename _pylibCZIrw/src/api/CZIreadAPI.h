@@ -6,6 +6,20 @@
 #include "inc_libCzi.h"
 #include <iostream>
 #include <optional>
+#include <stdexcept>
+#include <vector>
+
+class SubBlockDecodeError : public std::runtime_error,
+                            public std::nested_exception {
+public:
+  using std::runtime_error::runtime_error;
+};
+
+struct StoredMaskData {
+  uint32_t width;
+  uint32_t height;
+  std::string bits;
+};
 
 /// Class used to represent a CZI reader object in pylibCZIrw.
 /// It gathers the libCZI features needed for reading in the pylibCZIrw
@@ -26,8 +40,16 @@ private:
   ReaderOptions
       readerOptions; ///< Options for the reader, such as enabling mask
                      ///< awareness and visibility check optimizations
+  bool isClosed = false;
+
+  void Open(std::shared_ptr<libCZI::IStream> stream,
+            const SubBlockCacheOptions &cacheOptions,
+            const ReaderOptions &options);
+  void EnsureOpen() const;
 
 public:
+  explicit CZIreadAPI(std::shared_ptr<libCZI::IStream> stream);
+
   /// Constructor which constructs a CZIrwAPI object from the given wstring.
   /// Creates a spReader and spAccessor (SingleChannelTilingScalingAccessor) for
   /// the czi document pointed by the given filepath.
@@ -106,7 +128,26 @@ public:
              const ReaderOptions &readerOptions);
 
   /// Close the Opened czi document
-  void close() { this->spReader->Close(); }
+  void close();
+
+  libCZI::SubBlockInfo GetSubBlockInfo(int index) const;
+
+  std::vector<std::pair<int, libCZI::SubBlockInfo>>
+  GetSubBlockDirectory() const;
+
+  std::unique_ptr<PImage> ReadSubBlock(int index);
+
+  std::string ReadSubBlockMetadata(int index);
+
+  std::optional<StoredMaskData> ReadSubBlockMask(int index);
+
+  std::unique_ptr<PImage> ReadStoredLevel(const std::vector<int> &indices,
+                                          libCZI::IntRect roi, int factor);
+
+  libCZI::AttachmentInfo GetAttachmentInfo(int index) const;
+  std::vector<std::pair<int, libCZI::AttachmentInfo>> GetAttachmentDirectory();
+  std::string ReadAttachment(int index);
+  std::unique_ptr<PImage> ReadAttachmentImage(int index);
 
   /// Returns raw xml metadata from the czi document.
   std::string GetXmlMetadata();

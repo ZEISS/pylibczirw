@@ -131,13 +131,13 @@ jobs:
             PoolImage: ubuntu-latest,
             OS: Linux-x86_64,
             CIBWBEFOREALL: "${{inputs.CIBWBEFOREALLLINUX}}",
-            CIBW_ENVIRONMENT: "",
+            CIBW_ENVIRONMENT: "UV_CONFIG_FILE=/project/.github/uv-wheel-tests.toml",
           }
           - {
             PoolImage: ubuntu-24.04-arm,
             OS: Linux-arm64,
             CIBWBEFOREALL: "${{inputs.CIBWBEFOREALLLINUX}}",
-            CIBW_ENVIRONMENT: "",
+            CIBW_ENVIRONMENT: "UV_CONFIG_FILE=/project/.github/uv-wheel-tests.toml",
           }
           - {
             PoolImage: windows-2022,
