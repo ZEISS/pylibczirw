@@ -2,15 +2,15 @@
 
 import argparse
 import hashlib
-import importlib.metadata as metadata
 import inspect
 import json
 import os
 import runpy
 import shutil
-import subprocess
+import subprocess  # nosec B404 - Intentional subprocesses; see call-specific reviews.
 import sys
 import sysconfig
+from importlib import metadata
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -28,6 +28,12 @@ PLOT_VALUES = {
 }
 
 
+def require(condition: object, *details: object) -> None:
+    """Keep validation active under optimization and preserve error arguments."""
+    if not condition:
+        raise AssertionError(*details)
+
+
 def fingerprint(path: Path) -> dict:
     """Return the file size and SHA256 used by evidence records."""
     return {"size_bytes": path.stat().st_size, "sha256": hashlib.sha256(path.read_bytes()).hexdigest()}
@@ -35,7 +41,12 @@ def fingerprint(path: Path) -> dict:
 
 def installed() -> dict:
     """Verify non-editable installed module origins and record artifact provenance."""
+    # Package-owned private/native API intentionally exercised.
+    # pylint: disable-next=import-outside-toplevel,import-private-name
     import _pylibCZIrw as native
+
+    # Validation-only dependencies are intentionally deferred.
+    # pylint: disable-next=import-outside-toplevel
     from pylibCZIrw import czi
 
     site = Path(sysconfig.get_path("platlib")).resolve()
@@ -45,8 +56,7 @@ def installed() -> dict:
         raise AssertionError(native.__file__)
     distribution = metadata.distribution("pylibczirw")
     direct_url = json.loads(distribution.read_text("direct_url.json") or "{}")
-    if not not direct_url.get("dir_info", {}).get("editable", False):
-        raise AssertionError()
+    require(not direct_url.get("dir_info", {}).get("editable", False))
     return {
         "python": sys.executable,
         "version": distribution.version,
@@ -56,13 +66,43 @@ def installed() -> dict:
     }
 
 
+def documentation_example(staged: Path, work: Path) -> None:
+    """Execute the unchanged Python fence and verify its returned image."""
+    # Optional Markdown parser is needed only for documentation validation.
+    # pylint: disable-next=import-outside-toplevel
+    from markdown_it import MarkdownIt
+
+    blocks = [
+        token.content
+        for token in MarkdownIt().parse((staged / "INFO.md").read_text(encoding="utf8"))
+        if token.type == "fence" and token.info.strip() == "python"
+    ]
+    require(len(blocks) == 1)
+    os.chdir(staged)
+    extracted = work / "INFO-python-example.py"
+    extracted.write_text(blocks[0], encoding="utf8")
+    namespace = runpy.run_path(str(extracted), run_name="__documentation_example__")
+    require(namespace["image2d"].shape == (100, 50, 1))
+    require(namespace["total_bounding_box"] and namespace["scenes_bounding_rectangle"])
+
+
 def child(work: Path, case: str) -> None:
     """Execute one installed example and verify its displayed arrays and rendering."""
+    # Validation-only dependencies are intentionally deferred.
+    # pylint: disable-next=import-outside-toplevel
     import matplotlib
 
     matplotlib.use("Agg", force=True)
+    # Validation-only dependencies are intentionally deferred.
+    # pylint: disable-next=import-outside-toplevel
     import matplotlib.pyplot as plt
+
+    # Validation-only dependencies are intentionally deferred.
+    # pylint: disable-next=import-outside-toplevel
     import numpy as np
+
+    # Validation-only dependencies are intentionally deferred.
+    # pylint: disable-next=import-outside-toplevel
     from matplotlib.backends.backend_agg import FigureCanvasAgg
 
     provenance = installed()
@@ -78,13 +118,11 @@ def child(work: Path, case: str) -> None:
         values = frame.f_back.f_locals
         del frame
         opened = [plt.figure(identifier) for identifier in plt.get_fignums()]
-        if not len(opened) == 1:
-            raise AssertionError(case)
+        require(len(opened) == 1, case)
         (figure,) = opened
         images = [image for axis in figure.axes for image in axis.get_images()]
         expected = PLOT_VALUES[number]
-        if not len(images) == len(expected):
-            raise AssertionError((case, len(images)))
+        require(len(images) == len(expected), (case, len(images)))
         arrays = []
         for image, name in zip(images, expected):
             actual = np.asarray(image.get_array())
@@ -102,15 +140,13 @@ def child(work: Path, case: str) -> None:
         elif number == "06":
             np.testing.assert_array_equal(values["masked"], np.where(values["mask"], values["pixels"], 0))
         elif number == "09":
-            if not values["output_path"].read_bytes() == values["raw"]:
-                raise AssertionError()
+            require(values["output_path"].read_bytes() == values["raw"])
         renderer = figure.canvas
         if not isinstance(renderer, FigureCanvasAgg):
             raise RuntimeError("Figure validation requires the Agg canvas backend.")
         renderer.draw()
         canvas = np.asarray(renderer.buffer_rgba())
-        if not (canvas.shape[0] > 0 and canvas.shape[1] > 0 and canvas[..., :3].std() > 0):
-            raise AssertionError()
+        require(canvas.shape[0] > 0 and canvas.shape[1] > 0 and canvas[..., :3].std() > 0)
         image_path = work / "plots" / f"{Path(case).stem}.png"
         image_path.parent.mkdir(exist_ok=True)
         figure.savefig(image_path, dpi=120)
@@ -119,47 +155,28 @@ def child(work: Path, case: str) -> None:
 
     plt.show = save
     if case == "INFO":
-        from markdown_it import MarkdownIt
-
-        blocks = [
-            token.content
-            for token in MarkdownIt().parse((staged / "INFO.md").read_text(encoding="utf8"))
-            if token.type == "fence" and token.info.strip() == "python"
-        ]
-        if not len(blocks) == 1:
-            raise AssertionError()
-        os.chdir(staged)
-        extracted = work / "INFO-python-example.py"
-        extracted.write_text(blocks[0], encoding="utf8")
-        namespace = runpy.run_path(str(extracted), run_name="__documentation_example__")
-        if not namespace["image2d"].shape == (100, 50, 1):
-            raise AssertionError()
-        if not (namespace["total_bounding_box"] and namespace["scenes_bounding_rectangle"]):
-            raise AssertionError()
+        documentation_example(staged, work)
     else:
         script = staged / "demo_scripts" / case
         sys.argv = [str(script)]
         if number == "09":
             sys.argv.extend(["--output-dir", str(work / "extracted")])
         runpy.run_path(str(script), run_name="__main__")
-        if not bool(figures) == (number in PLOT_VALUES):
-            raise AssertionError(case)
+        require(bool(figures) == (number in PLOT_VALUES), case)
     record = {"case": case, "status": "passed", "installed": provenance, "figures": figures}
     (work / f"{Path(case).stem}-record.json").write_text(json.dumps(record, indent=2), encoding="utf8")
 
 
 def run(work: Path, source: Path, include_local: bool, only: str | None) -> None:
     """Stage admitted inputs and execute the selected installed examples."""
-    if not not work.is_relative_to(source):
-        raise AssertionError("Example evidence must live outside the source checkout.")
+    require(not work.is_relative_to(source), "Example evidence must live outside the source checkout.")
     work.mkdir(parents=True, exist_ok=False)
     provenance = installed()
     staged = work / "example-source"
     (staged / "demo_scripts").mkdir(parents=True)
     cases = PORTABLE + LOCAL if include_local else PORTABLE
     if only:
-        if only not in cases:
-            raise AssertionError(only)
+        require(only in cases, only)
         cases = (only,)
     scripts = []
     inputs = []
@@ -200,11 +217,11 @@ def run(work: Path, source: Path, include_local: bool, only: str | None) -> None
         log = work / f"{Path(case).stem}.log"
         command = [sys.executable, "-I", str(Path(__file__).resolve()), str(work), "--case", case]
         with log.open("x", encoding="utf8") as stream:
-            result = subprocess.run(
+            result = subprocess.run(  # nosec B603 - Reviewed argv; shell=False.
                 command, cwd=work, env=environment, stdout=stream, stderr=subprocess.STDOUT, check=False
             )
         print(case, "exit", result.returncode, flush=True)
-        if not result.returncode == 0:
+        if result.returncode != 0:
             raise AssertionError(log.read_text(encoding="utf8")[-4000:])
         record = json.loads((work / f"{Path(case).stem}-record.json").read_text(encoding="utf8"))
         record["command"] = command

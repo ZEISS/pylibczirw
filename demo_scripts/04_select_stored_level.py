@@ -32,12 +32,15 @@ def main() -> None:
     # Display the stored grayscale pixels; ownership survives reader close.
     figure, axis = plt.subplots()
     image = axis.imshow(pixels, cmap="gray", interpolation="nearest")
+    # Standalone examples intentionally repeat plot labels and presentation.
+    # pylint: disable=duplicate-code
     axis.set_title(f"Stored level {selected.level_id}, M={selected.m_index}")
     axis.set_xlabel("Stored X (pixels)")
     axis.set_ylabel("Stored Y (pixels)")
     figure.colorbar(image, ax=axis, label="Intensity")
     figure.tight_layout()
     plt.show()
+    # pylint: enable=duplicate-code
 
 
 if __name__ == "__main__":

@@ -6,9 +6,10 @@ import hashlib
 import os
 import shutil
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, Iterator, List, Optional
 
-import defusedxml.ElementTree as ET  # type: ignore[import-not-found]
+import defusedxml.ElementTree as ET
+import numpy as np
 import pytest
 import xmltodict
 
@@ -34,13 +35,14 @@ def _sha256(path: str) -> str:
 
 
 @pytest.fixture
-def czi_working_copy(tmp_path: Path) -> str:
+def czi_working_copy(tmp_path: Path) -> Iterator[str]:
     """Create a writable copy of the test CZI document for editing tests."""
     src = CZI_DOCUMENT_TEST1
     dst = tmp_path / "work.czi"
+    original_hash = _sha256(src)
     shutil.copy2(src, dst)
-    pytest.original_hash = _sha256(src)
-    return str(dst)
+    yield str(dst)
+    assert _sha256(src) == original_hash
 
 
 def test_editor_open_close(czi_working_copy: str) -> None:
@@ -50,7 +52,6 @@ def test_editor_open_close(czi_working_copy: str) -> None:
         xml = editor.read_metadata_xml()
         root = ET.fromstring(xml)
         assert root.tag == "ImageDocument"
-    assert _sha256(CZI_DOCUMENT_TEST1) == pytest.original_hash
 
 
 def test_read_general_document_info_has_valid_fields(czi_working_copy: str) -> None:
@@ -133,7 +134,7 @@ def test_builder_updates_existing_display_channels_only(czi_working_copy: str) -
         builder = editor.create_metadata_builder()
 
         first_idx = existing_ids[0]
-        red = Rgb8Color(255, 0, 0)
+        red = Rgb8Color(np.uint8(255), np.uint8(0), np.uint8(0))
         ds = ChannelDisplaySettingsDataClassWithNameAndDescription(
             is_enabled=True,
             tinting_mode=TintingMode.Color,
@@ -237,7 +238,7 @@ def test_set_display_settings_nonexistent_channel_raises(czi_working_copy: str) 
         ds = ChannelDisplaySettingsDataClassWithNameAndDescription(
             is_enabled=True,
             tinting_mode=TintingMode.Color,
-            tinting_color=Rgb8Color(0, 0, 0),
+            tinting_color=Rgb8Color(np.uint8(0), np.uint8(0), np.uint8(0)),
             black_point=0.0,
             white_point=1.0,
             description="SHOULD NOT BE ADDED",

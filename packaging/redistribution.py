@@ -78,6 +78,53 @@ def verify(archive_path: Path) -> dict:
     return manifest
 
 
+def copy_source_tree(original: Path, target: Path) -> None:
+    """Retain source files while excluding Git metadata, caches and symlinks."""
+    if not original.is_dir():
+        raise FileNotFoundError(original)
+    for path in sorted(original.rglob("*")):
+        relative = path.relative_to(original)
+        if ".git" in relative.parts or "__pycache__" in relative.parts:
+            continue
+        if path.is_symlink():
+            raise ValueError(f"Source symlinks require explicit archival handling: {path}")
+        if path.is_file():
+            copied = target / relative
+            copied.parent.mkdir(parents=True, exist_ok=True)
+            shutil.copy2(path, copied)
+    if not any(path.is_file() for path in target.rglob("*")):
+        raise ValueError(f"Source tree contains no retained files: {original}")
+
+
+def collect_input(item: dict, target: Path, record: dict) -> Path:
+    """Retain one reviewed input and return the original used for hash checks."""
+    if item["kind"] == "https":
+        validate_https(item["source"])
+        url = urllib.parse.urlsplit(item["source"])
+        filename = item.get("filename", PurePosixPath(url.path).name)
+        if not filename or filename != Path(filename).name:
+            raise ValueError("Download filenames must be simple path components.")
+        downloaded = target / filename
+        opener = urllib.request.build_opener(_HttpsRedirectHandler())
+        with opener.open(item["source"], timeout=90) as response:
+            if urllib.parse.urlsplit(response.url).scheme != "https":
+                raise ValueError("HTTPS download redirected to an insecure transport.")
+            record["resolved_url"] = response.url
+            with downloaded.open("xb") as stream:
+                shutil.copyfileobj(response, stream)
+        return downloaded
+    original = Path(item["source"])
+    if original.is_symlink():
+        raise ValueError(f"Source symlinks require explicit archival handling: {original}")
+    if item["kind"] == "file":
+        shutil.copy2(original, target / original.name)
+    elif item["kind"] == "tree":
+        copy_source_tree(original, target)
+    else:
+        raise ValueError(f"Unknown input kind: {item['kind']}")
+    return original
+
+
 def prepare(specification: Path, destination: Path) -> Path:
     """Collect sources into a verified internal archive without granting approval."""
     destination = destination.resolve()
@@ -97,44 +144,7 @@ def prepare(specification: Path, destination: Path) -> Path:
         record = dict(item)
         target = payload / item["id"]
         target.mkdir()
-        if item["kind"] == "https":
-            validate_https(item["source"])
-            url = urllib.parse.urlsplit(item["source"])
-            filename = item.get("filename", PurePosixPath(url.path).name)
-            if not filename or filename != Path(filename).name:
-                raise ValueError("Download filenames must be simple path components.")
-            downloaded = target / filename
-            opener = urllib.request.build_opener(_HttpsRedirectHandler())
-            with opener.open(item["source"], timeout=90) as response:
-                if urllib.parse.urlsplit(response.url).scheme != "https":
-                    raise ValueError("HTTPS download redirected to an insecure transport.")
-                record["resolved_url"] = response.url
-                with downloaded.open("xb") as stream:
-                    shutil.copyfileobj(response, stream)
-            original = downloaded
-        else:
-            original = Path(item["source"])
-            if original.is_symlink():
-                raise ValueError(f"Source symlinks require explicit archival handling: {original}")
-            if item["kind"] == "file":
-                shutil.copy2(original, target / original.name)
-            elif item["kind"] == "tree":
-                if not original.is_dir():
-                    raise FileNotFoundError(original)
-                for path in sorted(original.rglob("*")):
-                    relative = path.relative_to(original)
-                    if ".git" in relative.parts or "__pycache__" in relative.parts:
-                        continue
-                    if path.is_symlink():
-                        raise ValueError(f"Source symlinks require explicit archival handling: {path}")
-                    if path.is_file():
-                        copied = target / relative
-                        copied.parent.mkdir(parents=True, exist_ok=True)
-                        shutil.copy2(path, copied)
-                if not any(path.is_file() for path in target.rglob("*")):
-                    raise ValueError(f"Source tree contains no retained files: {original}")
-            else:
-                raise ValueError(f"Unknown input kind: {item['kind']}")
+        original = collect_input(item, target, record)
         if item.get("expected_sha256"):
             if not original.is_file() or fingerprint(original)["sha256"] != item["expected_sha256"]:
                 raise ValueError(f"Input differs from its recorded hash: {item['id']}")

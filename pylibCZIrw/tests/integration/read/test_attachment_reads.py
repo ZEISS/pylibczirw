@@ -9,6 +9,8 @@ from uuid import UUID
 import numpy as np
 import pytest
 
+# Package-owned private/native API intentionally exercised.
+# pylint: disable-next=import-private-name
 import _pylibCZIrw as native
 from pylibCZIrw.czi import AttachmentInfo, CziReader, create_czi, open_czi
 
@@ -142,7 +144,7 @@ def test_listing_does_not_fetch_payloads_and_io_failures_keep_cause() -> None:
     with closing(reader):
         reads.clear()
         assert len(reader.list_attachments()) == 5
-        assert reads == []
+        assert not reads
         reader.read_attachment(0)
         assert reads
         state["fail"] = True

@@ -4,12 +4,59 @@ import hashlib
 import json
 import re
 from pathlib import Path
+from typing import Iterator
 
 import pytest
 
 
-def verify_fixture_manifest(root: Path, manifest_path: Path) -> None:
-    """Reject missing, changed or malformed active fixture records."""
+def fixture_record(asset: object, seen_ids: set[str]) -> tuple[list[object], int, str]:
+    """Validate one manifest record before accessing any of its paths."""
+    if not isinstance(asset, dict):
+        raise ValueError("Invalid fixture asset record")
+    asset_id = asset.get("id")
+    aliases = asset.get("aliases")
+    expected_size = asset.get("size_bytes")
+    expected_hash = asset.get("sha256")
+    if not isinstance(asset_id, str) or not asset_id or asset_id in seen_ids:
+        raise ValueError(f"Invalid or duplicate fixture ID: {asset_id}")
+    seen_ids.add(asset_id)
+    if not isinstance(aliases, list):
+        raise ValueError(f"Invalid fixture aliases: {asset_id}")
+    if not isinstance(expected_size, int) or isinstance(expected_size, bool) or expected_size < 0:
+        raise ValueError(f"Invalid fixture size: {asset_id}")
+    if not isinstance(expected_hash, str) or not re.fullmatch(r"[a-fA-F0-9]{64}", expected_hash):
+        raise ValueError(f"Invalid fixture SHA256: {asset_id}")
+    return [asset.get("path"), *aliases], expected_size, expected_hash
+
+
+def fixture_paths(root: Path, paths: list[object], seen_paths: set[str]) -> Iterator[tuple[str, Path]]:
+    """Yield checked inventory paths without changing validation/read order."""
+    for relative in paths:
+        if not isinstance(relative, str) or not relative or "\\" in relative:
+            raise ValueError(f"Invalid fixture path: {relative}")
+        filepath = (root / relative).resolve()
+        if Path(relative).is_absolute() or ".." in Path(relative).parts or not filepath.is_relative_to(root):
+            raise ValueError(f"Invalid fixture path: {relative}")
+        if relative in seen_paths:
+            raise ValueError(f"Duplicate fixture path: {relative}")
+        seen_paths.add(relative)
+        yield relative, filepath
+
+
+def fixture_fingerprint(filepath: Path, relative: str, expected_size: int) -> tuple[int, str]:
+    """Validate byte size and hash a fixture with bounded memory."""
+    size = filepath.stat().st_size
+    if size != expected_size:
+        raise ValueError(f"Fixture size mismatch: {relative}; expected {expected_size}, got {size}")
+    digest = hashlib.sha256()
+    with filepath.open("rb") as stream:
+        for chunk in iter(lambda: stream.read(1024 * 1024), b""):
+            digest.update(chunk)
+    return size, digest.hexdigest()
+
+
+def fixture_manifest(manifest_path: Path) -> dict:
+    """Load and validate the inventory container before processing its assets."""
     try:
         manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
     except (OSError, UnicodeError, json.JSONDecodeError) as exc:
@@ -20,48 +67,26 @@ def verify_fixture_manifest(root: Path, manifest_path: Path) -> None:
     assets = manifest.get("assets")
     if not isinstance(assets, list) or not assets:
         raise ValueError("Fixture manifest has no active assets")
+    return manifest
+
+
+def verify_fixture_manifest(root: Path, manifest_path: Path) -> None:
+    """Reject missing, changed or malformed active fixture records."""
+    manifest = fixture_manifest(manifest_path)
+    assets = manifest["assets"]
 
     seen_ids: set[str] = set()
     seen_paths: set[str] = set()
     total_bytes = 0
     root = root.resolve()
     for asset in assets:
-        if not isinstance(asset, dict):
-            raise ValueError("Invalid fixture asset record")
-        asset_id = asset.get("id")
-        aliases = asset.get("aliases")
-        expected_size = asset.get("size_bytes")
-        expected_hash = asset.get("sha256")
-        if not isinstance(asset_id, str) or not asset_id or asset_id in seen_ids:
-            raise ValueError(f"Invalid or duplicate fixture ID: {asset_id}")
-        seen_ids.add(asset_id)
-        if not isinstance(aliases, list):
-            raise ValueError(f"Invalid fixture aliases: {asset_id}")
-        if type(expected_size) is not int or expected_size < 0:
-            raise ValueError(f"Invalid fixture size: {asset_id}")
-        if not isinstance(expected_hash, str) or not re.fullmatch(r"[a-fA-F0-9]{64}", expected_hash):
-            raise ValueError(f"Invalid fixture SHA256: {asset_id}")
-
-        for relative in [asset.get("path"), *aliases]:
-            if not isinstance(relative, str) or not relative or "\\" in relative:
-                raise ValueError(f"Invalid fixture path: {relative}")
-            filepath = (root / relative).resolve()
-            if Path(relative).is_absolute() or ".." in Path(relative).parts or not filepath.is_relative_to(root):
-                raise ValueError(f"Invalid fixture path: {relative}")
-            if relative in seen_paths:
-                raise ValueError(f"Duplicate fixture path: {relative}")
-            seen_paths.add(relative)
+        paths, expected_size, expected_hash = fixture_record(asset, seen_ids)
+        for relative, filepath in fixture_paths(root, paths, seen_paths):
             try:
-                size = filepath.stat().st_size
-                if size != expected_size:
-                    raise ValueError(f"Fixture size mismatch: {relative}; expected {expected_size}, got {size}")
-                digest = hashlib.sha256()
-                with filepath.open("rb") as stream:
-                    while chunk := stream.read(1024 * 1024):
-                        digest.update(chunk)
+                size, digest = fixture_fingerprint(filepath, relative, expected_size)
             except OSError as exc:
                 raise ValueError(f"Cannot read fixture {relative}: {exc}") from exc
-            if digest.hexdigest().upper() != expected_hash.upper():
+            if digest.upper() != expected_hash.upper():
                 raise ValueError(f"Fixture SHA256 mismatch: {relative}")
             total_bytes += size
 

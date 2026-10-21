@@ -15,6 +15,8 @@ from typing import Iterator, Optional, TypedDict, Union
 import numpy as np
 import pytest
 
+# Package-owned private/native API intentionally exercised.
+# pylint: disable-next=import-private-name
 import _pylibCZIrw as native
 from pylibCZIrw.czi import CziReader, ReaderOptions, StoredLevelInfo, SubblockInfo, create_czi, open_czi
 
@@ -54,7 +56,7 @@ class TestIndexedNativeAccess:
             directory = reader.GetSubBlockDirectory()
             assert [index for index, _info in directory] == [0, 1]
             assert reader.GetSubBlockInfo(1).mIndex == 37
-            assert reads == []
+            assert not reads
         assert directory[0][1].coordinate.to_dict() == {"S": 2, "T": 3, "C": 5, "Z": 7}
 
     @staticmethod
@@ -105,15 +107,18 @@ class TestIndexedNativeAccess:
             assert sum(reader.count_subblocks_by_scene().values()) == len(infos)
             for info in infos:
                 plane = {key: value for key, value in info.coordinates.items() if key != "S"}
-                filters: _Selection = dict(
-                    plane=plane, scene=info.coordinates.get("S"), m_index=info.m_index, level=info.level_id
-                )
+                filters: _Selection = {
+                    "plane": plane,
+                    "scene": info.coordinates.get("S"),
+                    "m_index": info.m_index,
+                    "level": info.level_id,
+                }
                 selected = reader.list_subblocks(**filters)
                 assert info in selected
                 assert reader.count_subblocks(**filters) == len(selected)
                 assert sum(reader.count_subblocks_by_scene(**filters).values()) == len(selected)
             assert reader.list_subblocks(level=2**100) == []
-            assert reads == []
+            assert not reads
         assert infos[0].stored_shape[0] > 0
 
     def test_selection_reads_only_chosen_stored_segment(self) -> None:
@@ -133,7 +138,7 @@ class TestIndexedNativeAccess:
             assert len(infos) == 2
             selected = reader.list_subblocks(scene=8, plane={"T": 9, "C": 11, "Z": 13}, level=infos[1].level_id)
             assert [info.index for info in selected] == [1]
-            assert reads == []
+            assert not reads
             pixels = np.asarray(reader._czi_reader.ReadSubBlock(selected[0].index))
             entry = self.directory_entry(data, selected[0].index)
             start = struct.unpack_from("<q", data, entry + 6)[0]
@@ -211,7 +216,7 @@ class TestIndexedNativeAccess:
             reads.clear()
             with pytest.raises(error):
                 reader.ReadSubBlock(0)
-            assert reads == []
+            assert not reads
 
     @pytest.fixture
     def indexed_reader(self) -> Iterator[native.czi_reader]:
@@ -497,7 +502,7 @@ class TestPublicSubblockReads:
                 reader.read_subblock_by_m(37, plane={"C": 0}, scene=0)
             with pytest.raises(ValueError, match="matched 0"):
                 reader.read_subblock_by_m(37, level=2**100)
-            assert reads == []
+            assert not reads
             pixels = reader.read_subblock_by_m(37, plane={"C": 0}, scene=0, level=lower.level_id)
             expected = (40000 + 101 * np.arange(16)[:, None] + 7 * np.arange(24)[None, :]).astype(np.uint16)
             np.testing.assert_array_equal(pixels, expected)
@@ -708,7 +713,7 @@ class TestStoredLevelReads:
             for dimension in range(count):
                 offset = base + 32 + 20 * dimension
                 name = data[offset : offset + 4].rstrip(b"\0")
-                if scenario == "factor_three" and name in (b"X", b"Y"):
+                if scenario == "factor_three" and bytes(name) in {b"X", b"Y"}:
                     stored = struct.unpack_from("<i", data, offset + 16)[0]
                     struct.pack_into("<i", data, offset + 8, stored * 3)
                 if scenario == "absent_m" and name == b"M":
@@ -727,7 +732,7 @@ class TestStoredLevelReads:
             if scenario == "mixed_types":
                 with pytest.raises(ValueError, match="Mixed"):
                     reader.read_stored_level(levels[0].level_id, roi=(30, 20, 8, 8))
-                assert reads == []
+                assert not reads
             elif scenario == "factor_three":
                 selected = next(level for level in levels if level.downsample == (Fraction(3), Fraction(3)))
                 np.testing.assert_array_equal(reader.read_stored_level(selected.level_id), self.literal(lower=True))
@@ -804,8 +809,8 @@ class TestStoredLevelReads:
             lower = next(level for level in levels if level.output_shape == (16, 24))
             with pytest.raises(ValueError, match="matched 0"):
                 reader.read_stored_level(2**100)
-            assert reader.list_stored_levels(scene=99) == []
-            assert reads == []
+            assert not reader.list_stored_levels(scene=99)
+            assert not reads
             pixels = reader.read_stored_level(lower.level_id)
             entry = TestIndexedNativeAccess.directory_entry(data, lower.subblocks[0].index)
             start = struct.unpack_from("<q", data, entry + 6)[0]
@@ -815,7 +820,7 @@ class TestStoredLevelReads:
             np.testing.assert_array_equal(pixels, self.literal(lower=True))
             reads.clear()
             reader.read_stored_level(lower.level_id, roi=(1000, 1000, 8, 8))
-            assert reads == []
+            assert not reads
         assert lower.subblocks
         with pytest.raises(RuntimeError, match="closed"):
             reader.list_stored_levels()
@@ -1087,7 +1092,7 @@ class TestSubblockCatalog:
         assert reader.count_subblocks(scene=0) == 1
         assert reader.count_subblocks_by_scene(scene=0) == {0: 1}
         assert reader.count_subblocks(scene=99) == 0
-        assert reader.count_subblocks_by_scene(scene=99) == {}
+        assert not reader.count_subblocks_by_scene(scene=99)
         counts = reader.count_subblocks_by_scene()
         counts.clear()
         assert reader.count_subblocks_by_scene(plane={}) == {8: 1, 2: 2, None: 1, 0: 1}
@@ -1112,7 +1117,7 @@ class TestSubblockCatalog:
         assert reader.count_subblocks(plane={"T": 3}, scene=2, m_index=37, level=0) == 1
         assert reader.count_subblocks_by_scene(plane={"T": 3}, scene=2, m_index=37, level=0) == {2: 1}
         assert reader.count_subblocks(level=2**100) == 0
-        assert reader.count_subblocks_by_scene(level=2**100) == {}
+        assert not reader.count_subblocks_by_scene(level=2**100)
 
     @pytest.mark.parametrize("method", ["count_subblocks", "count_subblocks_by_scene"])
     def test_count_signatures_and_closed_reader(self, method: str) -> None:
@@ -1222,7 +1227,7 @@ class TestSubblockCatalog:
         """Verify empty directory and numpy integer selectors."""
         assert self.reader([]).list_subblocks() == []
         assert self.reader([]).count_subblocks() == 0
-        assert self.reader([]).count_subblocks_by_scene() == {}
+        assert not self.reader([]).count_subblocks_by_scene()
         reader = self.reader([self.descriptor(5, {"C": -2}, -7)])
         assert reader.list_subblocks(plane={"C": np.int64(-2)}, m_index=np.int64(-7))[0].index == 5
         pytest.raises(TypeError, reader.list_subblocks, {"C": -2})

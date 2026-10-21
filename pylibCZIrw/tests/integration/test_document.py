@@ -9,6 +9,8 @@ from unittest.mock import MagicMock, Mock
 import numpy as np
 import pytest
 
+# Package-owned private/native API intentionally exercised.
+# pylint: disable-next=import-private-name
 import _pylibCZIrw as native
 from pylibCZIrw import czi
 
@@ -119,6 +121,8 @@ def test_open_owns_one_factory_and_closes_once(monkeypatch: pytest.MonkeyPatch, 
     assert_document_state(document, closed=True)
     assert events == [("open", str(filepath), czi.ReaderFileInputTypes.Standard, None, None), "close"]
     with pytest.raises(RuntimeError, match="closed"):
+        # Explicit entry verifies the deferred context-manager lifecycle.
+        # pylint: disable-next=unnecessary-dunder-call
         document.__enter__()
 
 
@@ -180,6 +184,8 @@ def test_wrong_mode_and_closed_dispatch(monkeypatch: pytest.MonkeyPatch, mode: s
         with pytest.raises(ValueError, match=f"{name}.*{mode}"):
             result = getattr(document, name)(**CALLS[name][0])
             if name == "edit_session":
+                # Explicit entry verifies the deferred context-manager lifecycle.
+                # pylint: disable-next=unnecessary-dunder-call
                 result.__enter__()
     assert backend.mock_calls == []
     document.close()
@@ -187,6 +193,8 @@ def test_wrong_mode_and_closed_dispatch(monkeypatch: pytest.MonkeyPatch, mode: s
         with pytest.raises(RuntimeError, match="closed"):
             result = getattr(document, name)(**CALLS[name][0])
             if name == "edit_session":
+                # Explicit entry verifies the deferred context-manager lifecycle.
+                # pylint: disable-next=unnecessary-dunder-call
                 result.__enter__()
     assert len(events) == 2
 
@@ -218,6 +226,8 @@ def test_nested_context_and_read_only_state(monkeypatch: pytest.MonkeyPatch) -> 
             getattr(document, name)
     with document:
         with pytest.raises(RuntimeError, match="already entered"):
+            # Explicit entry verifies the deferred context-manager lifecycle.
+            # pylint: disable-next=unnecessary-dunder-call
             document.__enter__()
     assert len(events) == 2
 
@@ -296,7 +306,7 @@ def test_edit_session_cannot_commit_after_document_close(monkeypatch: pytest.Mon
         with document.edit_session() as returned:
             assert returned is builder
             document.close()
-    assert commits == []
+    assert not commits
 
 
 @pytest.mark.parametrize("mode", ["r", "w", "edit"])
@@ -318,6 +328,8 @@ def test_session_created_before_close_cannot_enter_later(monkeypatch: pytest.Mon
     session = document.edit_session()
     document.close()
     with pytest.raises(RuntimeError, match="closed"):
+        # Explicit entry verifies the deferred context-manager lifecycle.
+        # pylint: disable-next=unnecessary-dunder-call
         session.__enter__()
     assert backend.mock_calls == []
 

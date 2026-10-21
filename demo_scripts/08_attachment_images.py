@@ -31,6 +31,8 @@ def main() -> None:
     print("Label / preview:", label.shape, label.dtype, preview.shape, preview.dtype)
     # Returned bytes and image buffers remain valid after the parent reader closes.
     figure, axes = plt.subplots(1, 2, figsize=(9, 4))
+    # Standalone examples intentionally repeat plot labels and presentation.
+    # pylint: disable=duplicate-code
     for axis, values, title in zip(axes, (label, preview), ("Embedded CZI label", "Selected slide preview")):
         image = axis.imshow(values, cmap="gray", interpolation="nearest")
         axis.set_title(title)
@@ -39,6 +41,7 @@ def main() -> None:
         figure.colorbar(image, ax=axis, label="Intensity")
     figure.tight_layout()
     plt.show()
+    # pylint: enable=duplicate-code
 
 
 if __name__ == "__main__":

@@ -5,7 +5,7 @@ import gc
 import hashlib
 import json
 import os
-import subprocess
+import subprocess  # nosec B404 - Intentional subprocesses; see call-specific reviews.
 import sys
 import tracemalloc
 import weakref
@@ -17,6 +17,8 @@ from typing import Iterator, Optional
 import numpy as np
 import pytest
 
+# Package-owned private/native API intentionally exercised.
+# pylint: disable-next=import-private-name
 import _pylibCZIrw as native
 from pylibCZIrw import czi
 
@@ -222,11 +224,11 @@ def test_facade_listings_and_ambiguous_selections_read_no_payloads(monkeypatch: 
         assert document.list_subblocks()
         assert document.list_stored_levels()
         assert document.list_attachments() == []
-        assert reads == []
+        assert not reads
         for m_index in (37, 987):
             with pytest.raises(ValueError):
                 document.read_subblock_by_m(m_index)
-        assert reads == []
+        assert not reads
 
 
 @pytest.mark.parametrize("operation", ["tile", "xml", "level", "attachment_raw", "attachment_image"])
@@ -275,25 +277,66 @@ def test_closed_document_releases_its_backend() -> None:
 
 def process_memory() -> dict[str, int]:
     """Read private/working-set counters and handles from the current process."""
-    from ctypes import wintypes
+    if sys.platform == "win32":
+        # Windows-only counters must remain importable on POSIX.
+        # pylint: disable-next=import-outside-toplevel
+        from ctypes import wintypes
 
-    values = _ProcessMemory()
-    values.cb = ctypes.sizeof(values)
-    get_process = ctypes.windll.kernel32.GetCurrentProcess
-    get_process.restype = wintypes.HANDLE
-    get_info = ctypes.windll.psapi.GetProcessMemoryInfo
-    get_info.argtypes = [wintypes.HANDLE, ctypes.POINTER(_ProcessMemory), wintypes.DWORD]
-    if not get_info(get_process(), ctypes.byref(values), values.cb):
-        raise ctypes.WinError()
-    handles = wintypes.DWORD()
-    get_handles = ctypes.windll.kernel32.GetProcessHandleCount
-    get_handles.argtypes = [wintypes.HANDLE, ctypes.POINTER(wintypes.DWORD)]
-    if not get_handles(get_process(), ctypes.byref(handles)):
-        raise ctypes.WinError()
+        values = _ProcessMemory(cb=ctypes.sizeof(_ProcessMemory))
+        get_process = ctypes.windll.kernel32.GetCurrentProcess
+        get_process.restype = wintypes.HANDLE
+        get_info = ctypes.windll.psapi.GetProcessMemoryInfo
+        get_info.argtypes = [wintypes.HANDLE, ctypes.POINTER(_ProcessMemory), wintypes.DWORD]
+        if not get_info(get_process(), ctypes.byref(values), values.cb):
+            raise ctypes.WinError()
+        handles = wintypes.DWORD()
+        get_handles = ctypes.windll.kernel32.GetProcessHandleCount
+        get_handles.argtypes = [wintypes.HANDLE, ctypes.POINTER(wintypes.DWORD)]
+        if not get_handles(get_process(), ctypes.byref(handles)):
+            raise ctypes.WinError()
+        return {
+            **{name: getattr(values, name) for name in ("private", "working_set", "peak_working_set", "peak_pagefile")},
+            "handles": handles.value,
+        }
+    raise RuntimeError("Process memory counters require Windows")
+
+
+def resource_output_info(output: object) -> dict[str, object]:
+    """Serialize one measured payload without retaining the payload itself."""
+    payload = (
+        output.tobytes()
+        if isinstance(output, np.ndarray)
+        else output.encode("utf8") if isinstance(output, str) else output if isinstance(output, bytes) else b""
+    )
     return {
-        **{name: getattr(values, name) for name in ("private", "working_set", "peak_working_set", "peak_pagefile")},
-        "handles": handles.value,
+        "bytes": len(payload),
+        "sha256": hashlib.sha256(payload).hexdigest(),
+        "shape": list(output.shape) if isinstance(output, np.ndarray) else None,
+        "dtype": str(output.dtype) if isinstance(output, np.ndarray) else None,
     }
+
+
+def resource_cycle(filepath: Path, case: str) -> object:
+    """Read one selected payload and verify its backend is closed before return."""
+    with czi.CziDocument.open(filepath, cache_options=None) as document:
+        if case == "tile":
+            result: object = document.read_subblock(0)
+        elif case.startswith("xml"):
+            result = document.read_subblock_metadata_xml(0)
+        elif case == "mask":
+            result = document.read_subblock_mask(0)
+        elif case == "level":
+            level = next(item for item in document.list_stored_levels() if item.output_shape == (16, 24))
+            result = document.read_stored_level(level.level_id)
+        elif case == "attachment_raw":
+            result = document.read_attachment(0)
+        elif case == "attachment_image":
+            result = document.read_attachment_image(0)
+        else:
+            result = (document.list_subblocks(), document.list_stored_levels(), document.list_attachments())
+    document.close()
+    assert document.closed
+    return result
 
 
 def resource_worker(case: str) -> dict[str, object]:
@@ -316,30 +359,8 @@ def resource_worker(case: str) -> dict[str, object]:
                 "compression_mode": int(entry.compression),
             }
 
-    def cycle() -> object:
-        """Return the selected payload for measurement and type-based hashing."""
-        with czi.CziDocument.open(filepath, cache_options=None) as document:
-            if case == "tile":
-                result: object = document.read_subblock(0)
-            elif case.startswith("xml"):
-                result = document.read_subblock_metadata_xml(0)
-            elif case == "mask":
-                result = document.read_subblock_mask(0)
-            elif case == "level":
-                level = next(item for item in document.list_stored_levels() if item.output_shape == (16, 24))
-                result = document.read_stored_level(level.level_id)
-            elif case == "attachment_raw":
-                result = document.read_attachment(0)
-            elif case == "attachment_image":
-                result = document.read_attachment_image(0)
-            else:
-                result = (document.list_subblocks(), document.list_stored_levels(), document.list_attachments())
-        document.close()
-        assert document.closed
-        return result
-
     for iteration in range(10):
-        output = cycle()
+        output = resource_cycle(filepath, case)
         del output
     gc.collect()
     samples = [process_memory() for iteration in range(100)]
@@ -350,21 +371,10 @@ def resource_worker(case: str) -> dict[str, object]:
     for iteration in range(100):
         before = tracemalloc.get_traced_memory()[0]
         tracemalloc.reset_peak()
-        output = cycle()
+        output = resource_cycle(filepath, case)
         peaks[iteration] = tracemalloc.get_traced_memory()[1] - before
         if iteration == 0:
-            payload = (
-                output.tobytes()
-                if isinstance(output, np.ndarray)
-                else output.encode("utf8") if isinstance(output, str) else output if isinstance(output, bytes) else b""
-            )
-            output_info = {
-                "bytes": len(payload),
-                "sha256": hashlib.sha256(payload).hexdigest(),
-                "shape": list(output.shape) if isinstance(output, np.ndarray) else None,
-                "dtype": str(output.dtype) if isinstance(output, np.ndarray) else None,
-            }
-            del payload
+            output_info = resource_output_info(output)
         del output
         gc.collect()
         samples[iteration] = process_memory()
@@ -403,7 +413,7 @@ def test_repeated_read_close_resource_protocol(case: str, tmp_path: Path) -> Non
     """Verify repeated read close resource protocol."""
     environment = os.environ.copy()
     environment["PYTHONPATH"] = str(Path(czi.__file__).resolve().parent.parent)
-    result = subprocess.run(
+    result = subprocess.run(  # nosec B603 - Reviewed argv; shell=False.
         [sys.executable, str(Path(__file__).resolve()), "--resource-worker", case],
         cwd=tmp_path,
         env=environment,

@@ -31,12 +31,15 @@ def main() -> None:
     # This fixture is grayscale, and axes refer to its stored pixel coordinates.
     figure, axis = plt.subplots()
     image = axis.imshow(pixels, cmap="gray", interpolation="nearest")
+    # Standalone examples intentionally repeat plot labels and presentation.
+    # pylint: disable=duplicate-code
     axis.set_title("M=37, S=8, T=9, C=11, Z=13")
     axis.set_xlabel("Stored X (pixels)")
     axis.set_ylabel("Stored Y (pixels)")
     figure.colorbar(image, ax=axis, label="Intensity")
     figure.tight_layout()
     plt.show()
+    # pylint: enable=duplicate-code
 
 
 if __name__ == "__main__":

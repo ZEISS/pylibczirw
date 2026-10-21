@@ -23,6 +23,8 @@ import numpy as np
 import validators
 import xmltodict
 
+# Package-owned private/native API intentionally exercised.
+# pylint: disable-next=import-private-name
 import _pylibCZIrw
 
 Rectangle = NamedTuple("Rectangle", [("x", int), ("y", int), ("w", int), ("h", int)])
@@ -398,6 +400,29 @@ class CziReader:
         """Close the document and finalize the reading"""
         self._czi_reader.close()
         self._subblock_closed = True
+
+    @staticmethod
+    def _direct_pixels(pixels: np.ndarray) -> np.ndarray:
+        """Return direct grayscale as YX and color as native-component YXA."""
+        return pixels[..., 0] if pixels.shape[2] == 1 else pixels
+
+    @staticmethod
+    def _stored_level_rectangle(
+        roi: Union[Tuple[int, int, int, int], Rectangle], factor: int, context: str
+    ) -> _pylibCZIrw.IntRect:
+        """Validate raw level-zero XYWH before constructing a native rectangle."""
+        if not isinstance(roi, tuple):
+            raise TypeError("roi must be an XYWH tuple or Rectangle.")
+        if len(roi) != 4:
+            raise ValueError("roi must contain exactly four XYWH integers.")
+        left, top, width, height = tuple(_subblock_integer(value, "roi") for value in roi)
+        if width <= 0 or height <= 0 or width // factor == 0 or height // factor == 0:
+            raise ValueError(f"{context}: ROI must have positive dimensions and nonzero stored output.")
+        _subblock_integer(left + width, "roi right edge")
+        _subblock_integer(top + height, "roi bottom edge")
+        rectangle = _pylibCZIrw.IntRect()
+        rectangle.x, rectangle.y, rectangle.w, rectangle.h = left, top, width, height
+        return rectangle
 
     @staticmethod
     def _create_reader_options(
@@ -1160,24 +1185,14 @@ class CziReader:
             )
         if roi is None:
             roi = selected.logical_rect
-        if not isinstance(roi, tuple):
-            raise TypeError("roi must be an XYWH tuple or Rectangle.")
-        if len(roi) != 4:
-            raise ValueError("roi must contain exactly four XYWH integers.")
-        left, top, width, height = tuple(_subblock_integer(value, "roi") for value in roi)
-        if width <= 0 or height <= 0 or width // factor == 0 or height // factor == 0:
-            raise ValueError(f"{context}: ROI must have positive dimensions and nonzero stored output.")
-        _subblock_integer(left + width, "roi right edge")
-        _subblock_integer(top + height, "roi bottom edge")
-        rectangle = _pylibCZIrw.IntRect()
-        rectangle.x, rectangle.y, rectangle.w, rectangle.h = left, top, width, height
+        rectangle = self._stored_level_rectangle(roi, factor, context)
         try:
             pixels = np.asarray(
                 self._czi_reader.ReadStoredLevel([info.index for info in selected.subblocks], rectangle, factor)
             )
         except ValueError as error:
             raise ValueError(f"{context}: {error}") from error
-        return pixels[..., 0] if pixels.shape[2] == 1 else pixels
+        return self._direct_pixels(pixels)
 
     def read_subblock(self, index: SupportsIndex) -> np.ndarray:
         """Decode exactly one file-local directory entry, without composition.
@@ -1212,7 +1227,7 @@ class CziReader:
             raise RuntimeError("The CZI reader is closed.")
         index = _subblock_integer(index, "index", native_range=False)
         pixels = np.asarray(self._czi_reader.ReadSubBlock(index))
-        return pixels[..., 0] if pixels.shape[2] == 1 else pixels
+        return self._direct_pixels(pixels)
 
     def read_subblock_metadata_xml(self, index: SupportsIndex) -> Optional[str]:
         """Return original UTF-8 subblock XML, or None when absent.
@@ -2146,6 +2161,8 @@ class CziMetadataBuilder:
         - `is_enabled` updates selection for channels.
         """
         # pylint: disable=import-outside-toplevel,no-name-in-module
+        # Package-owned private/native API intentionally exercised.
+        # pylint: disable-next=import-private-name
         from _pylibCZIrw import ChannelDisplaySettingsStructWithNameAndDescription, TintingModeEnum
 
         def to_pod(
@@ -2484,6 +2501,8 @@ class CziDocument:
     def _initialize_owner(self, owner: contextlib.AbstractContextManager, mode: Literal["r", "w", "edit"]) -> None:
         """Acquire the backend once and initialize its terminal-state tracking."""
         self._owner: Optional[contextlib.AbstractContextManager] = owner
+        # Explicit entry verifies the deferred context-manager lifecycle.
+        # pylint: disable-next=unnecessary-dunder-call
         self._backend = owner.__enter__()
         self._mode = mode
         self._closed = False

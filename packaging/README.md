@@ -44,6 +44,16 @@ and checks the displayed arrays and nonblank canvases. This is not interactive
 GUI certification. Add local-data examples only when their user-supplied input
 files are available. See the [demo guide](../demo_scripts/README.md).
 
+## Lint Boundaries
+
+Validation guards remain active under optimized Python. Validation-only and
+platform-specific imports stay deferred and have operation-scoped Pylint
+annotations. Subprocess checks use reviewed argument lists without a shell;
+Git is resolved from the trusted tool environment before launch. Repeated
+standalone pip recipes and example plot presentation have block-scoped
+duplication annotations. These exceptions do not disable repository-wide
+security, typing, complexity or duplication checks.
+
 ## Distribution Boundary
 
 License/notice collection is not legal clearance. Exact corresponding sources,

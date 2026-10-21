@@ -32,6 +32,8 @@ def main() -> None:
 
     print("Selected / ROI / gapped composition shapes:", pixels.shape, roi_pixels.shape, composed.shape)
     figure, axes = plt.subplots(1, 3, figsize=(12, 4))
+    # Standalone examples intentionally repeat plot labels and presentation.
+    # pylint: disable=duplicate-code
     for axis, values, title in zip(
         axes, (pixels, roi_pixels, composed), ("Exact reduced level", "Reduced-level ROI", "Tiles and black gap")
     ):
@@ -42,6 +44,7 @@ def main() -> None:
         figure.colorbar(image, ax=axis, label="Intensity")
     figure.tight_layout()
     plt.show()
+    # pylint: enable=duplicate-code
 
 
 if __name__ == "__main__":

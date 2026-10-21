@@ -41,12 +41,15 @@ def main() -> None:
 
     figure, axis = plt.subplots(figsize=(10, 7))
     image = axis.imshow(pixels, cmap="gray", interpolation="nearest", vmin=0, vmax=255)
+    # Standalone examples intentionally repeat plot labels and presentation.
+    # pylint: disable=duplicate-code
     axis.set_title(f"{filepath.name}\n{preview.name}")
     axis.set_xlabel("Image X (pixels)")
     axis.set_ylabel("Image Y (pixels)")
     figure.colorbar(image, ax=axis, label="Intensity")
     figure.tight_layout()
     plt.show()
+    # pylint: enable=duplicate-code
 
 
 if __name__ == "__main__":

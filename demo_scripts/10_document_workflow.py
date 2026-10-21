@@ -36,12 +36,15 @@ def main() -> None:
     print("Retained pixels:", pixels.shape, pixels.dtype, "placement:", info.logical_rect)
     figure, axis = plt.subplots(figsize=(7, 4.5))
     image = axis.imshow(pixels, cmap="gray", interpolation="nearest")
+    # Standalone examples intentionally repeat plot labels and presentation.
+    # pylint: disable=duplicate-code
     axis.set_title("CziDocument: compressed round trip after metadata edit")
     axis.set_xlabel("Image X (pixels)")
     axis.set_ylabel("Image Y (pixels)")
     figure.colorbar(image, ax=axis, label="Intensity")
     figure.tight_layout()
     plt.show()
+    # pylint: enable=duplicate-code
 
 
 if __name__ == "__main__":

@@ -7,7 +7,7 @@ import json
 import os
 import runpy
 import shutil
-import subprocess
+import subprocess  # nosec B404 - Intentional subprocesses; see call-specific reviews.
 import sys
 import sysconfig
 import tarfile
@@ -25,6 +25,12 @@ if TYPE_CHECKING:
 ROOT = Path(__file__).resolve().parents[1]
 
 
+def require(condition: object, *details: object) -> None:
+    """Keep validation active under optimization and preserve error arguments."""
+    if not condition:
+        raise AssertionError(*details)
+
+
 def fingerprint(filepath: Path) -> dict[str, str | int]:
     """Return the file size and SHA256 used by evidence records."""
     return {
@@ -38,12 +44,15 @@ def stage(destination: Path) -> list[str]:
     if destination.resolve().is_relative_to(ROOT):
         raise ValueError("The spike must be staged outside the working checkout.")
     destination.mkdir(parents=True, exist_ok=False)
-    tracked = subprocess.check_output(
-        ["git", "-C", str(ROOT), "ls-files", "--cached", "--recurse-submodules"],
+    git = shutil.which("git")
+    if git is None:
+        raise FileNotFoundError("Git is required to stage the candidate sources.")
+    tracked = subprocess.check_output(  # nosec B603 - Reviewed argv; shell=False.
+        [str(Path(git).resolve()), "-C", str(ROOT), "ls-files", "--cached", "--recurse-submodules"],
         text=True,
     ).splitlines()
-    untracked = subprocess.check_output(
-        ["git", "-C", str(ROOT), "ls-files", "--others", "--exclude-standard"],
+    untracked = subprocess.check_output(  # nosec B603 - Reviewed argv; shell=False.
+        [str(Path(git).resolve()), "-C", str(ROOT), "ls-files", "--others", "--exclude-standard"],
         text=True,
     ).splitlines()
     names = sorted(
@@ -65,7 +74,7 @@ def execute(label: str, command: list[str], work_dir: Path, environment: dict[st
     """Run a validation command and retain its exclusive log and exit status."""
     log_path = work_dir / f"{label}.log"
     with log_path.open("x", encoding="utf8") as stream:
-        result = subprocess.run(
+        result = subprocess.run(  # nosec B603 - Reviewed argv; shell=False.
             command, cwd=work_dir, env=environment, stdout=stream, stderr=subprocess.STDOUT, check=False
         )
     print(log_path.read_text(encoding="utf8")[-2500:])
@@ -80,8 +89,24 @@ def execute(label: str, command: list[str], work_dir: Path, environment: dict[st
     return record
 
 
+def audit_notices(archive: zipfile.ZipFile, source: Path, patterns: list[str], license_files: dict) -> None:
+    """Verify every selected source notice has exactly one byte-identical member."""
+    for pattern in patterns:
+        for path in source.glob(pattern):
+            if not path.is_file():
+                continue
+            relative = path.relative_to(source).as_posix()
+            matches = [name for name in license_files if name.endswith(f"/licenses/{relative}")]
+            if len(matches) != 1:
+                raise AssertionError(f"Missing or ambiguous packaged notice: {relative}")
+            if archive.read(matches[0]) != path.read_bytes():
+                raise AssertionError(f"Packaged notice bytes differ: {relative}")
+
+
 def audit_wheel(wheel: Path, source: Path) -> dict:
     """Verify wheel metadata, module bytes, selected notices and production readme parity."""
+    # Validation-only dependencies are intentionally deferred.
+    # pylint: disable-next=import-outside-toplevel
     from packaging.specifiers import SpecifierSet
 
     configuration = tomllib.loads((source / "pyproject.toml").read_text(encoding="utf8"))
@@ -89,28 +114,20 @@ def audit_wheel(wheel: Path, source: Path) -> dict:
     with zipfile.ZipFile(wheel) as archive:
         names = archive.namelist()
         native = [name for name in names if name.startswith("_pylibCZIrw.") and name.endswith((".pyd", ".so"))]
-        if not len(native) == 1:
-            raise AssertionError(native)
-        if not not any("/tests/" in name or "__pycache__" in name for name in names):
-            raise AssertionError()
-        if not archive.read("pylibCZIrw/czi.py") == (source / "pylibCZIrw/czi.py").read_bytes():
-            raise AssertionError()
+        require(len(native) == 1, native)
+        require(not any("/tests/" in name or "__pycache__" in name for name in names))
+        require(archive.read("pylibCZIrw/czi.py") == (source / "pylibCZIrw/czi.py").read_bytes())
         metadata = BytesParser().parsebytes(archive.read(next(name for name in names if name.endswith("/METADATA"))))
-        if not metadata["Version"] == project["version"]:
-            raise AssertionError()
-        if not SpecifierSet(metadata["Requires-Python"]) == SpecifierSet(">=3.12,<3.16"):
-            raise AssertionError()
+        require(metadata["Version"] == project["version"])
+        require(SpecifierSet(metadata["Requires-Python"]) == SpecifierSet(">=3.12,<3.16"))
         expected_readme = "\n".join((source / name).read_text(encoding="utf8") for name in ("INFO.md", "CHANGELOG.md"))
-        if not metadata["Description-Content-Type"] == "text/markdown":
-            raise AssertionError()
+        require(metadata["Description-Content-Type"] == "text/markdown")
         description = metadata.get_payload()
         if not isinstance(description, str):
             raise ValueError("Wheel metadata must contain one text description.")
-        if not description.rstrip("\n") == expected_readme.rstrip("\n"):
-            raise AssertionError()
+        require(description.rstrip("\n") == expected_readme.rstrip("\n"))
         for license_name in ("COPYING", "COPYING.LESSER", "NOTICE.txt"):
-            if not any(name.endswith(f"/licenses/{license_name}") for name in names):
-                raise AssertionError(license_name)
+            require(any(name.endswith(f"/licenses/{license_name}") for name in names), license_name)
         bundled_native_files = {}
         license_files = {}
         for name in names:
@@ -120,16 +137,7 @@ def audit_wheel(wheel: Path, source: Path) -> dict:
             elif ".dist-info/licenses/" in name and not name.endswith("/"):
                 content = archive.read(name)
                 license_files[name] = {"size_bytes": len(content), "sha256": hashlib.sha256(content).hexdigest()}
-        for pattern in configuration["tool"]["scikit-build"]["wheel"]["license-files"]:
-            for path in source.glob(pattern):
-                if not path.is_file():
-                    continue
-                relative = path.relative_to(source).as_posix()
-                matches = [name for name in license_files if name.endswith(f"/licenses/{relative}")]
-                if not len(matches) == 1:
-                    raise AssertionError(f"Missing or ambiguous packaged notice: {relative}")
-                if not archive.read(matches[0]) == path.read_bytes():
-                    raise AssertionError(f"Packaged notice bytes differ: {relative}")
+        audit_notices(archive, source, configuration["tool"]["scikit-build"]["wheel"]["license-files"], license_files)
         return {
             "path": str(wheel),
             **fingerprint(wheel),
@@ -149,13 +157,23 @@ def audit_wheel(wheel: Path, source: Path) -> dict:
 
 def isolated_sdist(source: Path, work_dir: Path, environment: dict[str, str]) -> Path:
     """Build and inspect a Git-free sdist using an isolated dependency overlay."""
+    # Validation-only dependencies are intentionally deferred.
+    # pylint: disable-next=import-outside-toplevel
     from packaging.requirements import Requirement
+
+    # Validation-only dependencies are intentionally deferred.
+    # pylint: disable-next=import-outside-toplevel
     from packaging.utils import canonicalize_name
+
+    # Validation-only dependencies are intentionally deferred.
+    # pylint: disable-next=import-outside-toplevel
     from pyproject_hooks import BuildBackendHookCaller
 
     project = tomllib.loads((source / "pyproject.toml").read_text(encoding="utf8"))
     dependencies = project["build-system"]["requires"]
     overlay = work_dir / "sdist-build-dependencies"
+    # Standalone shell-free pip recipe; keep each CLI independently executable.
+    # pylint: disable=duplicate-code
     execute(
         "sdist-build-dependencies",
         [
@@ -173,6 +191,7 @@ def isolated_sdist(source: Path, work_dir: Path, environment: dict[str, str]) ->
         work_dir,
         environment,
     )
+    # pylint: enable=duplicate-code
 
     def runner(cmd: Sequence[str], cwd: str | None = None, extra_environ: Mapping[str, str] | None = None) -> None:
         """Run the backend hook with its declared sequence/mapping contract."""
@@ -186,7 +205,9 @@ def isolated_sdist(source: Path, work_dir: Path, environment: dict[str, str]) ->
             str(overlay),
             *cmd[1:],
         ]
-        subprocess.run(hook_command, cwd=cwd, env=hook_environment, check=True)
+        subprocess.run(
+            hook_command, cwd=cwd, env=hook_environment, check=True
+        )  # nosec B603 - Reviewed argv; shell=False.
 
     backend = BuildBackendHookCaller(
         str(source),
@@ -203,9 +224,9 @@ def isolated_sdist(source: Path, work_dir: Path, environment: dict[str, str]) ->
         if requirement.marker is not None and not requirement.marker.evaluate():
             continue
         installed_version = installed.get(canonicalize_name(requirement.name))
-        if not not requirement.extras:
+        if requirement.extras:
             raise AssertionError(f"Hook dependency extras require an explicit isolated install: {specification}")
-        if not ((installed_version is not None and installed_version in requirement.specifier)):
+        if not (installed_version is not None and installed_version in requirement.specifier):
             raise AssertionError(f"Hook dependency is not satisfied by the isolated build overlay: {specification}")
     destination = work_dir / "sdists"
     destination.mkdir()
@@ -214,12 +235,10 @@ def isolated_sdist(source: Path, work_dir: Path, environment: dict[str, str]) ->
     unpacked.mkdir()
     with tarfile.open(archive) as stream:
         members = stream.getnames()
-        if not not any(".git" in Path(name).parts for name in members):
-            raise AssertionError()
+        require(not any(".git" in Path(name).parts for name in members))
         stream.extractall(unpacked, filter="data")
     roots = list(unpacked.iterdir())
-    if not len(roots) == 1:
-        raise AssertionError()
+    require(len(roots) == 1)
     result = roots[0]
     for relative in (
         "libs/libCZIrw/CMakeLists.txt",
@@ -229,10 +248,8 @@ def isolated_sdist(source: Path, work_dir: Path, environment: dict[str, str]) ->
         "packaging/CMakeLists.txt",
         "COPYING.LESSER",
     ):
-        if not (result / relative).is_file():
-            raise AssertionError(relative)
-    if not not (result / ".git").exists():
-        raise AssertionError()
+        require((result / relative).is_file(), relative)
+    require(not (result / ".git").exists())
     (work_dir / "sdist-record.json").write_text(
         json.dumps(
             {
@@ -278,19 +295,26 @@ class LocalOnly:
 
 def regressions(source: Path, work_dir: Path) -> None:
     """Run the installed-wheel suite and retain exact results and module identities."""
+    # Validation-only dependencies are intentionally deferred.
+    # pylint: disable-next=import-outside-toplevel
     import defusedxml.ElementTree as ET
+
+    # Validation-only dependencies are intentionally deferred.
+    # pylint: disable-next=import-outside-toplevel
     import pytest
 
+    # Package-owned private/native API intentionally exercised.
+    # pylint: disable-next=import-outside-toplevel,import-private-name
     import _pylibCZIrw as native
+
+    # Validation-only dependencies are intentionally deferred.
+    # pylint: disable-next=import-outside-toplevel
     from pylibCZIrw import czi
 
     site_packages = Path(sysconfig.get_path("platlib"))
-    if not Path(czi.__file__).is_relative_to(site_packages):
-        raise AssertionError()
-    if not Path(native.__file__).is_relative_to(site_packages):
-        raise AssertionError()
-    if not (source / "pylibCZIrw/czi.py").read_bytes() == Path(czi.__file__).read_bytes():
-        raise AssertionError()
+    require(Path(czi.__file__).is_relative_to(site_packages))
+    require(Path(native.__file__).is_relative_to(site_packages))
+    require((source / "pylibCZIrw/czi.py").read_bytes() == Path(czi.__file__).read_bytes())
     os.environ["PYTHON_SEMANTIC_RELEASE_VERSION"] = version("pylibczirw")
     os.environ["CZIRW_RESOURCE_EVIDENCE_DIR"] = str(work_dir / "installed-resources")
     plugin = LocalOnly()
@@ -321,8 +345,7 @@ def regressions(source: Path, work_dir: Path) -> None:
     (work_dir / "regressions-record.json").write_text(json.dumps(record, indent=2), encoding="utf8")
     print(log_path.read_text(encoding="utf8")[-4000:])
     print(json.dumps(counts, indent=2))
-    if not result == 0:
-        raise AssertionError()
+    require(result == 0)
 
 
 def check(arguments: argparse.Namespace, environment: dict[str, str]) -> None:
@@ -339,6 +362,8 @@ def check(arguments: argparse.Namespace, environment: dict[str, str]) -> None:
         config.append(f"--config-settings=cmake.define.CMAKE_TOOLCHAIN_FILE={arguments.toolchain.resolve()}")
     if arguments.triplet:
         config.append(f"--config-settings=cmake.define.VCPKG_TARGET_TRIPLET={arguments.triplet}")
+    # Standalone shell-free pip recipe; keep each CLI independently executable.
+    # pylint: disable=duplicate-code
     execute(
         "sdist-wheel",
         [
@@ -358,25 +383,52 @@ def check(arguments: argparse.Namespace, environment: dict[str, str]) -> None:
         work_dir,
         environment,
     )
+    # pylint: enable=duplicate-code
     sdist_wheel = next((work_dir / "sdist-wheels").glob("*.whl"))
     (work_dir / "sdist-wheel-audit.json").write_text(
         json.dumps(audit_wheel(sdist_wheel, source), indent=2), encoding="utf8"
     )
-    if not ((arguments.restore_wheel and arguments.restore_wheel.is_file())):
-        raise AssertionError("Supply the baseline wheel to restore after installed checks.")
-    try:
+    require(
+        arguments.restore_wheel and arguments.restore_wheel.is_file(),
+        "Supply the baseline wheel to restore after installed checks.",
+    )
+    with contextlib.ExitStack() as cleanup:
+        # Standalone shell-free pip recipe; keep each CLI independently executable.
+        # pylint: disable=duplicate-code
+        cleanup.callback(
+            execute,
+            "restore-baseline",
+            [
+                sys.executable,
+                "-I",
+                "-m",
+                "pip",
+                "install",
+                "--no-deps",
+                "--force-reinstall",
+                str(arguments.restore_wheel.resolve()),
+            ],
+            work_dir,
+            environment,
+        )
+        # pylint: enable=duplicate-code
+        # Standalone shell-free pip recipe; keep each CLI independently executable.
+        # pylint: disable=duplicate-code
         execute(
             "install-candidate",
             [sys.executable, "-I", "-m", "pip", "install", "--no-deps", "--force-reinstall", str(sdist_wheel)],
             work_dir,
             environment,
         )
+        # pylint: enable=duplicate-code
         execute(
             "regressions",
             [sys.executable, "-I", str(Path(__file__).resolve()), str(work_dir), "--regressions"],
             work_dir,
             environment,
         )
+        # Standalone shell-free pip recipe; keep each CLI independently executable.
+        # pylint: disable=duplicate-code
         execute(
             "install-editable",
             [
@@ -395,25 +447,10 @@ def check(arguments: argparse.Namespace, environment: dict[str, str]) -> None:
             work_dir,
             environment,
         )
+        # pylint: enable=duplicate-code
         execute(
             "editable-imports",
             [sys.executable, "-I", str(Path(__file__).resolve()), str(work_dir), "--editable-imports"],
-            work_dir,
-            environment,
-        )
-    finally:
-        execute(
-            "restore-baseline",
-            [
-                sys.executable,
-                "-I",
-                "-m",
-                "pip",
-                "install",
-                "--no-deps",
-                "--force-reinstall",
-                str(arguments.restore_wheel.resolve()),
-            ],
             work_dir,
             environment,
         )
@@ -421,20 +458,21 @@ def check(arguments: argparse.Namespace, environment: dict[str, str]) -> None:
 
 def editable_imports(source: Path, work_dir: Path) -> None:
     """Verify editable module origins and preserve their provenance record."""
+    # Package-owned private/native API intentionally exercised.
+    # pylint: disable-next=import-outside-toplevel,import-private-name
     import _pylibCZIrw as native
+
+    # Validation-only dependencies are intentionally deferred.
+    # pylint: disable-next=import-outside-toplevel
     from pylibCZIrw import czi
 
-    if not Path(czi.__file__).is_relative_to(source):
-        raise AssertionError()
-    if not Path(native.__file__).is_relative_to(Path(sysconfig.get_path("platlib"))):
-        raise AssertionError()
+    require(Path(czi.__file__).is_relative_to(source))
+    require(Path(native.__file__).is_relative_to(Path(sysconfig.get_path("platlib"))))
     direct_url = distribution("pylibczirw").read_text("direct_url.json")
     if direct_url is None:
         raise RuntimeError("Editable provenance is missing direct_url.json.")
-    if not json.loads(direct_url)["dir_info"]["editable"]:
-        raise AssertionError()
-    if not callable(getattr(czi.CziDocument, "open", None)):
-        raise AssertionError()
+    require(json.loads(direct_url)["dir_info"]["editable"])
+    require(callable(getattr(czi.CziDocument, "open", None)))
     record = {
         "python": sys.executable,
         "cwd": str(Path.cwd()),
@@ -462,11 +500,14 @@ def main() -> None:
     environment.pop("PYTHONPATH", None)
     environment.pop("PYTHONHOME", None)
     if os.name == "nt":
+        # Standalone Windows toolchain environment mirrors the independent build CLI.
+        # pylint: disable=duplicate-code
         environment["PATH"] = (
             f"{Path(sys.executable).parent};{Path(sys.executable).parent / 'Scripts'};"
             f"{os.environ['SystemRoot']}/System32/WindowsPowerShell/v1.0;"
             f"{os.environ['SystemRoot']}/System32;{environment['PATH']}"
         )
+        # pylint: enable=duplicate-code
         environment["CMAKE_GENERATOR"] = "Visual Studio 17 2022"
     if arguments.check:
         check(arguments, environment)
@@ -480,6 +521,8 @@ def main() -> None:
         editable_imports(source, work_dir)
         return
     names = stage(source)
+    # Standalone shell-free pip recipe; keep each CLI independently executable.
+    # pylint: disable=duplicate-code
     command = [
         sys.executable,
         "-I",
@@ -493,13 +536,14 @@ def main() -> None:
         str(work_dir / "wheels"),
         str(source),
     ]
+    # pylint: enable=duplicate-code
     if arguments.toolchain:
         command.append(f"--config-settings=cmake.define.CMAKE_TOOLCHAIN_FILE={arguments.toolchain.resolve()}")
     if arguments.triplet:
         command.append(f"--config-settings=cmake.define.VCPKG_TARGET_TRIPLET={arguments.triplet}")
     log_path = work_dir / "isolated-wheel.log"
     with log_path.open("x", encoding="utf8") as stream:
-        result = subprocess.run(
+        result = subprocess.run(  # nosec B603 - Reviewed argv; shell=False.
             command, cwd=work_dir, env=environment, stdout=stream, stderr=subprocess.STDOUT, check=False
         )
     record = {

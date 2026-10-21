@@ -3,6 +3,7 @@
 import types
 from typing import Any, Dict, Optional, Tuple
 
+import numpy as np
 import pytest
 
 from pylibCZIrw import czi as czi_mod
@@ -163,7 +164,7 @@ def test_make_channel_display_setting_with_description(monkeypatch: pytest.Monke
     )
     monkeypatch.setattr(czi_mod, "_pylibCZIrw", fake_ns)
 
-    color = czi_mod.Rgb8Color(255, 10, 5)
+    color = czi_mod.Rgb8Color(np.uint8(255), np.uint8(10), np.uint8(5))
     ds = czi_mod.CziEditor.make_channel_display_setting_with_description(
         is_enabled=True,
         tinting_mode=czi_mod.TintingMode.Color,

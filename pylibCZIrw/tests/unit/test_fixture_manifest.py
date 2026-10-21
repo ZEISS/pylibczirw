@@ -3,7 +3,7 @@
 import hashlib
 import json
 import shutil
-import subprocess
+import subprocess  # nosec B404 - Intentional subprocesses; see call-specific reviews.
 import sys
 from pathlib import Path
 
@@ -12,8 +12,8 @@ import pytest
 from ..conftest import verify_fixture_manifest
 
 
-@pytest.fixture
-def sample_manifest(tmp_path: Path) -> tuple[Path, Path]:
+@pytest.fixture(name="sample_manifest")
+def fixture_sample_manifest(tmp_path: Path) -> tuple[Path, Path]:
     """Yield an isolated fixture manifest and its verifier dependencies."""
     payload = b"fixture\x00bytes\r\n"
     (tmp_path / "sample.bin").write_bytes(payload)
@@ -134,7 +134,7 @@ def test_session_rejects_corruption_before_collection(sample_manifest: tuple[Pat
     test_path = test_dir / "test_never_collected.py"
     test_path.write_text('raise RuntimeError("TEST COLLECTION REACHED")\n', encoding="utf-8")
     (root / "sample.bin").unlink()
-    result = subprocess.run(
+    result = subprocess.run(  # nosec B603 - Reviewed argv; shell=False.
         [
             sys.executable,
             "-I",
@@ -154,8 +154,8 @@ def test_session_rejects_corruption_before_collection(sample_manifest: tuple[Pat
     assert "TEST COLLECTION REACHED" not in result.stdout + result.stderr
 
 
-@pytest.fixture(scope="module")
-def assignment_records() -> tuple[dict, dict]:
+@pytest.fixture(scope="module", name="assignment_records")
+def fixture_assignment_records() -> tuple[dict, dict]:
     """Return the manifest case assignments used by projection-policy checks."""
     root = Path(__file__).resolve().parents[3]
     manifest = json.loads(

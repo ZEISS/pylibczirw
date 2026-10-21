@@ -39,6 +39,8 @@ def main() -> None:
     # Axes use stored pixel coordinates, not the separate logical placement above.
     figure, axes = plt.subplots(1, 2, figsize=(10, 4), sharex=True, sharey=True)
     minimum, maximum = pixels.min(), pixels.max()
+    # Standalone examples intentionally repeat plot labels and presentation.
+    # pylint: disable=duplicate-code
     for axis, values, title in zip(
         axes,
         (pixels_by_m, pixels),
@@ -51,6 +53,7 @@ def main() -> None:
         figure.colorbar(image, ax=axis, label="Intensity")
     figure.tight_layout()
     plt.show()
+    # pylint: enable=duplicate-code
 
 
 if __name__ == "__main__":
