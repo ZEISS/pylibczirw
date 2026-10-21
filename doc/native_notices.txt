@@ -1,8 +1,14 @@
 Native third-party license and attribution texts
 
-The files in this directory preserve upstream or distributor-supplied text.
+The files in third_party/native preserve upstream or distributor-supplied text.
 Different platform wheels incorporate different components; inclusion here
 does not imply that every listed component is linked into every wheel.
+
+REUSE definitions in LICENSES/native use LicenseRef-native- filenames and
+preserve the same bytes. The per-file .reuse/dep5 associations reference those
+texts without selecting a single SPDX license for a mixed-license bundle.
+Copyright metadata remains NOASSERTION; the original embedded copyright and
+attribution statements remain unchanged. These references grant no new rights.
 
 Common native components:
   libCZI-and-vendored-components-COPYING.txt: libCZI and its modified

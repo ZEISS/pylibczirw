@@ -62,6 +62,15 @@ source-delivery obligations require distributor review. The unchanged production
 setup script and the candidate configuration do not necessarily package the
 same notice set. Inspect the actual wheel before redistribution.
 
+Native notice artifacts retain their original names and bytes under
+`third_party/native`; the component index is [native notices](../doc/native_notices.txt).
+`LICENSES/native` holds byte-identical `LicenseRef-native-` definitions linked
+to each artifact by `.reuse/dep5`. These references do not relicense components.
+The candidate packages the original artifacts and index, not duplicate
+definitions. Unverified copyright metadata remains `NOASSERTION`; embedded
+upstream attribution is preserved. The canonical ISC text satisfies the
+existing SPDX tag in curl's notice.
+
 The source-capture helper can build an internal source/review archive and verify
 its inventory. An inventory is not a public source offer, retention commitment
 or approval. Do not activate this candidate at the root or replace the release

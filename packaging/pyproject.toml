@@ -44,12 +44,13 @@ build.targets = ["_pylibCZIrw"]
 install.components = ["python"]
 wheel.packages = ["pylibCZIrw"]
 wheel.exclude = ["pylibCZIrw/tests/**", "**/__pycache__/**", "**/*.pyc"]
-wheel.license-files = ["COPYING", "COPYING.LESSER", "NOTICE.txt", "LICENSES/**/*"]
+wheel.license-files = ["COPYING", "COPYING.LESSER", "NOTICE.txt", "LICENSES/*.txt", "third_party/native/*.txt", "doc/native_notices.txt"]
 sdist.inclusion-mode = "manual"
 sdist.include = [
   "pyproject.toml", "CMakeLists.txt", "_pylibCZIrw/**", "libs/**",
   "pylibCZIrw/__init__.py", "pylibCZIrw/czi.py", "packaging/**",
   "INFO.md", "CHANGELOG.md", "COPYING", "COPYING.LESSER", "NOTICE.txt", "LICENSES/**",
+  "third_party/native/**", "doc/native_notices.txt",
 ]
 sdist.exclude = [
   "**/.git", "**/.git/**", "**/__pycache__/**", "**/*.pyc", "**/build/**",
