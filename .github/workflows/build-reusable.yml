@@ -63,11 +63,13 @@ jobs:
           # Python Semantic Release needs access to the full history to determine whether a release should be made.
           fetch-depth: 0
 
-      # Install Python 3.9; other versions are already available on the runner
-      - name: Set up Python 3.9
+      # Install Python 3.9 and 3.14; other versions are already available on the runner
+      - name: Set up Python 3.9 and 3.14
         uses: actions/setup-python@v5
         with:
-          python-version: '3.9'
+          python-version: |
+            3.9
+            3.14
 
       - id: psr
         name: Python Semantic Release

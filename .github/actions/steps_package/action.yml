@@ -30,13 +30,13 @@ runs:
       run: |-
         set -o errexit
         python -m pip install --upgrade pip
-        pip install cibuildwheel~=2.3 uv
+        pip install cibuildwheel~=3.4 uv
       shell: bash
     - name: Build wheels
       env:
         CIBW_BUILD_FRONTEND: build[uv]
         CIBW_ARCHS: auto64
-        CIBW_SKIP: pp* *-musllinux_*
+        CIBW_SKIP: pp* *-musllinux_* cp3??t-*
         CIBW_BEFORE_ALL: "${{inputs.CIBWBEFOREALL}}"
         CIBW_ENVIRONMENT: "${{inputs.CIBW_ENVIRONMENT}}"
         CIBW_TEST_REQUIRES: "-r requirements_test.txt"
