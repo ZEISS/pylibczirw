@@ -17,7 +17,7 @@ In addition, be sure to ideally always keep your remotes up-to-date with ``` git
 Note: if you forget to link the submodules when cloning, you can use ``` git submodule update --init ```.  
 
 You should ideally have [PyCharm Professional](https://www.jetbrains.com/pycharm/) and [conda](https://docs.conda.io/en/latest/miniconda.html) installed locally. You should also configure your Project interpreter as a conda environment to have all required packages installed, i.e.  
-1. Create a fresh conda environment via `conda create -p <some-path\PyPI\pylibCZIrw> python` and activate it with `conda activate <environment_name>`  
+1. Create a fresh conda environment via `conda create -p <some-path\PyPI\pylibCZIrw> python=3.12` and activate it with `conda activate <environment_name>`
    Note: Alternatively, when opening the project the first time, in the prompt to create a venv, select the python location from one of the existing conda venvs.
 2. Navigate to the repository from inside the environment.
 3. Install necessary packages for building from the activated environment via `pip install .`
@@ -54,7 +54,7 @@ This documentation provides a step-by-step guide to help you to do so.
 ## Requirements
 
 - 64 bits OS and 64 bits Python (with [cmake pre-installed](https://cmake-python-distributions.readthedocs.io/en/latest/installation.html)).
-- _**python 3.XX**_
+- Standard-GIL CPython 3.12, 3.13, 3.14 or 3.15 (`>=3.12,<3.16`). Older Python versions, PyPy and free-threaded builds are not supported.
 - C++ compiler (_**clang/gcc**_ for linux, _**VS Studio**_ on _**Windows**_).
 
 ## Getting started
@@ -78,7 +78,7 @@ Note: For pip 21.2 and below, use in-tree-build ```pip install --use-feature=in-
 4. To test this on another project that uses pylibczi, navigate to the pylibczirw folder in python terminal of the pylibCZIrw project, and then create a wheel file using
    ```python setup.py bdist_wheel```.  
     Note: Make sure you didn't run ``pip install .`` as this will delete the wheel file after installing it.
-    Then install the package in the project using ```pip install <RepositoryDirectory>\pylibczirw\dist\pylibCZIrw-3.4.0-cp310-cp310-win_amd64.whl```  
+   Then install the generated wheel in the project using ```pip install <path-to-generated-wheel.whl>```. Use the wheel matching your supported Python version.
     Note: this required the python versions in both projects (and venvs) to be the same.
     Note: If this fails on cmake, the cmake inputs can be copied from the console output, and run separately for faster debugging.
 5. Alternatively, in the python terminal of the project that uses pylibCZIrw, navigate to the build folder of pylibCZIrw and run ```pip install . -e```.  

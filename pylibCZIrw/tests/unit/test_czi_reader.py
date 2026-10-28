@@ -7,6 +7,8 @@ import numpy as np
 import pytest
 
 # pylint: disable=no-name-in-module
+# Package-owned private/native API intentionally exercised.
+# pylint: disable-next=import-private-name
 from _pylibCZIrw import DimensionIndex, IntRect, PixelType, RgbFloatColor
 from pylibCZIrw.czi import Color, CziReader, Rectangle
 
