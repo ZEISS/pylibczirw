@@ -1,6 +1,0 @@
-[req]
-distinguished_name = subject
-prompt = no
-
-[subject]
-CN = localhost
