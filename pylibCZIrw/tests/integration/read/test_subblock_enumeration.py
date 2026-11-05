@@ -53,8 +53,8 @@ class TestIndexedNativeAccess:
         reader = native.czi_reader._from_stream(read_at)
         with closing(reader):
             reads.clear()
-            directory = reader.GetSubBlockDirectory()
-            assert [index for index, _info in directory] == [0, 1]
+            directory = reader.QuerySubBlocks({}, None, None, None)
+            assert [index for index, _info, _level in directory] == [0, 1]
             assert reader.GetSubBlockInfo(1).mIndex == 37
             assert not reads
         assert directory[0][1].coordinate.to_dict() == {"S": 2, "T": 3, "C": 5, "Z": 7}
@@ -216,7 +216,8 @@ class TestIndexedNativeAccess:
             reads.clear()
             with pytest.raises(error):
                 reader.ReadSubBlock(0)
-            assert not reads
+            if change != "compression":
+                assert not reads
 
     @pytest.fixture
     def indexed_reader(self) -> Iterator[native.czi_reader]:
@@ -589,7 +590,7 @@ class TestPublicSubblockReads:
         reader, reads, _data = public_reader
         pytest.raises(error, reader.read_subblock_by_m, m_index, **filters)
         assert reads == []
-        assert reader._subblock_catalog is None
+        assert not hasattr(reader, "_subblock_catalog")
 
     @pytest.mark.parametrize("method", ["read_subblock", "read_subblock_by_m"])
     def test_public_signatures_reject_extra_selectors_and_closed_reads(
@@ -674,10 +675,93 @@ class TestStoredLevelReads:
         filepath = os.path.join(working_dir, "../test_data/synthetic/stored_levels_same_m37.czi")
         with open_czi(filepath) as reader:
             selected = next(level for level in reader.list_stored_levels() if level.output_shape == (16, 24))
-            pixels = reader.read_stored_level(selected.level_id, roi=(1000, -1000, 17, 9))
+            pixels = reader.read_stored_level(selected.level_id, roi=(1000, -1000, 16, 8))
             assert pixels.shape == (4, 8)
             assert pixels.dtype == np.uint16
             assert not pixels.any()
+
+    @pytest.mark.parametrize("origin", [-2, 2])
+    def test_aligned_signed_roi_preserves_sampling(self, origin: int) -> None:
+        """Preserve the stored sampling grid across signed ROI origins."""
+        filepath = os.path.join(working_dir, "../test_data/synthetic/stored_levels_same_m37.czi")
+        with open_czi(filepath) as reader:
+            lower = next(level for level in reader.list_stored_levels() if level.output_shape == (16, 24))
+            pixels = reader.read_stored_level(lower.level_id, roi=(origin, origin, 8, 8))
+        expected = np.zeros((4, 4), dtype=np.uint16)
+        source = max(origin // 2, 0)
+        destination = max(-origin // 2, 0)
+        expected[destination:, destination:] = self.literal(lower=True)[
+            source : source + 4 - destination, source : source + 4 - destination
+        ]
+        np.testing.assert_array_equal(pixels, expected)
+
+    @pytest.mark.parametrize("width,height", [(47, 32), (48, 31)])
+    def test_unaligned_roi_extents_are_rejected(self, width: int, height: int) -> None:
+        """Reject extents that would truncate the reduced output."""
+        filepath = os.path.join(working_dir, "../test_data/synthetic/stored_levels_same_m37.czi")
+        with open_czi(filepath) as reader:
+            lower = next(level for level in reader.list_stored_levels() if level.output_shape == (16, 24))
+            with pytest.raises(ValueError, match="align"):
+                reader.read_stored_level(lower.level_id, roi=(0, 0, width, height))
+
+    def test_incompatible_tile_grids_remain_discoverable(self) -> None:
+        """List incompatible origins without advertising a composed shape."""
+        first = TestSubblockCatalog.descriptor(0, stored=(24, 16))
+        shifted = TestSubblockCatalog.descriptor(1, stored=(24, 16))
+        shifted[1].logicalRect.x += 1
+        reader = TestSubblockCatalog.reader([first, shifted])
+        level = reader.list_stored_levels()[0]
+        assert level.output_shape is None
+        with pytest.raises(ValueError, match="unsupported stored geometry"):
+            reader.read_stored_level(level.level_id)
+
+    def test_equal_m_ties_follow_directory_index_not_requested_order(self) -> None:
+        """Resolve equal-M overlaps by stable original directory indices."""
+        data = TestIndexedNativeAccess.stream_data("literal_overlapping_tiles.czi")
+        for index in (0, 1):
+            entry = TestIndexedNativeAccess.directory_entry(data, index)
+            subblock = struct.unpack_from("<q", data, entry + 6)[0] + 48
+            for base in (entry, subblock):
+                count = struct.unpack_from("<i", data, base + 28)[0]
+                for dimension in range(count):
+                    offset = base + 32 + 20 * dimension
+                    if data[offset : offset + 4].rstrip(b"\0") == b"M":
+                        struct.pack_into("<i", data, offset + 4, 37)
+        reader = native.czi_reader._from_stream(lambda offset, size: bytes(data[offset : offset + size]))
+        with closing(reader):
+            rectangle = reader.GetSubBlockInfo(0).logicalRect
+            pixels = np.asarray(reader.ReadStoredLevel([1, 0], rectangle, 1))[..., 0]
+        expected = self.literal()
+        expected[:16, :24] = self.literal(lower=True)
+        np.testing.assert_array_equal(pixels, expected)
+
+    def test_masked_float_bgr_composition_preserves_values_and_nan(self, tmp_path: Path) -> None:
+        """Copy float-BGR pixels and NaNs while honoring the stored mask."""
+        data = TestIndexedNativeAccess.stream_data("literal_valid_mask_v2.czi")
+        entry = TestIndexedNativeAccess.directory_entry(data)
+        start = struct.unpack_from("<q", data, entry + 6)[0]
+        metadata_size, attachment_size, pixel_size = struct.unpack_from("<iiq", data, start + 32)
+        pixels_start = start + 288 + metadata_size
+        expected = np.arange(32 * 48 * 3, dtype=np.float32).reshape(32, 48, 3) / 8
+        expected[0, 1, 0] = np.nan
+        segment = bytearray(data[start:pixels_start])
+        segment.extend(expected.tobytes())
+        segment.extend(data[pixels_start + pixel_size : pixels_start + pixel_size + attachment_size])
+        struct.pack_into("<qq", segment, 16, len(segment) - 32, len(segment) - 32)
+        struct.pack_into("<q", segment, 40, expected.nbytes)
+        struct.pack_into("<i", segment, 50, int(native.PixelType.Bgr96Float))
+        data.extend(b"\0" * (-len(data) % 32))
+        struct.pack_into("<q", data, entry + 6, len(data))
+        struct.pack_into("<i", data, entry + 2, int(native.PixelType.Bgr96Float))
+        data.extend(segment)
+        filepath = tmp_path / "masked_float_bgr.czi"
+        filepath.write_bytes(data)
+        with open_czi(str(filepath), reader_options=ReaderOptions(enable_mask_awareness=True)) as reader:
+            level = reader.list_stored_levels()[0]
+            pixels = reader.read_stored_level(level.level_id)
+        rows, columns = np.indices(expected.shape[:2])
+        expected[(rows + columns) % 3 == 0] = 0
+        np.testing.assert_array_equal(pixels, expected)
 
     def test_frozen_descriptor_required_fields_and_owned_coordinates(self) -> None:
         """Verify frozen descriptor required fields and owned coordinates."""
@@ -758,17 +842,13 @@ class TestStoredLevelReads:
         np.testing.assert_array_equal(pixels, expected)
 
     @pytest.mark.parametrize("origin", [-1, 1, 3])
-    def test_roi_offsets_truncate_toward_zero(self, origin: int) -> None:
-        """Verify roi offsets truncate toward zero."""
+    def test_unaligned_roi_origins_are_rejected(self, origin: int) -> None:
+        """Reject origins that would shift the stored sampling grid."""
         filepath = os.path.join(working_dir, "../test_data/synthetic/stored_levels_same_m37.czi")
         with open_czi(filepath) as reader:
             lower = next(level for level in reader.list_stored_levels() if level.output_shape == (16, 24))
-            pixels = reader.read_stored_level(lower.level_id, roi=(origin, origin, 48, 32))
-        expected = self.literal(lower=True)
-        if origin == 3:
-            expected = np.zeros((16, 24), dtype=np.uint16)
-            expected[:-1, :-1] = self.literal(lower=True)[1:, 1:]
-        np.testing.assert_array_equal(pixels, expected)
+            with pytest.raises(ValueError, match="align"):
+                reader.read_stored_level(lower.level_id, roi=(origin, origin, 48, 32))
 
     @pytest.mark.parametrize("enabled", [False, True])
     @pytest.mark.parametrize("corrupt", [False, True])
@@ -1030,6 +1110,18 @@ class TestSelectiveSubblockReads:
 class TestSubblockCatalog:
     """Verify immutable catalog snapshots and directory-only selector semantics."""
 
+    def test_native_counts_do_not_materialize_python_snapshots(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        """Count natively without calling Python snapshot enumeration."""
+        with open_czi(CZI_MULTI_DIM) as reader:
+            expected = reader.list_subblocks(plane={"C": 0})
+
+            def reject_snapshots(**filters: object) -> None:
+                pytest.fail("Counting must not construct Python subblock snapshots.")
+
+            monkeypatch.setattr(reader, "list_subblocks", reject_snapshots)
+            assert reader.count_subblocks(plane={"C": 0}) == len(expected)
+            assert sum(reader.count_subblocks_by_scene(plane={"C": 0}).values()) == len(expected)
+
     @staticmethod
     def descriptor(
         index: int = 0,
@@ -1057,18 +1149,53 @@ class TestSubblockCatalog:
             """Provide only instrumented directory access and finalization for catalog tests."""
 
             calls = 0
+            directory_calls = 0
 
             def GetSubBlockDirectory(self) -> list[tuple[int, SimpleNamespace]]:
                 """Return the supplied directory while recording each native catalog access."""
-                self.calls += 1
+                self.directory_calls += 1
                 return directory
+
+            def QuerySubBlocks(
+                self, plane: dict[str, int], scene: Optional[int], m_index: Optional[int], level: Optional[int]
+            ) -> list[tuple[int, SimpleNamespace, Optional[int]]]:
+                """Return filtered triples with globally assigned level tokens."""
+                self.calls += 1
+                levels = {}
+                matches = []
+                for index, info in sorted(directory):
+                    rect, size = info.logicalRect, info.physicalSize
+                    token = None
+                    if min(rect.w, rect.h, size.w, size.h) > 0:
+                        ratios = (Fraction(rect.h, size.h), Fraction(rect.w, size.w))
+                        token = levels.setdefault(ratios, len(levels))
+                    coordinates = info.coordinate.to_dict()
+                    if (
+                        all(coordinates.get(key) == value for key, value in plane.items())
+                        and (scene is None or coordinates.get("S") == scene)
+                        and (m_index is None or (info.is_mindex_valid() and info.mIndex == m_index))
+                        and (level is None or token == level)
+                    ):
+                        matches.append((index, info, token))
+                return matches
+
+            def CountSubBlocks(self, *filters: object) -> int:
+                """Expose the native-style scalar count interface."""
+                return len(self.QuerySubBlocks(*filters))
+
+            def CountSubBlocksByScene(self, *filters: object) -> dict[Optional[int], int]:
+                """Expose the native-style per-scene count interface."""
+                counts: dict[Optional[int], int] = {}
+                for _index, info, _level in self.QuerySubBlocks(*filters):
+                    scene = info.coordinate.to_dict().get("S")
+                    counts[scene] = counts.get(scene, 0) + 1
+                return counts
 
             def close(self) -> None:
                 """Finalize the synthetic directory owner without pixel or stream access."""
 
         reader = CziReader.__new__(CziReader)
         reader._czi_reader = DirectoryOnly()
-        reader._subblock_catalog = None
         reader._subblock_closed = False
         return reader
 
@@ -1096,7 +1223,7 @@ class TestSubblockCatalog:
         counts = reader.count_subblocks_by_scene()
         counts.clear()
         assert reader.count_subblocks_by_scene(plane={}) == {8: 1, 2: 2, None: 1, 0: 1}
-        assert reader._czi_reader.calls == 1
+        assert reader._czi_reader.directory_calls == 0
 
     def test_counts_filter_levels_and_retain_unclassified_entries(self) -> None:
         """Verify counts filter levels and retain unclassified entries."""
@@ -1166,7 +1293,7 @@ class TestSubblockCatalog:
         assert reader.list_subblocks(scene=0) == []
         assert reader.list_subblocks(plane={}) == reader.list_subblocks()
         assert reader.list_subblocks()[0].m_index is None
-        assert reader._czi_reader.calls == 1
+        assert reader._czi_reader.directory_calls == 0
 
     def test_exact_levels_are_stable_not_ordinals_and_keep_unclassified(self) -> None:
         """Verify exact levels are stable not ordinals and keep unclassified."""

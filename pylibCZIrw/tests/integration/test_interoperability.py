@@ -14,6 +14,7 @@ from io import BytesIO
 from pathlib import Path
 from typing import Iterator, Optional
 
+import czifile
 import numpy as np
 import pytest
 
@@ -21,8 +22,6 @@ import pytest
 # pylint: disable-next=import-private-name
 import _pylibCZIrw as native
 from pylibCZIrw import czi
-
-czifile = pytest.importorskip("czifile", minversion="2026.8.16")
 
 DATA = Path(__file__).resolve().parent / "test_data"
 SYNTHETIC = DATA / "synthetic"
@@ -159,7 +158,7 @@ def test_attachments_match_independent_raw_and_embedded_images() -> None:
             if info.index < 3:
                 with czifile.CziFile(BytesIO(payload)) as embedded:
                     independent = np.squeeze(embedded.asarray(maxworkers=1))
-                np.testing.assert_array_equal(document.read_attachment_image(info.index), independent)
+                np.testing.assert_array_equal(document.read_embedded_czi_image(info.index), independent)
                 np.testing.assert_array_equal(independent, literal_pixels())
         with pytest.raises(ValueError, match="matched 2"):
             document.read_preview()
@@ -205,7 +204,6 @@ def instrumented_document(
         reader = czi.CziReader.__new__(czi.CziReader)
         reader._czi_reader = native.czi_reader._from_stream(read_at)
         reader._subblock_closed = False
-        reader._subblock_catalog = None
         owners.append(reader)
         with closing(reader):
             yield reader
@@ -258,7 +256,7 @@ def test_facade_reads_only_selected_native_segment(monkeypatch: pytest.MonkeyPat
         elif operation == "attachment_raw":
             result = document.read_attachment(0)
         else:
-            result = document.read_attachment_image(0)
+            result = document.read_embedded_czi_image(0)
         assert result is not None
         assert reads
         assert all(start <= offset and offset + size <= end for offset, size in reads)
@@ -331,7 +329,7 @@ def resource_cycle(filepath: Path, case: str) -> object:
         elif case == "attachment_raw":
             result = document.read_attachment(0)
         elif case == "attachment_image":
-            result = document.read_attachment_image(0)
+            result = document.read_embedded_czi_image(0)
         else:
             result = (document.list_subblocks(), document.list_stored_levels(), document.list_attachments())
     document.close()
@@ -412,7 +410,9 @@ def resource_worker(case: str) -> dict[str, object]:
 def test_repeated_read_close_resource_protocol(case: str, tmp_path: Path) -> None:
     """Verify repeated read close resource protocol."""
     environment = os.environ.copy()
-    environment["PYTHONPATH"] = str(Path(czi.__file__).resolve().parent.parent)
+    environment["PYTHONPATH"] = os.pathsep.join(
+        [str(Path(native.__file__).resolve().parent), str(Path(czi.__file__).resolve().parent.parent)]
+    )
     result = subprocess.run(  # nosec B603 - Reviewed argv; shell=False.
         [sys.executable, str(Path(__file__).resolve()), "--resource-worker", case],
         cwd=tmp_path,
@@ -424,6 +424,7 @@ def test_repeated_read_close_resource_protocol(case: str, tmp_path: Path) -> Non
     record = json.loads(result.stdout)
     assert record["measured_cycles"] == 100
     assert Path(record["api"]).resolve() == Path(czi.__file__).resolve()
+    assert Path(record["native"]).resolve() == Path(native.__file__).resolve()
     assert Path(record["python"]).resolve() == Path(sys.executable).resolve()
     evidence_dir = os.environ.get("CZIRW_RESOURCE_EVIDENCE_DIR")
     if evidence_dir:

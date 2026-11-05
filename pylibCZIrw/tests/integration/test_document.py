@@ -25,7 +25,7 @@ READ_METHODS = (
     "read_stored_level",
     "list_attachments",
     "read_attachment",
-    "read_attachment_image",
+    "read_embedded_czi_image",
     "read_label",
     "read_preview",
 )
@@ -43,7 +43,7 @@ CALLS: dict[str, tuple[dict[str, object]]] = {
     "read_stored_level": ({"level": 4},),
     "list_attachments": ({},),
     "read_attachment": ({"index": 2},),
-    "read_attachment_image": ({"index": 2},),
+    "read_embedded_czi_image": ({"index": 2},),
     "read_label": ({},),
     "read_preview": ({},),
     "write": ({"data": object()},),

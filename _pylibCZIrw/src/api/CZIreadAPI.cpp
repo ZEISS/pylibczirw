@@ -3,12 +3,14 @@
 #include "libCZI_Site.h"
 
 #include <algorithm>
+#include <array>
 #include <codecvt>
 #include <cstddef>
 #include <cstring>
 #include <limits>
 #include <locale>
 #include <map>
+#include <numeric>
 #include <sstream>
 #include <stdexcept>
 
@@ -109,26 +111,101 @@ libCZI::SubBlockInfo CZIreadAPI::GetSubBlockInfo(int index) const {
   this->EnsureOpen();
   libCZI::SubBlockInfo info;
   if (index < 0 || !this->spReader->TryGetSubBlockInfo(index, &info)) {
-    throw std::out_of_range(
-        "No subblock exists at the supplied directory index.");
+    throw std::out_of_range("No subblock exists at the supplied directory index.");
   }
   return info;
 }
 
-std::vector<std::pair<int, libCZI::SubBlockInfo>>
-CZIreadAPI::GetSubBlockDirectory() const {
+void CZIreadAPI::VisitSubBlocks(
+    const std::map<std::string, int> &plane, std::optional<int> scene,
+    std::optional<int> mIndex, std::optional<int> level, bool classify,
+    const std::function<void(int, const libCZI::SubBlockInfo &, std::optional<int>)> &visitor) const {
   this->EnsureOpen();
-  std::vector<std::pair<int, libCZI::SubBlockInfo>> directory;
-  this->spReader->EnumerateSubBlocks(
-      [&directory](int index, const libCZI::SubBlockInfo &info) {
-        directory.emplace_back(index, info);
+  std::map<libCZI::DimensionIndex, int> coordinates;
+  for (const auto &entry : plane) {
+    if (entry.first.size() != 1 || std::string("TCZRIHVB").find(entry.first) == std::string::npos) {
+      throw std::invalid_argument("Invalid subblock plane dimension.");
+    }
+    const auto parsed = libCZI::CDimCoordinate::Parse((entry.first + std::to_string(entry.second)).c_str());
+    parsed.EnumValidDimensions([&](libCZI::DimensionIndex dimension, int value) {
+      coordinates[dimension] = value;
+      return true;
+    });
+  }
+  if (scene) {
+    coordinates[libCZI::DimensionIndex::S] = *scene;
+  }
+  std::map<std::array<int, 4>, int> levels;
+  this->spReader->EnumerateSubBlocks([&](int index, const libCZI::SubBlockInfo &info) {
+    std::optional<int> token;
+    if ((classify || level) && info.logicalRect.w > 0 && info.logicalRect.h > 0 &&
+        info.physicalSize.w > 0 && info.physicalSize.h > 0) {
+      const auto horizontal = std::gcd(info.logicalRect.w, static_cast<int>(info.physicalSize.w));
+      const auto vertical = std::gcd(info.logicalRect.h, static_cast<int>(info.physicalSize.h));
+      const std::array<int, 4> key{info.logicalRect.h / vertical,
+          static_cast<int>(info.physicalSize.h) / vertical,
+          info.logicalRect.w / horizontal, static_cast<int>(info.physicalSize.w) / horizontal};
+      token = levels.emplace(key, static_cast<int>(levels.size())).first->second;
+    }
+    for (const auto &coordinate : coordinates) {
+      int value;
+      if (!info.coordinate.TryGetPosition(coordinate.first, &value) || value != coordinate.second) {
         return true;
+      }
+    }
+    if ((mIndex && (!libCZI::Utils::IsValidMindex(info.mIndex) || info.mIndex != *mIndex)) ||
+        (level && token != level)) {
+      return true;
+    }
+    visitor(index, info, token);
+    return true;
+  });
+}
+
+std::vector<std::tuple<int, libCZI::SubBlockInfo, std::optional<int>>>
+CZIreadAPI::QuerySubBlocks(const std::map<std::string, int> &plane, std::optional<int> scene,
+                          std::optional<int> mIndex, std::optional<int> level) const {
+  std::vector<std::tuple<int, libCZI::SubBlockInfo, std::optional<int>>> result;
+  this->VisitSubBlocks(plane, scene, mIndex, level, true,
+      [&](int index, const libCZI::SubBlockInfo &info, std::optional<int> token) {
+        result.emplace_back(index, info, token);
       });
-  return directory;
+  return result;
+}
+
+uint64_t CZIreadAPI::CountSubBlocks(const std::map<std::string, int> &plane, std::optional<int> scene,
+                                  std::optional<int> mIndex, std::optional<int> level) const {
+  uint64_t count = 0;
+  this->VisitSubBlocks(plane, scene, mIndex, level, false,
+      [&](int, const libCZI::SubBlockInfo &, std::optional<int>) { ++count; });
+  return count;
+}
+
+std::map<std::optional<int>, uint64_t> CZIreadAPI::CountSubBlocksByScene(
+    const std::map<std::string, int> &plane, std::optional<int> scene,
+    std::optional<int> mIndex, std::optional<int> level) const {
+  std::map<std::optional<int>, uint64_t> counts;
+  this->VisitSubBlocks(plane, scene, mIndex, level, false,
+      [&](int, const libCZI::SubBlockInfo &info, std::optional<int>) {
+        int value;
+        const auto key = info.coordinate.TryGetPosition(libCZI::DimensionIndex::S, &value)
+            ? std::optional<int>(value) : std::nullopt;
+        ++counts[key];
+      });
+  return counts;
 }
 
 std::unique_ptr<PImage> CZIreadAPI::ReadSubBlock(int index) {
-  const auto info = this->GetSubBlockInfo(index);
+  this->EnsureOpen();
+  return std::make_unique<PImage>(DecodeSubBlock(this->spReader, index));
+}
+
+std::shared_ptr<libCZI::IBitmapData> CZIreadAPI::DecodeSubBlock(
+    const std::shared_ptr<libCZI::ISubBlockRepository> &repository, int index) {
+  libCZI::SubBlockInfo info;
+  if (index < 0 || !repository->TryGetSubBlockInfo(index, &info)) {
+    throw std::out_of_range("No subblock exists at the supplied directory index.");
+  }
   if (info.physicalSize.w <= 0 || info.physicalSize.h <= 0) {
     throw std::invalid_argument("Stored subblock dimensions must be positive.");
   }
@@ -143,32 +220,32 @@ std::unique_ptr<PImage> CZIreadAPI::ReadSubBlock(int index) {
   default:
     throw std::invalid_argument("Unsupported stored subblock pixel layout.");
   }
-  if (info.GetCompressionMode() == libCZI::CompressionMode::Invalid) {
-    throw std::invalid_argument(
-        "Unsupported stored subblock compression mode.");
-  }
   const auto width = static_cast<size_t>(info.physicalSize.w);
   const auto height = static_cast<size_t>(info.physicalSize.h);
   const auto bytesPerPixel = libCZI::Utils::GetBytesPerPixel(info.pixelType);
   if (width > (std::numeric_limits<uint32_t>::max() - 3u) / bytesPerPixel) {
-    throw std::overflow_error(
-        "Decoded subblock stride exceeds the native range.");
+    throw std::overflow_error("Decoded subblock stride exceeds the native range.");
   }
   const auto stride = ((width * bytesPerPixel + 3) / 4) * 4;
-  if (height > static_cast<size_t>(std::numeric_limits<std::ptrdiff_t>::max()) /
-                   stride) {
-    throw std::overflow_error(
-        "Decoded subblock size exceeds the buffer range.");
+  if (height > static_cast<size_t>(std::numeric_limits<std::ptrdiff_t>::max()) / stride) {
+    throw std::overflow_error("Decoded subblock size exceeds the buffer range.");
   }
-  const auto subblock = this->spReader->ReadSubBlock(index);
+  const auto subblock = repository->ReadSubBlock(index);
   if (!subblock) {
-    throw std::out_of_range(
-        "No subblock exists at the supplied directory index.");
+    throw std::out_of_range("No subblock exists at the supplied directory index.");
   }
   try {
-    return std::make_unique<PImage>(subblock->CreateBitmap());
+    libCZI::CreateBitmapOptions options;
+    options.handle_uncompressed_data_size_mismatch = false;
+    options.handle_jpgxr_bitmap_mismatch = false;
+    options.handle_zstd_data_size_mismatch = false;
+    options.handle_chunked_compression_data_size_mismatch = false;
+    return subblock->CreateBitmap(&options);
   } catch (const std::overflow_error &) {
     throw;
+  } catch (const std::logic_error &error) {
+    throw SubBlockDecodeError("Stored subblock compression mode " +
+        std::to_string(info.compressionModeRaw) + ": " + error.what());
   } catch (const std::runtime_error &error) {
     throw SubBlockDecodeError(error.what());
   }
@@ -182,94 +259,97 @@ std::string CZIreadAPI::ReadSubBlockMetadata(int index) {
   if (size > static_cast<size_t>(std::numeric_limits<std::ptrdiff_t>::max())) {
     throw std::overflow_error("Subblock metadata exceeds the buffer range.");
   }
-  return size ? std::string(static_cast<const char *>(data.get()), size)
-              : std::string();
+  return size ? std::string(static_cast<const char *>(data.get()), size) : std::string();
 }
 
 std::optional<StoredMaskData> CZIreadAPI::ReadSubBlockMask(int index) {
-  const auto info = this->GetSubBlockInfo(index);
+  this->GetSubBlockInfo(index);
   const auto subblock = this->spReader->ReadSubBlock(index);
-  size_t size = 0;
-  const auto data = subblock->GetRawData(libCZI::ISubBlock::Attachment, &size);
-  if (!size) {
+  const auto bitmap = ReadMaskBitmap(subblock);
+  if (!bitmap) {
     return std::nullopt;
   }
-  const auto metadata =
-      libCZI::CreateSubBlockMetadataFromSubBlock(subblock.get());
-  if (!metadata->IsXmlValid()) {
-    throw std::invalid_argument("Invalid subblock metadata for stored mask.");
+  const auto width = bitmap->GetWidth();
+  const auto height = bitmap->GetHeight();
+  const auto rowBytes = (uint64_t(width) + 7) / 8;
+  if (rowBytes * height > static_cast<uint64_t>(std::numeric_limits<std::ptrdiff_t>::max())) {
+    throw std::overflow_error("Stored mask exceeds the buffer range.");
   }
-  const auto accessor =
-      libCZI::CreateSubBlockAttachmentAccessor(subblock, metadata);
-  if (!accessor->HasChunkContainer()) {
-    return std::nullopt;
-  }
-  const auto bytes = static_cast<const unsigned char *>(data.get());
-  const unsigned char maskGuid[] = {0x67, 0xea, 0xe3, 0xcb, 0xfc, 0x5b,
-                                    0x2b, 0x49, 0xa1, 0x6a, 0xec, 0xe3,
-                                    0x78, 0x03, 0x14, 0x48};
-  const auto read32 = [](const unsigned char *value) -> uint32_t {
-    return uint32_t(value[0]) | (uint32_t(value[1]) << 8) |
-           (uint32_t(value[2]) << 16) | (uint32_t(value[3]) << 24);
-  };
-  std::optional<StoredMaskData> result;
-  for (size_t offset = 0; offset < size;) {
-    if (size - offset < 20) {
-      throw std::invalid_argument("Corrupt stored mask chunk header.");
-    }
-    const auto length = read32(bytes + offset + 16);
-    if (length > size - offset - 20) {
-      throw std::invalid_argument("Corrupt stored mask chunk length.");
-    }
-    if (std::memcmp(bytes + offset, maskGuid, 16) == 0) {
-      if (result || length < 16) {
-        throw std::invalid_argument("Corrupt or duplicate stored mask chunk.");
-      }
-      const auto payload = bytes + offset + 20;
-      const auto width = read32(payload);
-      const auto height = read32(payload + 4);
-      const auto representation = read32(payload + 8);
-      const auto stride = read32(payload + 12);
-      const auto rowBytes = (uint64_t(width) + 7) / 8;
-      if (!width || !height ||
-          width != static_cast<uint32_t>(info.physicalSize.w) ||
-          height != static_cast<uint32_t>(info.physicalSize.h) ||
-          representation != 0 || stride < rowBytes ||
-          uint64_t(height - 1) * stride + rowBytes > length - 16) {
-        throw std::invalid_argument(
-            "Corrupt or unsupported stored mask geometry/representation.");
-      }
-      if (rowBytes * height >
-          static_cast<uint64_t>(std::numeric_limits<std::ptrdiff_t>::max())) {
-        throw std::overflow_error("Stored mask exceeds the buffer range.");
-      }
-      StoredMaskData mask{
-          info.physicalSize.w, info.physicalSize.h,
-          std::string(static_cast<size_t>(rowBytes * height), '\0')};
-      for (uint32_t row = 0; row < height; ++row) {
-        std::memcpy(mask.bits.data() + row * rowBytes,
-                    payload + 16 + uint64_t(row) * stride,
-                    static_cast<size_t>(rowBytes));
-      }
-      result = std::move(mask);
-    }
-    offset += 20 + static_cast<size_t>(length);
+  const libCZI::ScopedBitonalBitmapLockerP locked(bitmap.get());
+  StoredMaskData result{width, height,
+      std::string(static_cast<size_t>(rowBytes * height), '\0')};
+  for (uint32_t row = 0; row < height; ++row) {
+    std::memcpy(result.bits.data() + row * rowBytes,
+        static_cast<const unsigned char *>(locked.ptrData) + uint64_t(row) * locked.stride,
+        static_cast<size_t>(rowBytes));
   }
   return result;
 }
 
-std::unique_ptr<PImage>
-CZIreadAPI::ReadStoredLevel(const std::vector<int> &indices,
-                            libCZI::IntRect roi, int factor) {
+std::shared_ptr<libCZI::IBitonalBitmapData> CZIreadAPI::ReadMaskBitmap(
+    const std::shared_ptr<libCZI::ISubBlock> &subblock) {
+  const auto info = subblock->GetSubBlockInfo();
+  size_t size = 0;
+  subblock->GetRawData(libCZI::ISubBlock::Attachment, &size);
+  if (!size) {
+    return {};
+  }
+  const auto metadata = libCZI::CreateSubBlockMetadataFromSubBlock(subblock.get());
+  if (!metadata->IsXmlValid()) {
+    throw std::invalid_argument("Invalid subblock metadata for stored mask.");
+  }
+  const auto accessor = libCZI::CreateSubBlockAttachmentAccessor(subblock, metadata);
+  if (!accessor->HasChunkContainer()) {
+    return {};
+  }
+  try {
+    const libCZI::GUID maskGuid{0xcbe3ea67, 0x5bfc, 0x492b,
+        {0xa1, 0x6a, 0xec, 0xe3, 0x78, 0x03, 0x14, 0x48}};
+    int maskCount = 0;
+    accessor->EnumerateChunksInChunkContainer(
+        [&](int, const libCZI::ISubBlockAttachmentAccessor::ChunkInfo &chunk) {
+          if (chunk.guid == maskGuid) {
+            if (++maskCount > 1 || chunk.size < 16) {
+              throw std::invalid_argument("Corrupt or duplicate stored mask chunk.");
+            }
+          }
+          return true;
+        });
+    if (!maskCount) {
+      return {};
+    }
+    const auto mask = accessor->GetValidPixelMaskAsUncompressedBitonalBitmap();
+    const auto bitmap = accessor->CreateBitonalBitmapFromMaskInfo();
+    if (mask.width != info.physicalSize.w || mask.height != info.physicalSize.h) {
+      throw std::invalid_argument("Stored mask dimensions do not match the subblock.");
+    }
+    return bitmap;
+  } catch (const libCZI::LibCZIException &error) {
+    throw std::invalid_argument(std::string("Invalid stored mask: ") + error.what());
+  }
+}
+
+std::unique_ptr<PImage> CZIreadAPI::ReadStoredLevel(
+    const std::vector<int> &indices, libCZI::IntRect roi, int factor) {
   this->EnsureOpen();
+  return ComposeStoredLevel(this->spReader, indices, roi, factor,
+                            this->readerOptions.enableMaskAwareness);
+}
+
+std::unique_ptr<PImage> CZIreadAPI::ComposeStoredLevel(
+    const std::shared_ptr<libCZI::ISubBlockRepository> &repository,
+    const std::vector<int> &indices, libCZI::IntRect roi, int factor, bool maskAware) {
   if (indices.empty() || factor <= 0 || roi.w <= 0 || roi.h <= 0 ||
       roi.w / factor <= 0 || roi.h / factor <= 0) {
-    throw std::invalid_argument(
-        "Invalid stored level members, ROI or integer factor.");
+    throw std::invalid_argument("Invalid stored level members, ROI or integer factor.");
   }
   std::vector<std::pair<int, libCZI::SubBlockInfo>> members;
   for (const auto index : indices) {
-    members.emplace_back(index, this->GetSubBlockInfo(index));
+    libCZI::SubBlockInfo info;
+    if (index < 0 || !repository->TryGetSubBlockInfo(index, &info)) {
+      throw std::out_of_range("No subblock exists at the supplied directory index.");
+    }
+    members.emplace_back(index, info);
   }
   const auto pixelType = members.front().second.pixelType;
   switch (pixelType) {
@@ -294,81 +374,54 @@ CZIreadAPI::ReadStoredLevel(const std::vector<int> &indices,
         int64_t(info.physicalSize.h) * factor != info.logicalRect.h) {
       throw std::invalid_argument("Unsupported stored level member geometry.");
     }
+    if (roi.w % factor || roi.h % factor ||
+        (int64_t(info.logicalRect.x) - roi.x) % factor ||
+        (int64_t(info.logicalRect.y) - roi.y) % factor) {
+      throw std::invalid_argument("Stored level ROI and tiles must align to the sampling grid.");
+    }
   }
   const auto width = static_cast<uint32_t>(roi.w / factor);
   const auto height = static_cast<uint32_t>(roi.h / factor);
   const auto bytesPerPixel = libCZI::Utils::GetBytesPerPixel(pixelType);
   if (width > (std::numeric_limits<uint32_t>::max() - 3u) / bytesPerPixel) {
-    throw std::overflow_error(
-        "Stored level output stride exceeds the native range.");
+    throw std::overflow_error("Stored level output stride exceeds the native range.");
   }
   const auto stride = (uint64_t(width) * bytesPerPixel + 3) / 4 * 4;
-  if (height > static_cast<size_t>(std::numeric_limits<std::ptrdiff_t>::max()) /
-                   stride) {
+  if (height > static_cast<size_t>(std::numeric_limits<std::ptrdiff_t>::max()) / stride) {
     throw std::overflow_error("Stored level output exceeds the buffer range.");
   }
-  auto output = std::make_unique<PImage>(
-      libCZI::GetDefaultSiteObject(libCZI::SiteObjectType::Default)
-          ->CreateBitmap(pixelType, width, height));
+  const auto bitmap = libCZI::GetDefaultSiteObject(libCZI::SiteObjectType::Default)
+      ->CreateBitmap(pixelType, width, height);
+  auto output = std::make_unique<PImage>(bitmap);
   std::memset(output->get_data(), 0, output->get_stride() * height);
-  std::stable_sort(
-      members.begin(), members.end(), [](const auto &left, const auto &right) {
-        const auto leftM = libCZI::Utils::IsValidMindex(left.second.mIndex)
-                               ? left.second.mIndex
-                               : std::numeric_limits<int>::min();
-        const auto rightM = libCZI::Utils::IsValidMindex(right.second.mIndex)
-                                ? right.second.mIndex
-                                : std::numeric_limits<int>::min();
-        return leftM < rightM;
-      });
-  for (const auto &member : members) {
+  members.erase(std::remove_if(members.begin(), members.end(), [&](const auto &member) {
     const auto &rect = member.second.logicalRect;
-    if (int64_t(rect.x) + rect.w <= roi.x ||
-        int64_t(rect.y) + rect.h <= roi.y || int64_t(roi.x) + roi.w <= rect.x ||
-        int64_t(roi.y) + roi.h <= rect.y) {
-      continue;
+    return int64_t(rect.x) + rect.w <= roi.x || int64_t(rect.y) + rect.h <= roi.y ||
+        int64_t(roi.x) + roi.w <= rect.x || int64_t(roi.y) + roi.h <= rect.y;
+  }), members.end());
+  std::stable_sort(members.begin(), members.end(), [](const auto &left, const auto &right) {
+    const auto leftM = libCZI::Utils::IsValidMindex(left.second.mIndex)
+        ? left.second.mIndex : std::numeric_limits<int>::min();
+    const auto rightM = libCZI::Utils::IsValidMindex(right.second.mIndex)
+        ? right.second.mIndex : std::numeric_limits<int>::min();
+    return leftM < rightM || (leftM == rightM && left.first < right.first);
+  });
+  libCZI::Compositors::ComposeSingleChannelTilesMaskAware(
+      [&](int position, std::shared_ptr<libCZI::IBitmapData> &pixels,
+          std::shared_ptr<libCZI::IBitonalBitmapData> &maskBitmap, int &offsetX, int &offsetY) {
+    if (static_cast<size_t>(position) >= members.size()) {
+      return false;
     }
-    const auto offsetX = (int64_t(rect.x) - roi.x) / factor;
-    const auto offsetY = (int64_t(rect.y) - roi.y) / factor;
-    const auto sourceX = std::max<int64_t>(0, -offsetX);
-    const auto sourceY = std::max<int64_t>(0, -offsetY);
-    const auto targetX = std::max<int64_t>(0, offsetX);
-    const auto targetY = std::max<int64_t>(0, offsetY);
-    const auto copyWidth = std::min<int64_t>(
-        member.second.physicalSize.w - sourceX, width - targetX);
-    const auto copyHeight = std::min<int64_t>(
-        member.second.physicalSize.h - sourceY, height - targetY);
-    if (copyWidth <= 0 || copyHeight <= 0) {
-      continue;
+    const auto &member = members[position];
+    const auto &rect = member.second.logicalRect;
+    offsetX = static_cast<int>((int64_t(rect.x) - roi.x) / factor);
+    offsetY = static_cast<int>((int64_t(rect.y) - roi.y) / factor);
+    pixels = DecodeSubBlock(repository, member.first);
+    if (maskAware) {
+      maskBitmap = ReadMaskBitmap(repository->ReadSubBlock(member.first));
     }
-    const auto pixels = this->ReadSubBlock(member.first);
-    const auto mask = this->readerOptions.enableMaskAwareness
-                          ? this->ReadSubBlockMask(member.first)
-                          : std::optional<StoredMaskData>();
-    for (int64_t row = 0; row < copyHeight; ++row) {
-      const auto source =
-          static_cast<const unsigned char *>(pixels->get_data()) +
-          (sourceY + row) * pixels->get_stride() + sourceX * bytesPerPixel;
-      const auto target = static_cast<unsigned char *>(output->get_data()) +
-                          (targetY + row) * output->get_stride() +
-                          targetX * bytesPerPixel;
-      if (!mask) {
-        std::memcpy(target, source,
-                    static_cast<size_t>(copyWidth) * bytesPerPixel);
-      } else {
-        const auto maskStride = (uint64_t(mask->width) + 7) / 8;
-        for (int64_t column = 0; column < copyWidth; ++column) {
-          const auto maskX = sourceX + column;
-          const auto value = static_cast<unsigned char>(
-              mask->bits[(sourceY + row) * maskStride + maskX / 8]);
-          if (value & (0x80 >> (maskX % 8))) {
-            std::memcpy(target + column * bytesPerPixel,
-                        source + column * bytesPerPixel, bytesPerPixel);
-          }
-        }
-      }
-    }
-  }
+    return true;
+  }, bitmap.get(), 0, 0, nullptr);
   return output;
 }
 
@@ -376,25 +429,22 @@ libCZI::AttachmentInfo CZIreadAPI::GetAttachmentInfo(int index) const {
   this->EnsureOpen();
   libCZI::AttachmentInfo info;
   if (index < 0 || !this->spReader->TryGetAttachmentInfo(index, &info)) {
-    throw std::out_of_range(
-        "No attachment exists at the supplied directory index.");
+    throw std::out_of_range("No attachment exists at the supplied directory index.");
   }
   return info;
 }
 
-std::vector<std::pair<int, libCZI::AttachmentInfo>>
-CZIreadAPI::GetAttachmentDirectory() {
+std::vector<libCZI::AttachmentInfo> CZIreadAPI::GetAttachmentDirectory() {
   this->EnsureOpen();
-  std::vector<std::pair<int, libCZI::AttachmentInfo>> directory;
-  this->spReader->EnumerateAttachments(
-      [&](int index, const libCZI::AttachmentInfo &info) {
-        directory.emplace_back(index, info);
-        return true;
-      });
+  std::vector<libCZI::AttachmentInfo> directory;
+  this->spReader->EnumerateAttachments([&](int, const libCZI::AttachmentInfo &info) {
+    directory.push_back(info);
+    return true;
+  });
   return directory;
 }
 
-std::string CZIreadAPI::ReadAttachment(int index) {
+std::vector<uint8_t> CZIreadAPI::ReadAttachment(int index) {
   this->GetAttachmentInfo(index);
   const auto attachment = this->spReader->ReadAttachment(index);
   size_t size = 0;
@@ -402,73 +452,63 @@ std::string CZIreadAPI::ReadAttachment(int index) {
   if (size > static_cast<size_t>(std::numeric_limits<std::ptrdiff_t>::max())) {
     throw std::overflow_error("Attachment payload exceeds the buffer range.");
   }
-  return size ? std::string(static_cast<const char *>(data.get()), size)
-              : std::string();
+  const auto bytes = static_cast<const uint8_t *>(data.get());
+  return size ? std::vector<uint8_t>(bytes, bytes + size) : std::vector<uint8_t>();
 }
 
-std::unique_ptr<PImage> CZIreadAPI::ReadAttachmentImage(int index) {
+std::unique_ptr<PImage> CZIreadAPI::ReadEmbeddedCziImage(int index) {
   const auto info = this->GetAttachmentInfo(index);
   if (std::string(info.contentFileType) != "CZI") {
-    throw std::invalid_argument(
-        "Unsupported attachment image format; expected embedded CZI.");
+    throw std::invalid_argument("Unsupported attachment image format; expected embedded CZI.");
   }
   const auto attachment = this->spReader->ReadAttachment(index);
   size_t size = 0;
   attachment->GetRawData(&size);
   if (size > static_cast<size_t>(std::numeric_limits<std::ptrdiff_t>::max())) {
-    throw std::overflow_error(
-        "Attachment image payload exceeds the buffer range.");
+    throw std::overflow_error("Attachment image payload exceeds the buffer range.");
   }
-  CZIreadAPI embedded(libCZI::CreateStreamFromMemory(attachment.get()));
-  const auto directory = embedded.GetSubBlockDirectory();
+  const auto embedded = libCZI::CreateCZIReader();
+  embedded->Open(libCZI::CreateStreamFromMemory(attachment.get()));
   std::vector<int> indices;
   std::map<libCZI::DimensionIndex, int> selectedCoordinates;
   int64_t left = std::numeric_limits<int64_t>::max();
   int64_t top = left;
   int64_t right = std::numeric_limits<int64_t>::min();
   int64_t bottom = right;
-  for (const auto &entry : directory) {
-    const auto &block = entry.second;
+  embedded->EnumerateSubBlocks([&](int index, const libCZI::SubBlockInfo &block) {
     if (block.logicalRect.w <= 0 || block.logicalRect.h <= 0 ||
         uint64_t(block.logicalRect.w) != block.physicalSize.w ||
         uint64_t(block.logicalRect.h) != block.physicalSize.h) {
-      continue;
+      return true;
     }
     std::map<libCZI::DimensionIndex, int> coordinates;
-    block.coordinate.EnumValidDimensions(
-        [&](libCZI::DimensionIndex dimension, int value) {
-          coordinates[dimension] = value;
-          return true;
-        });
+    block.coordinate.EnumValidDimensions([&](libCZI::DimensionIndex dimension, int value) {
+      coordinates[dimension] = value;
+      return true;
+    });
     if (!indices.empty() && coordinates != selectedCoordinates) {
-      throw std::invalid_argument(
-          "Embedded CZI attachment contains multiple image planes.");
+      throw std::invalid_argument("Embedded CZI attachment contains multiple image planes.");
     }
     selectedCoordinates = std::move(coordinates);
-    indices.push_back(entry.first);
+    indices.push_back(index);
     left = std::min<int64_t>(left, block.logicalRect.x);
     top = std::min<int64_t>(top, block.logicalRect.y);
-    right = std::max<int64_t>(right, int64_t(block.logicalRect.x) +
-                                         block.logicalRect.w);
-    bottom = std::max<int64_t>(bottom, int64_t(block.logicalRect.y) +
-                                           block.logicalRect.h);
-  }
+    right = std::max<int64_t>(right, int64_t(block.logicalRect.x) + block.logicalRect.w);
+    bottom = std::max<int64_t>(bottom, int64_t(block.logicalRect.y) + block.logicalRect.h);
+    return true;
+  });
   if (indices.empty()) {
-    throw std::invalid_argument("Embedded CZI attachment has no supported "
-                                "full-resolution image plane.");
+    throw std::invalid_argument("Embedded CZI attachment has no supported full-resolution image plane.");
   }
-  if (right > std::numeric_limits<int>::max() ||
-      bottom > std::numeric_limits<int>::max() ||
-      right - left > std::numeric_limits<int>::max() ||
-      bottom - top > std::numeric_limits<int>::max()) {
-    throw std::overflow_error(
-        "Embedded CZI image bounds exceed the native range.");
+  if (right > std::numeric_limits<int>::max() || bottom > std::numeric_limits<int>::max() ||
+      right - left > std::numeric_limits<int>::max() || bottom - top > std::numeric_limits<int>::max()) {
+    throw std::overflow_error("Embedded CZI image bounds exceed the native range.");
   }
   const libCZI::IntRect roi{static_cast<int>(left), static_cast<int>(top),
-                            static_cast<int>(right - left),
-                            static_cast<int>(bottom - top)};
-  auto pixels = embedded.ReadStoredLevel(indices, roi, 1);
-  embedded.close();
+                            static_cast<int>(right - left), static_cast<int>(bottom - top)};
+  auto pixels = ComposeStoredLevel(embedded, indices, roi, 1,
+                                    this->readerOptions.enableMaskAwareness);
+  embedded->Close();
   return pixels;
 }
 

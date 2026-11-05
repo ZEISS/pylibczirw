@@ -108,7 +108,7 @@ accept local paths only. Create refuses existing files unless `exist_ok=True`.
 
 | Read-Only `mode` | Delegated Operations                                                                                                                                                                                                                                         |
 |------------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| `"r"`            | `read`, `list_subblocks`, `read_subblock`, `read_subblock_by_m`, `read_subblock_metadata_xml`, `read_subblock_mask`, `list_stored_levels`, `read_stored_level`, `list_attachments`, `read_attachment`, `read_attachment_image`, `read_label`, `read_preview` |
+| `"r"`            | `read`, `list_subblocks`, `read_subblock`, `read_subblock_by_m`, `read_subblock_metadata_xml`, `read_subblock_mask`, `list_stored_levels`, `read_stored_level`, `list_attachments`, `read_attachment`, `read_embedded_czi_image`, `read_label`, `read_preview` |
 | `"w"`            | `write`, `write_metadata`                                                                                                                                                                                                                                    |
 | `"edit"`         | `read_metadata_xml`, `edit_session`                                                                                                                                                                                                                          |
 
@@ -577,8 +577,10 @@ with czi.open_czi(file_path) as reader:
 
 `list_subblocks(*, plane=None, scene=None, m_index=None, level=None)` returns
 `list[SubblockInfo]` in ascending file-local directory-index order. It reads
-directory information only, not pixel, XML or mask payloads. The catalog is
-materialized lazily; no constant-time or constant-memory guarantee is made.
+directory information only, not pixel, XML or mask payloads. Filtering runs
+natively before matching descriptors are transferred to Python. No additional
+full-directory Python catalog is cached. Level classification retains exact
+geometry tokens natively; no constant-time or constant-memory guarantee is made.
 The filters intersect; no matches gives `[]` and an empty plane mapping adds
 no constraint. Unspecified coordinates remain unconstrained, not zero.
 
@@ -609,7 +611,9 @@ invalid dimensions, absent-M sentinel selectors and negative level tokens raise
 the number of matching stored directory entries. `count_subblocks_by_scene()`
 accepts the same keyword-only filters and returns a dictionary of native scene
 IDs to counts. Both use the listing filters and validation without reading
-pixel, XML or mask payloads.
+pixel, XML or mask payloads. Counting runs natively and does not construct Python
+subblock snapshots or a filtered descriptor list. Without a level filter, counts
+also avoid level classification.
 
 ```python
 with czi.open_czi(file_path) as reader:
@@ -758,13 +762,19 @@ approximated. All selected members must share a supported native pixel layout.
 ROI is a tuple or `Rectangle` of signed-native-integer `(x, y, width, height)`
 in raw level-0 coordinates, preserving negative origins. It defaults to the
 descriptor's logical union. For reduction `p`, output YX is
-`(height // p, width // p)`; remainders are dropped. Relative signed tile offsets
-truncate toward zero. Nonpositive/zero-output extents and unsafe conversions
-are rejected. No scaling accessor, resampling, or `zoom` fallback is involved.
+`(height // p, width // p)`. Width and height must be divisible by `p`; tile and
+ROI origins must lie on the same sampling grid, including negative origins.
+The descriptor's logical top-left is the grid origin; its `downsample` records
+the exact Y/X grid spacing in raw coordinates. Incompatible tile grids have
+`output_shape=None`; unaligned ROIs raise `ValueError` rather than truncating.
+Nonpositive extents and unsafe conversions are rejected. Composition uses
+libCZI's public tile compositor, with no scaling accessor, resampling or `zoom`
+fallback.
 
 Uncovered pixels are initialized to zero after level availability is confirmed.
 This is not validity information. Overlaps follow ascending valid M, highest M
-on top; absent M sorts first. Equal/absent-M ties have no portable winner promise.
+on top; absent M sorts first. Equal/absent-M ties use ascending original directory
+index, so later directory entries overwrite earlier entries.
 `ReaderOptions(enable_mask_awareness=True)` applies valid stored masks during
 composition and raises on corrupt masks. The default is mask-unaware. The
 current mask-aware path reads each intersecting selected subblock again to
@@ -779,7 +789,7 @@ behavior is unchanged. See [the composition/ROI demo](demo_scripts/07_compose_st
 ```python
 reader.list_attachments() -> list[AttachmentInfo]
 reader.read_attachment(index: int) -> bytes
-reader.read_attachment_image(index: int) -> np.ndarray
+reader.read_embedded_czi_image(index: int) -> np.ndarray
 reader.read_label(*, index: int | None = None) -> np.ndarray | None
 reader.read_preview(*, index: int | None = None) -> np.ndarray | None
 ```
@@ -808,7 +818,7 @@ indices raise `IndexError`. Native parse/decode failures raise `ValueError`,
 stream failures `OSError`, and unsafe size conversions `OverflowError`.
 
 Raw and image reads materialize the selected payload in memory. Raw access also
-creates native string/Python-byte copies; image access additionally retains
+creates native byte-vector/Python-byte copies; image access additionally retains
 decoded input/output bitmaps. Size arithmetic is checked, with no arbitrary
 payload cap, streaming, fixed-memory-bound or zero-copy guarantee. Unrelated
 attachment payloads are not loaded. Memory use depends on the selected payload
@@ -1260,6 +1270,11 @@ The standard way of defining ROIs to cover a plane will lead to situations like 
 ## Editing metadata in-place (CziEditor)
 
 The edit API allows reading metadata and performing in-place metadata changes on an existing CZI without rewriting pixel data. It uses a context manager to open the file and provides a builder for staged edits that are committed once.
+
+Editing requires an existing regular file. The native filesystem guard is retained
+because libCZI's Linux `pread/pwrite` input-output stream uses `O_CREAT`; removing
+the guard would allow a failed edit-open to create a missing file. The Windows
+stream uses `OPEN_EXISTING`.
 
 ### Opening a CZI for editing
 

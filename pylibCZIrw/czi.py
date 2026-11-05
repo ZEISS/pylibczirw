@@ -105,18 +105,17 @@ def _subblock_integer(value: Any, name: str, *, native_range: bool = True) -> in
 
 
 class _SubblockCatalog:
-    """Own immutable directory snapshots and validated selection state."""
+    """Convert native query results and validate selection state."""
 
-    def __init__(self, directory: Iterable[Tuple[int, _pylibCZIrw.SubBlockInfo]]) -> None:
-        levels: dict[Tuple[Fraction, Fraction], int] = {}
+    @staticmethod
+    def snapshots(
+        directory: Iterable[Tuple[int, _pylibCZIrw.SubBlockInfo, Optional[int]]],
+    ) -> list[SubblockInfo]:
+        """Convert only matching native entries to owned Python snapshots."""
         snapshots = []
-        for index, info in sorted(directory, key=lambda entry: entry[0]):
+        for index, info, level_id in directory:
             rect = info.logicalRect
             shape = (info.physicalSize.h, info.physicalSize.w)
-            level_id = None
-            if min(rect.w, rect.h, *shape) > 0:
-                ratios = (Fraction(rect.h, shape[0]), Fraction(rect.w, shape[1]))
-                level_id = levels.setdefault(ratios, len(levels))
             snapshots.append(
                 SubblockInfo(
                     index=index,
@@ -129,7 +128,7 @@ class _SubblockCatalog:
                     level_id=level_id,
                 )
             )
-        self.entries = tuple(snapshots)
+        return snapshots
 
     @staticmethod
     def filters(
@@ -156,24 +155,8 @@ class _SubblockCatalog:
             level = _subblock_integer(level, "level", native_range=False)
             if level < 0:
                 raise ValueError("level must be a nonnegative catalog token.")
+            level = min(level, 2**31 - 1)
         return coordinates, scene, m_index, level
-
-    def select(
-        self,
-        coordinates: Mapping[str, int],
-        scene: Optional[int],
-        m_index: Optional[int],
-        level: Optional[int],
-    ) -> list[SubblockInfo]:
-        """Return every snapshot matching all normalized filters."""
-        return [
-            info
-            for info in self.entries
-            if all(info.coordinates.get(dimension) == value for dimension, value in coordinates.items())
-            and (scene is None or info.coordinates.get("S") == scene)
-            and (m_index is None or info.m_index == m_index)
-            and (level is None or info.level_id == level)
-        ]
 
 
 class TintingMode(Enum):
@@ -374,7 +357,6 @@ class CziReader:
             except BaseException as cleanup_error:
                 raise acquisition_error from cleanup_error
             raise
-        self._subblock_catalog: Optional[_SubblockCatalog] = None
         self._subblock_closed = False
 
     @classmethod
@@ -1014,9 +996,7 @@ class CziReader:
         if self._subblock_closed:
             raise RuntimeError("The CZI reader is closed.")
         filters = _SubblockCatalog.filters(plane, scene, m_index, level)
-        if self._subblock_catalog is None:
-            self._subblock_catalog = _SubblockCatalog(self._czi_reader.GetSubBlockDirectory())
-        return self._subblock_catalog.select(*filters)
+        return _SubblockCatalog.snapshots(self._czi_reader.QuerySubBlocks(*filters))
 
     def count_subblocks(
         self,
@@ -1033,7 +1013,9 @@ class CziReader:
         Omitted filters include all scenes, planes and stored levels.
         No matches returns zero.
         """
-        return len(self.list_subblocks(plane=plane, scene=scene, m_index=m_index, level=level))
+        if self._subblock_closed:
+            raise RuntimeError("The CZI reader is closed.")
+        return self._czi_reader.CountSubBlocks(*_SubblockCatalog.filters(plane, scene, m_index, level))
 
     def count_subblocks_by_scene(
         self,
@@ -1051,11 +1033,9 @@ class CziReader:
         Repeated M values and stored levels count as separate directory entries.
         No pixel, XML or mask payloads are read.
         """
-        counts: dict[Optional[int], int] = {}
-        for info in self.list_subblocks(plane=plane, scene=scene, m_index=m_index, level=level):
-            scene_id = info.coordinates.get("S")
-            counts[scene_id] = counts.get(scene_id, 0) + 1
-        return counts
+        if self._subblock_closed:
+            raise RuntimeError("The CZI reader is closed.")
+        return self._czi_reader.CountSubBlocksByScene(*_SubblockCatalog.filters(plane, scene, m_index, level))
 
     def list_attachments(self) -> list[AttachmentInfo]:
         """List immutable attachment descriptors without fetching payloads.
@@ -1079,7 +1059,7 @@ class CziReader:
             raise RuntimeError("The CZI reader is closed.")
         return self._czi_reader.ReadAttachment(_subblock_integer(index, "index", native_range=False))
 
-    def read_attachment_image(self, index: SupportsIndex) -> np.ndarray:
+    def read_embedded_czi_image(self, index: SupportsIndex) -> np.ndarray:
         """Decode one supported embedded-CZI attachment as YX or native-BGR YXA.
 
         Requires one full-resolution image plane with a supported native pixel
@@ -1089,7 +1069,7 @@ class CziReader:
         if self._subblock_closed:
             raise RuntimeError("The CZI reader is closed.")
         index = _subblock_integer(index, "index", native_range=False)
-        pixels = np.asarray(self._czi_reader.ReadAttachmentImage(index))
+        pixels = np.asarray(self._czi_reader.ReadEmbeddedCziImage(index))
         return pixels[..., 0] if pixels.shape[2] == 1 else pixels
 
     def _read_named_attachment_image(self, name: str, index: Optional[SupportsIndex]) -> Optional[np.ndarray]:
@@ -1102,7 +1082,7 @@ class CziReader:
             if len(matches) != 1:
                 raise ValueError(f"Attachment name {name!r} matched {len(matches)} entries; specify index.")
             index = matches[0].index
-        return self.read_attachment_image(index)
+        return self.read_embedded_czi_image(index)
 
     def read_label(self, *, index: Optional[SupportsIndex] = None) -> Optional[np.ndarray]:
         """Read the Label image; return None only for absence, not decoding errors."""
@@ -1141,7 +1121,16 @@ class CziReader:
             )
             factor = _stored_level_factor(downsample)
             output_shape = None
-            if factor is not None and (bottom - top) // factor > 0 and (right - left) // factor > 0:
+            if (
+                factor is not None
+                and (bottom - top) % factor == 0
+                and (right - left) % factor == 0
+                and all(
+                    (info.logical_rect[0] - left) % factor == 0
+                    and (info.logical_rect[1] - top) % factor == 0
+                    for info in members
+                )
+            ):
                 output_shape = ((bottom - top) // factor, (right - left) // factor)
             result.append(
                 StoredLevelInfo(
@@ -1166,7 +1155,9 @@ class CziReader:
         """Compose exact stored-level members without resampling or level fallback.
 
         Select exactly one scene/plane. ROI is raw level-0 XYWH; uncovered output
-        is black. The reader's existing mask-awareness option is honored.
+        is black. ROI extents and offsets from the stored sampling origin must
+        align to the integer reduction grid. The reader's existing mask-awareness
+        option is honored. Equal-M overlaps use ascending directory-index order.
         """
         if self._subblock_closed:
             raise RuntimeError("The CZI reader is closed.")
@@ -2686,9 +2677,9 @@ class CziDocument:
         """Delegate retrieval of an owned raw attachment payload."""
         return self._require_mode("read_attachment", "r").read_attachment(index)
 
-    def read_attachment_image(self, index: SupportsIndex) -> np.ndarray:
+    def read_embedded_czi_image(self, index: SupportsIndex) -> np.ndarray:
         """Delegate decoding of one supported embedded-CZI image."""
-        return self._require_mode("read_attachment_image", "r").read_attachment_image(index)
+        return self._require_mode("read_embedded_czi_image", "r").read_embedded_czi_image(index)
 
     def read_label(self, *, index: Optional[SupportsIndex] = None) -> Optional[np.ndarray]:
         """Delegate label image selection and its existing absence/error rules."""

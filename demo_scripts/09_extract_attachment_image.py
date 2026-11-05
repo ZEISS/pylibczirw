@@ -30,7 +30,7 @@ def main() -> None:
             raise ValueError(f"Expected one SlidePreview attachment, found {len(previews)}.")
         preview = previews[0]
         raw = reader.read_attachment(preview.index)
-        pixels = reader.read_attachment_image(preview.index)
+        pixels = reader.read_embedded_czi_image(preview.index)
 
     args.output_dir.mkdir(parents=True, exist_ok=True)
     output_path = args.output_dir / f"{filepath.stem}_SlidePreview.czi"
