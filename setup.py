@@ -327,16 +327,14 @@ setup(
     packages=["pylibCZIrw"],
     cmdclass={"build_ext": CMakeBuild},
     install_requires=requirements,
-    # we require at least python version 3.9
-    python_requires=">=3.9,<3.15",
+    # we require at least python version 3.11
+    python_requires=">=3.11,<3.15",
     license_files=["COPYING", "COPYING.LESSER", "NOTICE.txt"],
     # Classifiers help users find your project by categorizing it.
     # For a list of valid classifiers, see https://pypi.org/classifiers/
     classifiers=[
         "Development Status :: 5 - Production/Stable",
         "Topic :: Scientific/Engineering :: Image Processing",
-        "Programming Language :: Python :: 3.9",
-        "Programming Language :: Python :: 3.10",
         "Programming Language :: Python :: 3.11",
         "Programming Language :: Python :: 3.12",
         "Programming Language :: Python :: 3.13",
