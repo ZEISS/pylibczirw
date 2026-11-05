@@ -117,7 +117,7 @@ class TestIndexedNativeAccess:
                 assert info in selected
                 assert reader.count_subblocks(**filters) == len(selected)
                 assert sum(reader.count_subblocks_by_scene(**filters).values()) == len(selected)
-            assert reader.list_subblocks(level=2**100) == []
+            assert not reader.list_subblocks(level=2**100)
             assert not reads
         assert infos[0].stored_shape[0] > 0
 
@@ -1115,7 +1115,7 @@ class TestSubblockCatalog:
         with open_czi(CZI_MULTI_DIM) as reader:
             expected = reader.list_subblocks(plane={"C": 0})
 
-            def reject_snapshots(**filters: object) -> None:
+            def reject_snapshots(**_filters: object) -> None:
                 pytest.fail("Counting must not construct Python subblock snapshots.")
 
             monkeypatch.setattr(reader, "list_subblocks", reject_snapshots)
@@ -1161,7 +1161,7 @@ class TestSubblockCatalog:
             ) -> list[tuple[int, SimpleNamespace, Optional[int]]]:
                 """Return filtered triples with globally assigned level tokens."""
                 self.calls += 1
-                levels = {}
+                levels: dict[tuple[Fraction, Fraction], int] = {}
                 matches = []
                 for index, info in sorted(directory):
                     rect, size = info.logicalRect, info.physicalSize
@@ -1170,25 +1170,30 @@ class TestSubblockCatalog:
                         ratios = (Fraction(rect.h, size.h), Fraction(rect.w, size.w))
                         token = levels.setdefault(ratios, len(levels))
                     coordinates = info.coordinate.to_dict()
-                    if (
-                        all(coordinates.get(key) == value for key, value in plane.items())
-                        and (scene is None or coordinates.get("S") == scene)
-                        and (m_index is None or (info.is_mindex_valid() and info.mIndex == m_index))
-                        and (level is None or token == level)
-                    ):
+                    matches_filters = (
+                        all(coordinates.get(key) == value for key, value in plane.items()),
+                        scene is None or coordinates.get("S") == scene,
+                        m_index is None or (info.is_mindex_valid() and info.mIndex == m_index),
+                        level is None or token == level,
+                    )
+                    if all(matches_filters):
                         matches.append((index, info, token))
                 return matches
 
-            def CountSubBlocks(self, *filters: object) -> int:
+            def CountSubBlocks(
+                self, plane: dict[str, int], scene: Optional[int], m_index: Optional[int], level: Optional[int]
+            ) -> int:
                 """Expose the native-style scalar count interface."""
-                return len(self.QuerySubBlocks(*filters))
+                return len(self.QuerySubBlocks(plane, scene, m_index, level))
 
-            def CountSubBlocksByScene(self, *filters: object) -> dict[Optional[int], int]:
+            def CountSubBlocksByScene(
+                self, plane: dict[str, int], scene: Optional[int], m_index: Optional[int], level: Optional[int]
+            ) -> dict[Optional[int], int]:
                 """Expose the native-style per-scene count interface."""
                 counts: dict[Optional[int], int] = {}
-                for _index, info, _level in self.QuerySubBlocks(*filters):
-                    scene = info.coordinate.to_dict().get("S")
-                    counts[scene] = counts.get(scene, 0) + 1
+                for _index, info, _level in self.QuerySubBlocks(plane, scene, m_index, level):
+                    key = info.coordinate.to_dict().get("S")
+                    counts[key] = counts.get(key, 0) + 1
                 return counts
 
             def close(self) -> None:
@@ -1290,7 +1295,7 @@ class TestSubblockCatalog:
         assert [info.index for info in reader.list_subblocks(plane={"C": 0})] == [3]
         assert [info.index for info in reader.list_subblocks(m_index=0)] == [9]
         assert [info.index for info in reader.list_subblocks(plane={"Z": -3}, scene=2, m_index=-7)] == [12]
-        assert reader.list_subblocks(scene=0) == []
+        assert not reader.list_subblocks(scene=0)
         assert reader.list_subblocks(plane={}) == reader.list_subblocks()
         assert reader.list_subblocks()[0].m_index is None
         assert reader._czi_reader.directory_calls == 0
@@ -1310,8 +1315,8 @@ class TestSubblockCatalog:
         infos = reader.list_subblocks()
         assert [info.level_id for info in infos] == [0, 1, 0, 2, None, 3]
         assert [info.index for info in reader.list_subblocks(level=0)] == [0, 2]
-        assert reader.list_subblocks(scene=8, level=0) == []
-        assert reader.list_subblocks(level=2**100) == []
+        assert not reader.list_subblocks(scene=8, level=0)
+        assert not reader.list_subblocks(level=2**100)
         reader.list_subblocks().clear()
         assert len(reader.list_subblocks()) == 6
         reader.close()
@@ -1352,7 +1357,7 @@ class TestSubblockCatalog:
 
     def test_empty_directory_and_numpy_integer_selectors(self) -> None:
         """Verify empty directory and numpy integer selectors."""
-        assert self.reader([]).list_subblocks() == []
+        assert not self.reader([]).list_subblocks()
         assert self.reader([]).count_subblocks() == 0
         assert not self.reader([]).count_subblocks_by_scene()
         reader = self.reader([self.descriptor(5, {"C": -2}, -7)])

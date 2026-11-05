@@ -4,8 +4,8 @@
 #include "ReaderOptions.h"
 #include "SubBlockCache.h"
 #include "inc_libCzi.h"
-#include <iostream>
 #include <functional>
+#include <iostream>
 #include <map>
 #include <optional>
 #include <stdexcept>
@@ -13,15 +13,15 @@
 #include <vector>
 
 class SubBlockDecodeError : public std::runtime_error,
-                                                        public std::nested_exception {
+                            public std::nested_exception {
 public:
-    using std::runtime_error::runtime_error;
+  using std::runtime_error::runtime_error;
 };
 
 struct StoredMaskData {
-    uint32_t width;
-    uint32_t height;
-    std::string bits;
+  uint32_t width;
+  uint32_t height;
+  std::string bits;
 };
 
 /// Class used to represent a CZI reader object in pylibCZIrw.
@@ -43,27 +43,30 @@ private:
   ReaderOptions
       readerOptions; ///< Options for the reader, such as enabling mask
                      ///< awareness and visibility check optimizations
-    bool isClosed = false;
+  bool isClosed = false;
 
-    void Open(std::shared_ptr<libCZI::IStream> stream,
-                        const SubBlockCacheOptions &cacheOptions,
-                        const ReaderOptions &options);
-    void EnsureOpen() const;
-    static std::shared_ptr<libCZI::IBitmapData> DecodeSubBlock(
-        const std::shared_ptr<libCZI::ISubBlockRepository> &repository, int index);
-    static std::shared_ptr<libCZI::IBitonalBitmapData> ReadMaskBitmap(
-        const std::shared_ptr<libCZI::ISubBlock> &subblock);
-    static std::unique_ptr<PImage> ComposeStoredLevel(
-        const std::shared_ptr<libCZI::ISubBlockRepository> &repository,
-        const std::vector<int> &indices, libCZI::IntRect roi, int factor, bool maskAware);
-    void VisitSubBlocks(const std::map<std::string, int> &plane,
-                        std::optional<int> scene, std::optional<int> mIndex,
-                        std::optional<int> level, bool classify,
-                        const std::function<void(int, const libCZI::SubBlockInfo &,
-                                                 std::optional<int>)> &visitor) const;
+  void Open(std::shared_ptr<libCZI::IStream> stream,
+            const SubBlockCacheOptions &cacheOptions,
+            const ReaderOptions &options);
+  void EnsureOpen() const;
+  static std::shared_ptr<libCZI::IBitmapData>
+  DecodeSubBlock(const std::shared_ptr<libCZI::ISubBlockRepository> &repository,
+                 int index);
+  static std::shared_ptr<libCZI::IBitonalBitmapData>
+  ReadMaskBitmap(const std::shared_ptr<libCZI::ISubBlock> &subblock);
+  static std::unique_ptr<PImage> ComposeStoredLevel(
+      const std::shared_ptr<libCZI::ISubBlockRepository> &repository,
+      const std::vector<int> &indices, libCZI::IntRect roi, int factor,
+      bool maskAware);
+  void
+  VisitSubBlocks(const std::map<std::string, int> &plane,
+                 std::optional<int> scene, std::optional<int> mIndex,
+                 std::optional<int> level, bool classify,
+                 const std::function<void(int, const libCZI::SubBlockInfo &,
+                                          std::optional<int>)> &visitor) const;
 
 public:
-    explicit CZIreadAPI(std::shared_ptr<libCZI::IStream> stream);
+  explicit CZIreadAPI(std::shared_ptr<libCZI::IStream> stream);
 
   /// Constructor which constructs a CZIrwAPI object from the given wstring.
   /// Creates a spReader and spAccessor (SingleChannelTilingScalingAccessor) for
@@ -143,32 +146,35 @@ public:
              const ReaderOptions &readerOptions);
 
   /// Close the Opened czi document
-    void close();
+  void close();
 
-    libCZI::SubBlockInfo GetSubBlockInfo(int index) const;
+  libCZI::SubBlockInfo GetSubBlockInfo(int index) const;
 
-    std::vector<std::tuple<int, libCZI::SubBlockInfo, std::optional<int>>>
-    QuerySubBlocks(const std::map<std::string, int> &plane, std::optional<int> scene,
-                   std::optional<int> mIndex, std::optional<int> level) const;
-    uint64_t CountSubBlocks(const std::map<std::string, int> &plane, std::optional<int> scene,
-                           std::optional<int> mIndex, std::optional<int> level) const;
-    std::map<std::optional<int>, uint64_t> CountSubBlocksByScene(
-        const std::map<std::string, int> &plane, std::optional<int> scene,
-        std::optional<int> mIndex, std::optional<int> level) const;
+  std::vector<std::tuple<int, libCZI::SubBlockInfo, std::optional<int>>>
+  QuerySubBlocks(const std::map<std::string, int> &plane,
+                 std::optional<int> scene, std::optional<int> mIndex,
+                 std::optional<int> level) const;
+  uint64_t CountSubBlocks(const std::map<std::string, int> &plane,
+                          std::optional<int> scene, std::optional<int> mIndex,
+                          std::optional<int> level) const;
+  std::map<std::optional<int>, uint64_t>
+  CountSubBlocksByScene(const std::map<std::string, int> &plane,
+                        std::optional<int> scene, std::optional<int> mIndex,
+                        std::optional<int> level) const;
 
-    std::unique_ptr<PImage> ReadSubBlock(int index);
+  std::unique_ptr<PImage> ReadSubBlock(int index);
 
-    std::string ReadSubBlockMetadata(int index);
+  std::string ReadSubBlockMetadata(int index);
 
-    std::optional<StoredMaskData> ReadSubBlockMask(int index);
+  std::optional<StoredMaskData> ReadSubBlockMask(int index);
 
-    std::unique_ptr<PImage> ReadStoredLevel(const std::vector<int> &indices,
-                                           libCZI::IntRect roi, int factor);
+  std::unique_ptr<PImage> ReadStoredLevel(const std::vector<int> &indices,
+                                          libCZI::IntRect roi, int factor);
 
-    libCZI::AttachmentInfo GetAttachmentInfo(int index) const;
-    std::vector<libCZI::AttachmentInfo> GetAttachmentDirectory();
-    std::vector<uint8_t> ReadAttachment(int index);
-    std::unique_ptr<PImage> ReadEmbeddedCziImage(int index);
+  libCZI::AttachmentInfo GetAttachmentInfo(int index) const;
+  std::vector<libCZI::AttachmentInfo> GetAttachmentDirectory();
+  std::vector<uint8_t> ReadAttachment(int index);
+  std::unique_ptr<PImage> ReadEmbeddedCziImage(int index);
 
   /// Returns raw xml metadata from the czi document.
   std::string GetXmlMetadata();

@@ -1,3 +1,4 @@
+-r requirements_reference.txt
 defusedxml==0.7.1
 markdown-it-py==4.2.0
 matplotlib==3.11.2

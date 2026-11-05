@@ -1126,8 +1126,7 @@ class CziReader:
                 and (bottom - top) % factor == 0
                 and (right - left) % factor == 0
                 and all(
-                    (info.logical_rect[0] - left) % factor == 0
-                    and (info.logical_rect[1] - top) % factor == 0
+                    (info.logical_rect[0] - left) % factor == 0 and (info.logical_rect[1] - top) % factor == 0
                     for info in members
                 )
             ):

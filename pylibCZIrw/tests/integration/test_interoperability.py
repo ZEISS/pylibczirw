@@ -94,6 +94,7 @@ def test_independent_pixels_xml_geometry_and_strict_native_validation(filename: 
         assert len(infos) == len(reference.subblock_directory)
         for info, entry in zip(infos, reference.subblock_directory, strict=True):
             block = entry.read_segment_data(reference)
+            assert isinstance(block, czifile.CziSubBlockSegmentData)
             expected = np.squeeze(block.data())
             if entry.pixel_type.samples == 3:
                 expected = expected[..., ::-1]
@@ -349,6 +350,7 @@ def resource_worker(case: str) -> dict[str, object]:
         else:
             entry = reference.subblock_directory[1 if case == "level" else 0]
             block = entry.read_segment_data(reference)
+            assert isinstance(block, czifile.CziSubBlockSegmentData)
             selected_storage = {
                 "encoded_pixel_bytes": block.data_size,
                 "stored_shape": list(entry.stored_shape),
@@ -416,8 +418,8 @@ def test_repeated_read_close_resource_protocol(case: str, tmp_path: Path) -> Non
             "-c",
             "import runpy, sys; sys.path[:0] = sys.argv[1:3]; "
             "del sys.argv[:3]; runpy.run_path(sys.argv[0], run_name='__main__')",
-            str(Path(native.__file__).resolve().parent),
             str(Path(czi.__file__).resolve().parent.parent),
+            str(Path(native.__file__).resolve().parent),
             str(Path(__file__).resolve()),
             "--resource-worker",
             case,

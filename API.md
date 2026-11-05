@@ -106,11 +106,11 @@ URL strings require explicit `ReaderFileInputTypes.Curl`, preserve the URL
 unchanged, and use the existing reader's range-request behavior. Create and edit
 accept local paths only. Create refuses existing files unless `exist_ok=True`.
 
-| Read-Only `mode` | Delegated Operations                                                                                                                                                                                                                                         |
-|------------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| Read-Only `mode` | Delegated Operations                                                                                                                                                                                                                                           |
+|------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | `"r"`            | `read`, `list_subblocks`, `read_subblock`, `read_subblock_by_m`, `read_subblock_metadata_xml`, `read_subblock_mask`, `list_stored_levels`, `read_stored_level`, `list_attachments`, `read_attachment`, `read_embedded_czi_image`, `read_label`, `read_preview` |
-| `"w"`            | `write`, `write_metadata`                                                                                                                                                                                                                                    |
-| `"edit"`         | `read_metadata_xml`, `edit_session`                                                                                                                                                                                                                          |
+| `"w"`            | `write`, `write_metadata`                                                                                                                                                                                                                                      |
+| `"edit"`         | `read_metadata_xml`, `edit_session`                                                                                                                                                                                                                            |
 
 Delegates retain the existing method signatures, defaults, results and domain
 errors documented below. The facade owns one existing reader, writer or editor,
