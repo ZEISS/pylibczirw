@@ -10,7 +10,17 @@ PRE_COMMANDS:
     venv: mypy
     secured_env: true
     continue_if_failed: false
+  - command: pip install --no-deps --constraint "${DEFAULT_WORKSPACE:-${GITHUB_WORKSPACE:-/tmp/lint}}/requirements_reference.txt" czifile
+    cwd: workspace
+    venv: mypy
+    secured_env: true
+    continue_if_failed: false
   - command: pip install --requirement "${DEFAULT_WORKSPACE:-${GITHUB_WORKSPACE:-/tmp/lint}}/requirements_lint.txt"
+    cwd: workspace
+    venv: pylint
+    secured_env: true
+    continue_if_failed: false
+  - command: pip install --no-deps --constraint "${DEFAULT_WORKSPACE:-${GITHUB_WORKSPACE:-/tmp/lint}}/requirements_reference.txt" czifile
     cwd: workspace
     venv: pylint
     secured_env: true
