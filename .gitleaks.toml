@@ -1,0 +1,7 @@
+[extend]
+useDefault = true
+
+[allowlist]
+description = "Public xxHash AVX-512 intrinsic identifier, not credential material."
+regexTarget = "secret"
+regexes = ['^_mm512_srli_epi64$']

@@ -21,6 +21,14 @@ variable-rgx=^(?!.*([_])\1)^(?=.{1,30}$)[a-z_][a-z0-9_]{0,}$
 # Following https://github.com/psf/black/blob/master/docs/compatible_configs.md#black-compatible-configurations
 max-line-length=120
 
+[CLASSES]
+
+defining-attr-methods=__init__,__new__,setUp,asyncSetUp,__post_init__,_initialize_owner
+
+[IMPORTS]
+
+known-third-party=enchant,packaging
+
 [LOGGING]
 
 # Format style used to check logging format string. `old` means using %

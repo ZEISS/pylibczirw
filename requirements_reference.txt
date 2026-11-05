@@ -1,0 +1,2 @@
+czifile>=2026.8.16; python_version >= "3.12"
+imagecodecs>=2026.8.16; python_version >= "3.12"

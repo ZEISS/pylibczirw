@@ -35,6 +35,9 @@ The detailed usage can be inferred from the [sample notebooks](https://github.co
 For more detailed information (on the latest version) refer to <https://zeiss.github.io/pylibczirw/>.  
 
 ## Installation
+Use standard-GIL CPython 3.12, 3.13, 3.14 or 3.15 (`>=3.12,<3.16`).
+Older Python versions, PyPy and free-threaded builds are not supported.
+
 In case there is no wheel available for your system configuration, you can:  
 - try to install from the provided source distribution  
   **For Windows**:

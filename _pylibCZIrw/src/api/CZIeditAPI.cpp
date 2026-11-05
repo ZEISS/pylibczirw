@@ -1,10 +1,17 @@
 #include "CZIeditAPI.h"
 #include "CZIwriteAPI.h"
+#include <filesystem>
 
 using namespace libCZI;
 using namespace std;
 
 CZIeditAPI::CZIeditAPI(const std::wstring &fileName) {
+  const auto filenameUtf8 = Utils::ConvertToUtf8(fileName);
+  if (!std::filesystem::is_regular_file(
+          std::filesystem::u8path(filenameUtf8))) {
+    throw std::runtime_error("Cannot edit CZI file \"" + filenameUtf8 +
+                             "\": an existing regular file is required.");
+  }
   auto stream = CreateInputOutputStreamForFile(fileName.c_str());
   auto rw = CreateCZIReaderWriter();
   rw->Create(stream);
