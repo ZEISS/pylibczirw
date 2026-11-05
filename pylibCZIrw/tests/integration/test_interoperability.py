@@ -409,14 +409,20 @@ def resource_worker(case: str) -> dict[str, object]:
 @pytest.mark.parametrize("case", RESOURCE_CASES)
 def test_repeated_read_close_resource_protocol(case: str, tmp_path: Path) -> None:
     """Verify repeated read close resource protocol."""
-    environment = os.environ.copy()
-    environment["PYTHONPATH"] = os.pathsep.join(
-        [str(Path(native.__file__).resolve().parent), str(Path(czi.__file__).resolve().parent.parent)]
-    )
     result = subprocess.run(  # nosec B603 - Reviewed argv; shell=False.
-        [sys.executable, str(Path(__file__).resolve()), "--resource-worker", case],
+        [
+            sys.executable,
+            "-E",
+            "-c",
+            "import runpy, sys; sys.path[:0] = sys.argv[1:3]; "
+            "del sys.argv[:3]; runpy.run_path(sys.argv[0], run_name='__main__')",
+            str(Path(native.__file__).resolve().parent),
+            str(Path(czi.__file__).resolve().parent.parent),
+            str(Path(__file__).resolve()),
+            "--resource-worker",
+            case,
+        ],
         cwd=tmp_path,
-        env=environment,
         capture_output=True,
         text=True,
         check=True,
