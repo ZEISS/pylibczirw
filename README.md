@@ -78,7 +78,7 @@ Note: For pip 21.2 and below, use in-tree-build ```pip install --use-feature=in-
 4. To test this on another project that uses pylibczi, navigate to the pylibczirw folder in python terminal of the pylibCZIrw project, and then create a wheel file using
    ```python setup.py bdist_wheel```.  
     Note: Make sure you didn't run ``pip install .`` as this will delete the wheel file after installing it.
-    Then install the package in the project using ```pip install <RepositoryDirectory>\pylibczirw\dist\pylibCZIrw-3.4.0-cp310-cp310-win_amd64.whl```  
+    Then install the package in the project using ```pip install <RepositoryDirectory>\pylibczirw\dist\pylibCZIrw-3.4.0-cp311-cp311-win_amd64.whl```  
     Note: this required the python versions in both projects (and venvs) to be the same.
     Note: If this fails on cmake, the cmake inputs can be copied from the console output, and run separately for faster debugging.
 5. Alternatively, in the python terminal of the project that uses pylibCZIrw, navigate to the build folder of pylibCZIrw and run ```pip install . -e```.  
