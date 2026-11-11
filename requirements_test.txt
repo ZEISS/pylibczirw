@@ -1,7 +1,7 @@
 # Used for testing
 mypy
 check-python-versions
-tox==3.27.1
+tox==4.67.13
 tox-current-env
 pytest
 defusedxml
