@@ -33,18 +33,25 @@ require Matplotlib; the other demos need no plotting packages or fixture downloa
   a temporary directory, edit metadata, reopen through `CziDocument` and display
   retained pixels after close. It does not modify fixture files.
 
-## Installed-Wheel Setup
+## Installed-Wheel Validation
 
 Use a separate environment with a wheel containing these interfaces. In the
 commands below, `$python` names its interpreter and `$wheel` names that wheel.
-Install the wheel and plotting dependency before running the examples below:
+Run from the repository root and choose a new evidence directory outside it:
 
 ```powershell
-& $python -I -m pip install --only-binary=:all: $wheel matplotlib
+& $python -I -m pip install --only-binary=:all: $wheel matplotlib==3.11.2 markdown-it-py==4.2.0
+$evidence = Join-Path $env:TEMP "pylibczirw-example-check"
+& $python -I packaging/example_checks.py $evidence
 ```
 
-Demos 02 and 09 require their named local acquisition files. See the
-[fixture policy](../doc/fixture_policy.md) for the synthetic test inputs.
+Add `--include-local` only when both acquisition files used by demos 02 and 09
+are present. The runner uses fresh isolated child processes, asserts installed
+non-editable imports, stages example inputs outside the checkout, and retains
+logs, plot/array hashes and PNGs. Plots use Agg with exact displayed-array and
+nonblank-canvas checks; interactive GUI behavior is not certified. This evidence
+does not certify other platforms/interpreters, all documentation recipes or
+distribution readiness. See the [fixture policy](../doc/fixture_policy.md).
 
 ## Interactive Runs
 
